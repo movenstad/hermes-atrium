@@ -6,10 +6,10 @@
  * the same contribution areas the built-in UI uses. Nothing here forks the app,
  * so an update cannot revert it.
  *
- * This build is the two-look edition: **Gruvbox** (a painting behind tinted
- * glass) and **Custom** (the same machinery driven by hermes-atrium-theme.json). There
- * is no weather, no feed and no network access of any kind: nothing leaves the
- * computer, ever.
+ * Two looks, one editor: **Gruvbox** is a preset (the shipped painting, palette
+ * and opacities) and **Custom** is the same set of knobs kept as you leave
+ * them, optionally driven by hermes-atrium-theme.json. There is no weather, no
+ * feed and no network access of any kind: nothing leaves the computer, ever.
  *
  * Each feature rides the cheapest existing mechanism:
  *   appearance        -> contributed themes (one stable "Hermes Atrium" entry whose
@@ -39,7 +39,10 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 const THEMES_AREA = 'themes'
 const DIRECTIVE_AREA = 'transcript.directives'
 
-const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
+// Stored key strings are permanent: users have data under them. `gruvboxSkin`
+// and `gruvboxSkinImage` are the Gruvbox preset's own record, so both looks
+// keep an independent picture and palette.
+const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
 
 // write an attribute only when its value changes: an identical write still queues a
 // mutation record, and every observer wakes up for it
@@ -77,45 +80,39 @@ const putText = (el, value) => { if (el && el.textContent !== value) el.textCont
 // glass rather than a clear pane — because fg1 on bg0 is a 9.5:1 pair and that
 // is the only way prose stays readable over a picture with real highlights.
 const GROUND_THEME = 'hermes-atrium-gruvbox'
-const GRUVBOX_ACCENT = '#fe8019'
 // Resolved at startup from wherever the plugin is installed (assets/ in a
 // clone, or next to plugin.js); see resolvePluginFiles.
 let PAINTING_URL = 'data:,'
 const PAINTING_FILE = 'backwater.jpg'
 
-// The palette, verbatim from gruvbox.vim's `s:gb` dictionary.
-const GB = {
-  bg0h: [29, 32, 33], bg0: [40, 40, 40], bg0s: [50, 48, 47], bg1: [60, 56, 54],
-  bg2: [80, 73, 69], bg3: [102, 92, 84], bg4: [124, 111, 100],
-  gray: [146, 131, 116], fg0: [251, 241, 199], fg1: [235, 219, 178], fg2: [213, 196, 161],
-  fg3: [189, 174, 147], fg4: [168, 153, 132],
-  red: '#fb4934', green: '#b8bb26', yellow: '#fabd2f', blue: '#83a598',
-  purple: '#d3869b', aqua: '#8ec07c', orange: '#fe8019'
-}
-const gbA = (rgb, a) => `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a})`
-// Gruvbox's own bg ladder is nearly neutral, which over a painting reads grey.
-// These are the same values pushed toward the river in the picture: equal or
-// lower luminance than bg0, but with hue and chroma, so the panes stay dark
-// while reading as deep green glass instead of soot. Deliberately outside the
-// palette.
-const RIVER = { deep: [13, 23, 19], pane: [19, 32, 26], card: [27, 43, 35], bubble: [38, 58, 46] }
-const RIVER_EDGE = '#466553'
+// The one colour that is not a skin value: gruvbox's red, kept for destructive
+// actions so a delete button reads as a warning in either look. Everything
+// else a surface paints now comes from SKIN_DEFAULTS, which is why the old
+// palette table (gruvbox.vim's `s:gb`) is gone: it was a second source of truth
+// for colours the skin already names, and a Custom look could not reach it.
+const DESTRUCTIVE = '#fb4934'
 
 // ── The skin, as data ───────────────────────────────────────────────────────
-// Everything below is what the editor writes: the artwork, how the glass sits on
-// it, and the panel colours. Defaults reproduce the shipped look exactly, so a
-// fresh install paints what you saw before anyone touched a control.
+// ONE set of knobs for both looks. A look is a named preset of this data: the
+// values below are what Gruvbox ships, and Custom starts from the same place
+// and keeps whatever you change. There is no second material and no desktop
+// tint, so a control that exists for one look exists for both.
 const SKIN_DEFAULTS = {
   image: PAINTING_URL,
   fit: 'cover',
   posX: 46,
   posY: 45,
   scrim: 0.31,
-  blur: 18,
+  // No blur and no sidebar wash by default. A still picture gains nothing from
+  // being blurred behind the reading column, and the blur was a full-window
+  // compositor pass on every scroll. The sidebar's zero is the same idea for
+  // the rail: the gaps between the cards show the picture at full strength,
+  // which is what makes the cards float.
+  blur: 0,
   saturate: 1.3,
   brightness: 0.90,
   chrome: 0.74,
-  sidebar: 0.74,
+  sidebar: 0,
   card: 0.78,
   bubble: 0.78,
   ground: '#16261e',
@@ -125,7 +122,22 @@ const SKIN_DEFAULTS = {
   edge: '#4f7360',
   accent: '#fe8019',
   ink: '#fbf1c7',
-  ink2: '#ebdbb2'
+  ink2: '#ebdbb2',
+  // The prose and label colours were hard-coded gruvbox tokens, which meant a
+  // Custom picture still got gruvbox's blue links and purple code. They are
+  // skin values now, so both looks can be palette-complete.
+  //
+  // ink3 and ink4 are the two faintest text tiers, and they are named rather
+  // than derived: deriving them from ink2 and quiet produced colours a shade
+  // off gruvbox's own fg2 and fg4, which repainted every section label and
+  // timestamp in the shipped look. A palette that names them can reproduce
+  // that look and a Custom one can change them.
+  quiet: '#bdae93',
+  ink3: '#d5c4a1',
+  ink4: '#a89984',
+  link: '#83a598',
+  code: '#d3869b',
+  quote: '#8ec07c'
 }
 const SKIN_SLIDERS = [
   ['scrim', 'Picture scrim', 0, 0.9, 0.01],
@@ -133,7 +145,13 @@ const SKIN_SLIDERS = [
   ['saturate', 'Glass saturation', 0.5, 2, 0.05],
   ['brightness', 'Glass brightness', 0.5, 1.1, 0.01],
   ['chrome', 'Chat pane opacity', 0.4, 1, 0.01],
-  ['sidebar', 'Sidebar opacity', 0.4, 1, 0.01],
+  // Sidebar opacity starts at zero, and zero means clear: the rail behind the
+  // cards is transparent and the gaps show the picture. The range is 0..1 and
+  // the wash is `sidebar * 0.5`, so the old 0.74 position is still reachable at
+  // 0.74 and now reads as the 0.37 wash it always painted. It used to start at
+  // 0.4 with the floor remapped to clear, which meant the number under the
+  // slider was never the number it used, and zero was not selectable at all.
+  ['sidebar', 'Sidebar opacity', 0, 1, 0.01],
   ['card', 'Card opacity', 0.4, 1, 0.01],
   ['bubble', 'Your message opacity', 0.4, 1, 0.01]
 ]
@@ -145,109 +163,16 @@ const SKIN_COLORS = [
   ['edge', 'Edges'],
   ['accent', 'Accent'],
   ['ink', 'Text'],
-  ['ink2', 'Quiet text']
+  ['ink2', 'Quiet text'],
+  ['ink3', 'Faint text'],
+  ['quiet', 'Labels'],
+  ['ink4', 'Faintest text'],
+  ['link', 'Links'],
+  ['code', 'Inline code'],
+  ['quote', 'Quotes']
 ]
 let SKIN = { ...SKIN_DEFAULTS }
 
-// ── Gruvbox tint: the desktop through the window ───────────────────────────
-// Tint replaces the painting with the desktop: one ground across the window,
-// with native glass supplying blur or a wallpaper blurred once at screen size.
-// Palette matching keeps every surface and text role in the wallpaper's family.
-const LEGACY_GLASS_DEFAULTS = {
-  ground: '#1f0b06', deeper: '#170805', cardTint: '#2c130b', bubbleTint: '#3b1a10', edge: '#5b2a1b',
-  accent: '#e2704a', ink: '#edd1b3', ink2: '#d6b597', quiet: '#a8846c', link: '#7fa3bc', code: '#e6a3ac', quote: '#9db07c',
-  tint: 0.92, thumb: ''
-}
-const GLASS_DEFAULTS = {
-  ground: '#282828', deeper: '#1d2021', cardTint: '#3c3836', bubbleTint: '#504945', edge: '#665c54',
-  accent: '#fe8019', ink: '#ebdbb2', ink2: '#d5c4a1', quiet: '#bdae93', link: '#83a598', code: '#d3869b', quote: '#8ec07c',
-  tint: 0, thumb: ''
-}
-// Old Glass stored opacity; Gruvbox stores transparency so zero keeps its painting.
-const migrateGruvboxTint = (look, palette) => {
-  if (look !== 'glass') return null
-  const n = Number(palette?.tint)
-  const opacity = Number.isFinite(n) ? Math.min(0.97, Math.max(0.4, n)) : LEGACY_GLASS_DEFAULTS.tint
-  return { ...LEGACY_GLASS_DEFAULTS, ...palette, tint: Number((1 - opacity).toFixed(4)) }
-}
-const GLASS_KEYS = Object.keys(GLASS_DEFAULTS)
-let GLASS = { ...GLASS_DEFAULTS }
-const setGlass = (next, defaults = GLASS_DEFAULTS) => {
-  const out = { ...defaults }
-  for (const key of GLASS_KEYS) {
-    const v = next?.[key]
-    if (key === 'tint') { const n = Number(v); if (Number.isFinite(n)) out.tint = Math.min(0.92, Math.max(0, n)) }
-    else if (key === 'thumb') { if (typeof v === 'string' && v.startsWith('data:image/')) out.thumb = v }
-    else if (typeof v === 'string' && SKIN_HEX.test(v.trim())) out[key] = v.trim()
-  }
-  GLASS = out
-}
-// HSL in [0,360) / [0,1] / [0,1] to '#rrggbb'
-const hslHex = (h, s, l) => {
-  h = ((h % 360) + 360) % 360
-  const k = n => (n + h / 30) % 12
-  const a = s * Math.min(l, 1 - l)
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
-  return '#' + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('')
-}
-const rgbHsl = (r, g, b) => {
-  r /= 255; g /= 255; b /= 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2
-  if (max === min) return [0, 0, l]
-  const d = max - min
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-  const h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
-  return [h * 60, s, l]
-}
-// The palette a picture implies: its dominant hue becomes the glass, the ink and
-// the accent; the strongest hue far from it becomes links. Pure, so testable.
-const glassPaletteFrom = pixels => {
-  const bins = new Array(36).fill(0), sat = new Array(36).fill(0)
-  let total = 0
-  for (let i = 0; i + 2 < pixels.length; i += 4) {
-    const [h, s, l] = rgbHsl(pixels[i], pixels[i + 1], pixels[i + 2])
-    const w = s * Math.max(0, 1 - Math.abs(l - 0.5) * 2)
-    const b = Math.floor(h / 10) % 36
-    bins[b] += w; sat[b] += s * w; total += w
-  }
-  const smooth = bins.map((_, i) => bins[(i + 35) % 36] * 0.5 + bins[i] + bins[(i + 1) % 36] * 0.5)
-  const top = smooth.indexOf(Math.max(...smooth))
-  const hue = top * 10 + 5
-  // how colourful the picture is overall (0 grey .. 1 vivid), so a grey
-  // wallpaper gets grey glass rather than an invented colour
-  const vivid = Math.min(1, total / (pixels.length / 4) / 0.35)
-  const chroma = Math.max(0.08, (sat[top] / Math.max(bins[top], 1e-6)) * vivid)
-  let far = -1, farW = 0
-  smooth.forEach((w, i) => { const d = Math.min(Math.abs(i - top), 36 - Math.abs(i - top)); if (d >= 6 && w > farW) { farW = w; far = i } })
-  const linkHue = far >= 0 && farW > smooth[top] * 0.08 ? far * 10 + 5 : hue + 180
-  const c = x => Math.min(1, x * chroma / 0.75)
-  return {
-    ground: hslHex(hue, c(0.68), 0.075), deeper: hslHex(hue, c(0.7), 0.055),
-    cardTint: hslHex(hue, c(0.55), 0.11), bubbleTint: hslHex(hue, c(0.5), 0.15), edge: hslHex(hue, c(0.42), 0.25),
-    accent: hslHex(hue + 2, Math.max(0.35, c(0.72)), 0.6), ink: hslHex(hue + 18, c(0.62), 0.82), ink2: hslHex(hue + 18, c(0.42), 0.72),
-    quiet: hslHex(hue + 14, c(0.22), 0.55), link: hslHex(linkHue, Math.max(0.2, c(0.33)), 0.63),
-    code: hslHex(hue - 20, Math.max(0.25, c(0.55)), 0.75), quote: hslHex(hue + 70, Math.max(0.15, c(0.25)), 0.6)
-  }
-}
-// The glass colours, as the host theme's tokens (menus, dialogs, inputs).
-const glassGrounds = () => {
-  const a = (hex, alpha) => `rgba(${hexTriple(hex)}, ${alpha})`
-  return {
-    background: a(GLASS.ground, 0.80), foreground: GLASS.ink, card: a(GLASS.cardTint, 0.86), cardForeground: GLASS.ink,
-    muted: a(GLASS.cardTint, 0.6), mutedForeground: GLASS.ink2, popover: a(GLASS.deeper, 0.96), popoverForeground: GLASS.ink,
-    primary: GLASS.accent, primaryForeground: GLASS.deeper, secondary: a(GLASS.bubbleTint, 0.7), secondaryForeground: GLASS.ink,
-    accent: GLASS.accent, accentForeground: GLASS.deeper, border: GLASS.edge, input: a(GLASS.cardTint, 0.7), ring: GLASS.accent,
-    destructive: '#e5482f', destructiveForeground: '#fff4ee',
-    sidebarBackground: 'transparent', sidebarBorder: a(GLASS.ink, 0.09), userBubble: a(GLASS.ink, 0.05), userBubbleBorder: a(GLASS.ink, 0.1)
-  }
-}
-// Glass reuses the skin machinery for its panels; these are its skin values.
-const glassSkin = () => ({
-  ...SKIN_DEFAULTS, scrim: 0, blur: 0, saturate: 1, brightness: 1,
-  chrome: 0.62, sidebar: 0.5, card: 0.7, bubble: 0.8,
-  ground: GLASS.ground, deeper: GLASS.deeper, cardTint: GLASS.cardTint, bubbleTint: GLASS.bubbleTint,
-  edge: GLASS.edge, accent: GLASS.accent, ink: GLASS.ink, ink2: GLASS.ink2
-})
 // The skin comes from a hand-edited file and goes into the stylesheet as text, so
 // one stray `;` or `}` would break every rule after it. Colours must be hex and
 // numbers are clamped to what the sliders allow; anything else keeps its default.
@@ -286,6 +211,9 @@ const hexRgb = hex => hexTriple(hex).split(', ').map(Number)
 // Every surface Atrium paints reads these, so a look (or a user skin) is one
 // set of numbers instead of a hunt through the stylesheet.
 const mixHex = (a, b, t) => hexRgb(a).map((v, i) => Math.round(v + (hexRgb(b)[i] - v) * t))
+// A darker/lighter variant of a skin colour, for the quiet tiers the skin does
+// not name itself. Ordinary colour maths, no palette knowledge.
+const hexFade = (hex, toward, t) => '#' + mixHex(hex, toward, t).map(v => v.toString(16).padStart(2, '0')).join('')
 // The skin's materials, as the host theme's tokens (menus, dialogs, inputs).
 const materialVars = () => {
   const tri = rgb => rgb.join(', ')
@@ -306,35 +234,45 @@ const materialVars = () => {
   ]
 }
 
-const gbHex = rgb => `#${rgb.map(v => v.toString(16).padStart(2, '0')).join('')}`
-
-const GRUVBOX_GROUNDS = {
-  // Deep green ground: the luminance of bg0_hard with the river's green in it,
-  // so prose keeps its contrast while the app stops reading as grey.
-  background: gbA(RIVER.pane, 0.88), foreground: gbHex(GB.fg0),
-  card: gbA(RIVER.card, 0.96), cardForeground: gbHex(GB.fg0),
-  muted: gbA(GB.bg1, 0.80), mutedForeground: gbHex(GB.fg3),
-  popover: gbA(RIVER.deep, 0.98), popoverForeground: gbHex(GB.fg0),
-  primary: GB.orange, primaryForeground: gbHex(GB.bg0h),
-  secondary: gbA(RIVER.card, 0.90), secondaryForeground: gbHex(GB.fg2),
-  accent: GB.orange, accentForeground: gbHex(GB.bg0h),
-  border: RIVER_EDGE, input: gbA(RIVER.card, 0.95),
-  ring: GB.yellow, destructive: GB.red, destructiveForeground: gbHex(GB.bg0h),
-  sidebarBackground: 'transparent', sidebarBorder: RIVER_EDGE,
-  userBubble: gbA(RIVER.bubble, 0.95), userBubbleBorder: RIVER_EDGE
+// The skin, as the host theme's tokens (menus, dialogs, inputs). ONE set for
+// both looks, because both looks read the same skin: Gruvbox is only the name
+// of the preset the skin starts from. Deriving these from SKIN is also what
+// makes a Custom palette reach the app's own menus, which used to stay gruvbox
+// green under any picture.
+//
+// `sidebarBackground` is transparent on purpose, and `upstream` set it that way
+// for the floating sidebar: the rail behind the cards must show the picture at
+// full strength, or the gaps between the cards match their own tone and the
+// column reads as one slab. The cards paint themselves from the skin.
+const skinGrounds = () => {
+  const a = (hex, alpha) => `rgba(${hexTriple(hex)}, ${alpha})`
+  return {
+    background: a(SKIN.ground, 0.88), foreground: SKIN.ink,
+    card: a(SKIN.cardTint, 0.96), cardForeground: SKIN.ink,
+    muted: a(SKIN.cardTint, 0.80), mutedForeground: SKIN.quiet,
+    popover: a(SKIN.deeper, 0.98), popoverForeground: SKIN.ink,
+    primary: SKIN.accent, primaryForeground: SKIN.deeper,
+    secondary: a(SKIN.cardTint, 0.90), secondaryForeground: SKIN.ink2,
+    accent: SKIN.accent, accentForeground: SKIN.deeper,
+    border: SKIN.edge, input: a(SKIN.cardTint, 0.95),
+    ring: SKIN.accent, destructive: DESTRUCTIVE, destructiveForeground: SKIN.deeper,
+    sidebarBackground: 'transparent', sidebarBorder: SKIN.edge,
+    userBubble: a(SKIN.bubbleTint, 0.95), userBubbleBorder: SKIN.edge
+  }
 }
 
-// The glass material comes from bg1/bg2, so every Atrium surface (sidebar
-// cards, snippet cards, composer) is a gruvbox pane. The ink ramp is gruvbox's
-// own fg ladder.
-const gruvboxMaterial = () => ({
+// The pane material comes from the skin's ground and bubble tints, so every
+// Atrium surface (sidebar cards, snippet cards, composer) is one material.
+// The ink ramp follows the skin's own two ink levels.
+const skinMaterial = () => ({
   tint: hexRgb(SKIN.ground),
   tintHi: hexRgb(SKIN.bubbleTint),
-  // ink3 lands on every 10-11px uppercase label in the app — section headers,
-  // the status bar, the fold line, shortcuts — and gruvbox's Comment grey is
-  // simply too quiet at that size over a tinted ground, so the quiet tier sits
-  // at fg1. This is the one place the theme deliberately out-contrasts gruvbox.
-  ink: [hexRgb(SKIN.ink), hexRgb(SKIN.ink2), gruvboxTinted() ? hexRgb(GLASS.ink2) : GB.fg2, hexRgb(SKIN.ink2)],
+  // Four tiers, and every one of them is a named skin value, so a Custom
+  // palette can set its own ramp and the shipped gruvbox one is reproduced
+  // exactly. The shape is [text, quiet, faint, quiet]: the shipped look put
+  // fg2 in the faint tier and fg1 again in the last, and `ink2` in the fourth
+  // slot is what the theme file's readme has always meant by "quiet text".
+  ink: [hexRgb(SKIN.ink), hexRgb(SKIN.ink2), hexRgb(SKIN.ink3), hexRgb(SKIN.ink2)],
   night: 0.2,
   accent: SKIN.accent
 })
@@ -342,7 +280,7 @@ const gruvboxMaterial = () => ({
 // The painting as the ground. The scrim is what makes the glass tinted rather
 // than clear: it drops the picture's peak brightness so the panels above it can
 // stay translucent without letting a highlight sit under a line of prose.
-const gruvboxLayers = () => {
+const pictureLayers = () => {
   const scrim = skinNumber(SKIN.scrim, 0.44)
   return [
     'html::before {',
@@ -377,51 +315,6 @@ const gruvboxLayers = () => {
     'body::before { content: none; }'
   ]
 }
-
-// Glass has no picture: the window is the picture. <body> is the one painter,
-// a single tint over the native material, exactly like a terminal with
-// background-opacity + background-blur. Without native glass (the setting is
-// off, or the platform has none) the same tint is painted solid.
-const glassLayers = () => [
-  "html, html:root { background: transparent !important; background-color: transparent !important; }",
-  `html:root body { background: rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))}) !important; }`,
-  `html:root:not([data-hermes-glass-on]) body { background: ${GLASS.ground} !important; }`,
-  "html::before, body::before { content: none !important; }",
-  "html:root [data-contrib-shell], html:root [data-slot='sidebar-wrapper'] { background-color: transparent !important; }",
-]
-const glassChromeCss = () => [
-  "html:root {",
-  `  --atr-glass-rgb: ${hexTriple(GLASS.ground)};`,
-  `  --atr-glass-a: ${Number((1 - GLASS.tint).toFixed(4))};`,
-  `  --ui-text-tertiary: ${GLASS.quiet} !important;`,
-  `  --ui-text-quaternary: rgba(${hexTriple(GLASS.quiet)}, 0.8) !important;`,
-  `  --atr-ink-3: ${GLASS.quiet} !important;`,
-  // One surface, like a terminal: panels are a faint lift of the ink over the
-  // same tint, never a second slab of colour, and nothing casts a shadow.
-  `  --atr-side-card: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --atr-side-card-hi: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
-  `  --atr-glass: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --atr-glass-hover: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
-  `  --theme-neutral-card: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --atr-edge: rgba(${hexTriple(GLASS.ink)}, 0.09) !important;`,
-  "  --atr-lift: none !important;",
-  "  --atr-lift-high: none !important; --atr-lift-float: none !important; --atr-frost: none !important;",
-  "}",
-  // Nothing in this look needs a live blur: the OS already blurred what is
-  // behind the window, and blurring our own flat tint again is pure GPU cost.
-  "html:root *, html:root *::before, html:root *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }",
-  // Over a busy desktop the prose shadow reads as smudge; the tint carries contrast.
-  "html:root :is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message'], [data-slot='assistant-message'], [data-slot='aui_intro'], [data-slot='statusbar']) :is(p, li, td, th, dd, dt, figcaption, h1, h2, h3, span) { text-shadow: none !important; }",
-  `::selection { background: rgba(${hexTriple(GLASS.accent)}, 0.38) !important; color: ${GLASS.ink} !important; }`,
-  // the running dot takes the palette's accent instead of a stock blue
-  "html:root :is([data-sessions-mode], [data-tour='sessions-sidebar'], [data-slot='sidebar-content']) [class*='place-items-center'] span[role='status']:is([class*='ui-accent'], [aria-label*='session running' i]) {",
-  `  background: ${GLASS.accent} !important; background-color: ${GLASS.accent} !important; box-shadow: 0 0 6px rgba(${hexTriple(GLASS.accent)}, 0.55) !important;`,
-  "}",
-  "html:root :is([data-sessions-mode], [data-tour='sessions-sidebar'], [data-slot='sidebar-content']) [class*='place-items-center'] span[role='status']:is([class*='ui-accent'], [aria-label*='session running' i])::after {",
-  `  box-shadow: 0 0 0 1.5px rgba(${hexTriple(GLASS.accent)}, 0.35) !important;`,
-  "}",
-  "* { scrollbar-color: rgba(" + hexTriple(GLASS.ink) + ", 0.16) transparent; }",
-]
 
 // A picture change invalidates the cached sample grid the reply-panel solver
 // reads, and the sheet that paints the background. There is no longer a
@@ -612,8 +505,8 @@ const polishCss = () => [
   // applies a theme, and inline declarations otherwise beat any stylesheet.
   `  --ui-text-primary: ${SKIN.ink} !important;`,
   `  --ui-text-secondary: ${SKIN.ink2} !important;`,
-  `  --ui-text-tertiary: ${gruvboxTinted() ? GLASS.quiet : '#bdae93'} !important;`,
-  `  --ui-text-quaternary: ${gruvboxTinted() ? GLASS.quiet : '#a89984'} !important;`,
+  `  --ui-text-tertiary: ${SKIN.quiet} !important;`,
+  `  --ui-text-quaternary: ${SKIN.ink4} !important;`,
   '}',
   // `--atr-` is the app's namespace too: it ships its own --atr-ink-2, which is
   // rgb(33 3 25) — near-black. Every rule of ours that said
@@ -623,7 +516,7 @@ const polishCss = () => [
   `  --atr-ink-0: ${SKIN.ink} !important;`,
   `  --atr-ink-1: ${SKIN.ink2} !important;`,
   `  --atr-ink-2: ${SKIN.ink2} !important;`,
-  `  --atr-ink-3: ${gruvboxTinted() ? GLASS.quiet : '#d5c4a1'} !important;`,
+  `  --atr-ink-3: ${SKIN.ink3} !important;`,
   '}',
   ':root {',
   // One ladder, four steps: chip 4, control/row/well 8, card 12, sheet 16.
@@ -872,10 +765,10 @@ const polishCss = () => [
   // The composer and your own messages wear the gruvbox glass, the material
   // every other surface wears (--atr-glass): a plain white wash over the
   // painting reads as a different, lighter thing than the cards beside it.
-  ...(!gruvboxTinted() ? [
+  ...[
     "html body div[data-slot='composer-surface'][data-slot][class] { background: linear-gradient(var(--atr-m-comp-a), var(--atr-m-comp-b)) !important; backdrop-filter: blur(18px) saturate(1.25) brightness(1.08) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 10px 30px rgba(0, 0, 0, 0.22) !important; }",
     "html body :is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container) { background: linear-gradient(var(--atr-m-bub-a), var(--atr-m-bub-b)) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 6px 20px rgba(0, 0, 0, 0.16) !important; border-color: transparent !important; }",
-  ] : []),
+  ],
   // No live backdrop blur on a full-height sheet: the frosted glass it sat
   // behind is already baked, and the 28px pass was the most expensive one left.
   "div.rounded-xl[data-atr-setbox] { backdrop-filter: none !important; }",
@@ -956,16 +849,25 @@ const gruvboxTextCss = () => [
   // It hangs off html::after rather than a thread element precisely because a
   // thread element's width ends at the pane boundary, and that boundary is the
   // hard line we are trying to get rid of.
-  ...(gruvboxTinted() ? [] : [
-  "html[data-atr-chat='1']::after {",
-  "  content: '';",
-  '  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;',
-  '  pointer-events: none;',
-  `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`,
-  `  backdrop-filter: blur(${skinNumber(SKIN.blur, 16)}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
-  '}',
-  "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
-  ]),
+  // The soft-focus layer is opt-in. At blur 0 there is nothing to filter, and
+  // emitting `blur(0px)` still asks the compositor for a full-window
+  // backdrop-filter pass on every scroll, so the whole rule is skipped and only
+  // the scrim remains. Any blur above 0 brings the filter back.
+  ...(() => {
+    const blur = skinNumber(SKIN.blur, 0)
+    const scrim = `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`
+    if (!(blur > 0)) return []
+    return [
+      "html[data-atr-chat='1']::after {",
+      "  content: '';",
+      '  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;',
+      '  pointer-events: none;',
+      scrim,
+      `  backdrop-filter: blur(${blur}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
+      '}',
+      "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
+    ]
+  })(),
   `::selection { background: ${SKIN.edge} !important; color: ${SKIN.ink} !important; }`,
   // The tab bar floats on the picture with nothing marking where it ends. The very top of the
   // window is a touch darker, fading out under the tabs, with a faint line at the bar's foot.
@@ -981,26 +883,26 @@ const gruvboxTextCss = () => [
   '}',
   // Underlined
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) a {",
-  `  color: ${gruvboxTinted() ? GLASS.link : '#83a598'} !important;`,
+  `  color: ${SKIN.link} !important;`,
   '  text-decoration: underline !important;',
-  `  text-decoration-color: rgba(${gruvboxTinted() ? hexTriple(GLASS.link) : '131, 165, 152'}, 0.55) !important;`,
+  `  text-decoration-color: rgba(${hexTriple(SKIN.link)}, 0.55) !important;`,
   '}',
   // Constant
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) :is(code, kbd, samp) {",
-  `  color: ${gruvboxTinted() ? GLASS.code : '#d3869b'} !important;`,
-  `  background: rgba(${hexTriple(SKIN.deeper)}, ${gruvboxTinted() ? 0.55 : 0.78}) !important;`,
+  `  color: ${SKIN.code} !important;`,
+  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.78) !important;`,
   `  border: 1px solid ${SKIN.edge} !important;`,
   '}',
   // String / Special in blocks: the fence keeps bg0_hard, the border is bg2
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) pre {",
-  `  background: rgba(${hexTriple(SKIN.deeper)}, ${gruvboxTinted() ? 0.6 : 0.90}) !important;`,
+  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.9) !important;`,
   `  border: 1px solid ${SKIN.edge} !important;`,
-  `  color: ${gruvboxTinted() ? GLASS.ink : '#ebdbb2'} !important;`,
+  `  color: ${SKIN.ink2} !important;`,
   '}',
   // PreProc
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) blockquote {",
-  `  border-left: 2px solid ${gruvboxTinted() ? GLASS.quote : '#8ec07c'} !important;`,
-  `  color: ${gruvboxTinted() ? GLASS.ink2 : '#d5c4a1'} !important;`,
+  `  border-left: 2px solid ${SKIN.quote} !important;`,
+  `  color: ${SKIN.ink3} !important;`,
   '}',
   // LineNr
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) hr {",
@@ -1015,11 +917,11 @@ const gruvboxTextCss = () => [
   '}'
 ]
 
-// Read by sheetCss, which stays a pure function of the switches.
-// Custom shares Gruvbox chrome but must never inherit its desktop tint.
+// Read by sheetCss, which stays a pure function of the switches. The two looks
+// differ only in which preset the skin holds, so the sheet needs to know which
+// one is on screen for its comment header and nothing else.
 let LOOK_MODE = 'gruvbox'
 const setLookMode = mode => { LOOK_MODE = mode === 'custom' ? 'custom' : 'gruvbox' }
-const gruvboxTinted = () => LOOK_MODE === 'gruvbox' && GLASS.tint > 0
 
 const WORK_ICONS = {
   brain: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M216,72a48,48,0,0,0-88-26.49A48,48,0,0,0,40,72v1.39a56,56,0,0,0,0,101.22V176a48,48,0,0,0,88,26.49A48,48,0,0,0,216,176v-1.39A56.09,56.09,0,0,0,248,124,56.11,56.11,0,0,0,216,72ZM120,208a32,32,0,0,1-32-32,48,48,0,0,1,32-45.26Zm0-93.26A48,48,0,0,1,88,69.26,32,32,0,0,1,120,40Zm16-74.74A32,32,0,0,1,168,69.26a48,48,0,0,1-32,45.48Zm0,93.26A48,48,0,0,1,168,176a32,32,0,0,1-32,32Z"/></svg>',
@@ -1497,25 +1399,25 @@ const SIDEBAR_CSS = [
 // switches in Settings, so a plain Hermes chrome can keep the picture, and the
 // glass can stay without a backdrop behind it.
 //
-// Only two looks exist now: Gruvbox (built in) and Custom (the same machinery
-// driven by hermes-atrium-theme.json). Both are the skin -- one set of colours and
-// opacities, so nothing here reads the clock or anything live.
+// Only two looks exist now: Gruvbox (the shipped preset) and Custom (the same
+// knobs, kept as you leave them). Both are the skin: one set of colours and
+// opacities, so nothing here reads the clock or anything live, and nothing here
+// branches on which look is on screen except the comment at the top.
 const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = false } = {}) => {
-  const glass = gruvboxTinted()
   // There is no day/night split any more: the look is one palette.
   const isNight = false
   // Panels are the skin's own opacities; there is no light level to follow.
-  const zf = gruvboxMaterial()
-  // Gruvbox's own night factor: how much weight the glass carries over a
-  // picture. It is a constant of the look, not of the clock.
+  const zf = skinMaterial()
+  // How much weight the pane material carries over a picture. A constant of the
+  // look, not of the clock.
   const NIGHT = zf.night
   // The reading pane and the cards hold the picture back differently; the
   // sidebar's own numbers live in `sideCard` below.
-  const density = glass ? '0' : String(skinNumber(SKIN.chrome, 0.88))
-  const cardDensity = glass ? '0.55' : String(skinNumber(SKIN.card, 0.96))
+  const density = String(skinNumber(SKIN.chrome, 0.88))
+  const cardDensity = String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
-  // gruvbox has no white in its palette; fg0 is the brightest ink it uses.
-  const solidInk = glass ? GLASS.ink : gbHex(GB.fg0)
+  // The brightest ink the sheet asks for; the skin's own text colour.
+  const solidInk = SKIN.ink
   // The sidebar is the cards, and only the cards.
   //
   // `sideCard` is the cards' own fill: the deeper ground with the ink mixed in,
@@ -1530,28 +1432,21 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // a clear rail, separates them by 32.6. Leaving the rail alone gives the gaps
   // the full picture back, which is the contrast that makes the cards float.
   //
-  // Glass keeps the terminal look: a faint lift of the ink, no ground at all.
-  //
   // Which slider owns the sidebar cards: Card opacity, not Sidebar opacity.
   // Sidebar opacity was the original owner, which left the card slider only
   // touching the chat's own cards while every sidebar surface ignored it. The
   // slider is named for the cards it paints, and the reply panels' Solidity
   // floor is what gives it a genuinely solid end of the range.
   const sideAlpha = skinNumber(SKIN.card, 0.96)
-  const sideCard = glass
-    ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
-    : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
-  // Sidebar opacity is the column the cards sit on. The slider runs 0.4..1, and
-  // it has to be able to reach NOTHING: at its floor the gaps between the cards
-  // should be the bare picture, which is the floating look. So the range maps
-  // linearly onto alpha 0..0.5 rather than being used raw: 0.4 is clear, 0.74
-  // lands on 0.28 (what this column looked like before), and 1.0 is a half
-  // wash. Using the raw value left a floor of 0.16 that no setting could clear.
-  const sideSlider = skinNumber(SKIN.sidebar, 0.92)
-  const sideWashAlpha = Math.max(0, Math.min(1, (sideSlider - 0.4) / 0.6)) * 0.5
-  const sideWash = glass
-    ? 'transparent'
-    : `rgba(${hexTriple(SKIN.deeper)}, ${sideWashAlpha.toFixed(3)})`
+  const sideCard = `rgba(${hexTriple(hexFade(SKIN.deeper, SKIN.ink, 0.04))}, ${String(sideAlpha)})`
+  // Sidebar opacity is the column the cards sit on. The slider now runs 0..1
+  // and zero is genuinely clear, which is the floating look: at 0 the gaps
+  // between the cards are the bare picture. The top half of the range is the
+  // useful part, so the wash is `sidebar * 0.5`: 0.74 lands on the 0.37 wash
+  // this column has always painted, and 1.0 is a half wash.
+  const sideSlider = skinNumber(SKIN.sidebar, 0)
+  const sideWashAlpha = Math.max(0, Math.min(1, sideSlider)) * 0.5
+  const sideWash = `rgba(${hexTriple(SKIN.deeper)}, ${sideWashAlpha.toFixed(3)})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
   // opaque seed decides the fill on its own and swallows the neutral above
@@ -1565,7 +1460,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   const sections = [[
     ...(backdrop ? [
     'html {',
-    `  background-color: ${glass ? 'transparent' : '#1d2021'};`,
+    `  background-color: #1d2021;`,
     '}',
     // The app's own ground is `body { background: var(--ui-chat-surface-background) }`,
     // and that chrome colour is a color-mix whose second input is an OPAQUE
@@ -1576,8 +1471,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // image behind the conversation. Over the painting it reads as dirt on the
     // glass, so it rests while a backdrop is shown.
     "img[src*='filler-bg0'] { display: none; }",
-    // The painting (or the desktop, when tinted) IS the background.
-    ...(glass ? glassLayers() : gruvboxLayers()),
+    // The picture IS the background.
+    ...pictureLayers(),
     ] : []),
     ...(chrome ? [
     // Panel density, and it is deliberately mode-scoped: Atrium's palettes are
@@ -2789,8 +2684,6 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '* { scrollbar-color: rgba(255, 255, 255, 0.14) transparent; scrollbar-width: thin; }',
     ...SIDEBAR_CSS,
     ...MORPH_CSS,
-    // Tint tokens and scrollbars must win over the shared chrome above.
-    ...(glass ? glassChromeCss() : []),
   ] : []].map(lines => lines.join('\n'))
   // Two style elements by contract: `paintSheet` installs exactly the two
   // entries in SHEET_IDS and silently drops anything past that. The array above
@@ -2808,11 +2701,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     const details = defined[defined.length - 1] || ''
     return [defined.slice(0, -1).join('\n'), details]
   }
-  const header = glass
-    ? `/* Hermes Atrium · glass. Tint ${GLASS.ground} at ${Number((1 - GLASS.tint).toFixed(4))} over the native window material. */`
-    : LOOK_MODE === 'custom'
-      ? `/* Hermes Atrium · custom. Your own picture and colours, from hermes-atrium-theme.json. */`
-      : `/* Hermes Atrium · gruvbox. ${PAINTING_FILE}, full ${4096}×${2428}, cover-fitted. */`
+  const header = LOOK_MODE === 'custom'
+    ? `/* Hermes Atrium · custom. Your own picture, colours and opacities. */`
+    : `/* Hermes Atrium · gruvbox preset. ${PAINTING_FILE} or your own picture, cover-fitted. */`
   return [header, ...sections.filter(Boolean)].join('\n')
 }
 
@@ -3354,8 +3245,8 @@ const clearSheet = () => {
 // One stable host entry; the look itself lives in Atrium settings.
 const THEME_NAME = 'hermes-atrium'
 const APPEARANCE_LOOKS = [
-  { id: 'gruvbox', label: 'Gruvbox', description: 'Painting or desktop tint', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' },
-  { id: 'custom', label: 'Custom', description: 'Your picture & colours', preview: 'var(--ui-widget-surface-background)' }
+  { id: 'gruvbox', label: 'Gruvbox', description: 'The shipped painting & palette', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' },
+  { id: 'custom', label: 'Custom', description: 'Your own picture & colours', preview: 'var(--ui-widget-surface-background)' }
 ]
 // Every theme name Hermes Atrium owns; anything else is the user's own pick.
 // The legacy names are the ones this plugin published before it was renamed
@@ -4174,26 +4065,24 @@ export default {
       const now = document.documentElement.dataset.hermesTheme || ''
       away = (stored('away') === true || stored(STORE_KEYS.auto) === false) && Boolean(now) && !isOurTheme(now)
     }
-    const migratedTint = migrateGruvboxTint(stored(STORE_KEYS.look), stored('glass'))
-    setGlass(migratedTint || stored('gruvboxTint'), migratedTint ? LEGACY_GLASS_DEFAULTS : GLASS_DEFAULTS)
-    if (migratedTint) {
-      // Write the palette first so an interrupted migration can safely run again.
-      ctx.storage.set('gruvboxTint', { ...GLASS })
-      ctx.storage.set(STORE_KEYS.look, 'gruvbox')
-    }
+    // The desktop tint is gone. An install that had used it still holds the
+    // old `gruvboxTint` palette under its own key; that key is simply no longer
+    // read, so the look falls back to the Gruvbox preset's own picture and
+    // colours. Leave the data in place rather than deleting a user's palette:
+    // a later install that understands it again would find it intact.
     const appearance = atom(away ? 'hermes' : stored(STORE_KEYS.look) === 'custom' ? 'custom' : 'gruvbox')
     const appearanceAssets = atom(0)
     const wake = () => { away = false; ctx.storage.set('away', false) }
     const tint = atom(stored(STORE_KEYS.tint) === true)
-    // Two independent switches. `backdropOn` shows the picture (the painting, or
-    // with a tint, the desktop); `chrome` is Atrium's sheet of glass, type and
-    // controls. They were once welded together because both lived in one <style>.
+    // Two independent switches. `backdropOn` shows the picture; `chrome` is
+    // Atrium's sheet of glass, type and controls. They were once welded together
+    // because both lived in one <style>.
     const backdropOn = atom(stored(STORE_KEYS.sky) !== false)
     const chromeOn = atom(stored(STORE_KEYS.chrome) !== false)
     const replyGround = atom(stored(STORE_KEYS.replyGround) !== false)
-    // 'gruvbox' = the built-in skin at its shipped defaults; 'custom'
-    // = the same skin driven by your own picture and knobs
-    // (hermes-atrium-theme.json). The two differ only in which values the sheet reads.
+    // 'gruvbox' and 'custom' are the same skin with independent values:
+    // Gruvbox starts at the shipped preset, Custom starts there too and can be
+    // driven by hermes-atrium-theme.json. Neither has a knob the other lacks.
     const LOOKS = ['gruvbox', 'custom']
     const lookStore = stored(STORE_KEYS.look)
     const look = atom(LOOKS.includes(lookStore) ? lookStore : 'gruvbox')
@@ -7057,15 +6946,12 @@ export default {
       replyRefreshKey = key
       const native = replyHostGround()
       const styled = !away && chromeOn.get() && document.documentElement.classList?.contains?.('dark')
-      const material = gruvboxMaterial()
+      const material = skinMaterial()
       const ink = styled ? hexRgb(SKIN.ink) : native.ink
       let samples = native.samples
       if (!away && backdropOn.get()) {
-        if (gruvboxTinted()) samples = [hexRgb(GLASS.ground)]
-        else {
-          preparePictureBackdrop(String(SKIN.image || PAINTING_URL))
-          samples = pictureBackdrop(native.bounds, chromeOn.get())
-        }
+        preparePictureBackdrop(String(SKIN.image || PAINTING_URL))
+        samples = pictureBackdrop(native.bounds, chromeOn.get())
       }
       if (!samples.length) samples = [hexRgb(SKIN.ground)]
       const css = replyGroundCss(replyMaterial(ink, styled ? material.tint : native.tint, samples))
@@ -7094,7 +6980,7 @@ export default {
       repaint()
       if (away) return
       requestTheme(THEME_NAME)
-      if (tint.get()) setAccentOverride(gruvboxTinted() ? GLASS.accent : GRUVBOX_ACCENT)
+      if (tint.get()) setAccentOverride(SKIN.accent)
     }
     // The status stack's concave corners read the layout, so they are refreshed
     // on a cheap interval rather than from a paint pass.
@@ -7133,16 +7019,19 @@ export default {
     apply()
 
     // ── themes: one stable host entry ──────────────────────────────────────
-    // Hermes Atrium publishes a single theme name and re-registers it with the current
-    // look's colours, so the pick in Appearance never changes as the look does.
+    // Hermes Atrium publishes a single theme name and re-registers it with the
+    // skin's current colours, so the pick in Appearance never changes as the
+    // look does. Both looks publish from the same skin: Gruvbox is the shipped
+    // preset, Custom is that data after your edits, and neither has a palette
+    // the other lacks.
     function registerLive() {
-      const key = gruvboxTinted() ? 'gruvbox-tint:' + GLASS_KEYS.filter(k => k !== 'thumb').map(k => GLASS[k]).join() : look.get()
+      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble'].map(k => SKIN[k]).join()
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
         name: THEME_NAME, label: 'Hermes Atrium',
         description: 'Choose Gruvbox or Custom in Settings → Hermes Atrium.',
-        colors: gruvboxTinted() ? glassGrounds() : GRUVBOX_GROUNDS
+        colors: skinGrounds()
       } })
     }
     let liveFor = null
@@ -7245,19 +7134,44 @@ export default {
       })
     }
 
-    // ── the skin as state: wallpaper + every knob the editor exposes ──────────
-    // The image is stored under its own key because a full-resolution picture
-    // can be megabytes; the rest is one small object.
-    const storedSkin = stored(STORE_KEYS.skin)
-    const customSkin = storedSkin && typeof storedSkin === 'object' ? { ...SKIN_DEFAULTS, ...storedSkin } : { ...SKIN_DEFAULTS }
-    const storedPicture = stored(STORE_KEYS.skinImage)
-    if (typeof storedPicture === 'string' && storedPicture.length > 32) customSkin.image = storedPicture
-    // Zero tint always restores the shipped painting and panel values.
-    setSkin(look.get() === 'custom' ? customSkin : gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
+    // ── the skin as state: one record per look ───────────────────────────────
+    // Gruvbox and Custom hold the same knobs and the same controls; only the
+    // values differ, and each keeps its own. A look is therefore a saved skin,
+    // not a code path: pick Gruvbox and you edit the Gruvbox record, pick
+    // Custom and you edit the Custom one. `SKIN_DEFAULTS` is what both start
+    // from, so a fresh install paints the shipped painting under the shipped
+    // palette whichever look you pick.
+    //
+    // The image lives under its own key per look because a full-resolution
+    // picture can be megabytes; the rest is one small object.
+    const SKIN_STORES = {
+      gruvbox: { object: STORE_KEYS.gruvboxSkin, image: STORE_KEYS.gruvboxSkinImage },
+      custom: { object: STORE_KEYS.skin, image: STORE_KEYS.skinImage }
+    }
+    const readLookSkin = which => {
+      const keys = SKIN_STORES[which] || SKIN_STORES.custom
+      const raw = stored(keys.object)
+      const out = raw && typeof raw === 'object' ? { ...SKIN_DEFAULTS, ...raw } : { ...SKIN_DEFAULTS }
+      const picture = stored(keys.image)
+      if (typeof picture === 'string' && picture.length > 32) out.image = picture
+      return out
+    }
+    const writeLookSkin = (which, next) => {
+      const keys = SKIN_STORES[which] || SKIN_STORES.custom
+      ctx.storage.set(keys.object, next)
+      ctx.storage.set(keys.image, next.image)
+    }
+    // Both looks are ordinary skins: there is no built-in palette that Custom
+    // cannot reach, and no Custom knob that Gruvbox lacks. Hold both records in
+    // memory so an edit is in hand the moment a slider moves, and write through
+    // to each look's own keys.
+    const LOOK_SKINS = { gruvbox: readLookSkin('gruvbox'), custom: readLookSkin('custom') }
+    const skinOf = which => LOOK_SKINS[which] || LOOK_SKINS.custom
+    setSkin(skinOf(look.get()))
     pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
 
     ensurePictureStyle()
-    const skin = atom({ ...customSkin })
+    const skin = atom({ ...skinOf(look.get()) })
     const selectAppearance = next => {
       if (!['gruvbox', 'custom', 'hermes'].includes(next)) return
       if (next === 'hermes') {
@@ -7279,46 +7193,18 @@ export default {
       look.set(next)
       appearance.set(next)
       setLookMode(look.get())
-      setSkin(next === 'custom' ? { ...skin.get() } : gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
+      // Switch to the other look's own record, not to a shared one: the whole
+      // point of two presets is that each remembers what you did to it.
+      const chosen = skinOf(next)
+      skin.set({ ...chosen })
+      setSkin(chosen)
       ensurePictureStyle()
-      if (gruvboxTinted()) ensureWindowGlass()
       persist()
-      syncBackdrop()
+      registerLive()
       apply()
     }
 
 
-    // Glass needs the window itself to be see-through: Hermes's own glass
-    // setting (Settings → Appearance → Translucency). If it is off, turn it on
-    // for the dark palette at a light tint; ours paints the colour. The app's
-    // store listens for this key's storage event, so it applies live.
-    const TRANSLUCENCY_KEY = 'hermes.desktop.translucency.v2'
-    const ensureWindowGlass = () => {
-      if (typeof document === 'undefined' || !window.hermesDesktop?.glassSupported || backdrop) return
-      let book = {}
-      try { book = JSON.parse(localStorage.getItem(TRANSLUCENCY_KEY) || '{}') || {} } catch {}
-      // Like a terminal's background-blur: the whole window, on the thinnest
-      // material ('under-window'; 'titlebar' frosts everything grey), and the
-      // sidebar-only scope would leave the chat column a solid slab.
-      const dark = { ...(book.dark || {}) }
-      if (!(Number(dark.intensity) > 0)) dark.intensity = 20
-      if (book.mode === 'glass' && dark.material === 'under-window' && dark.scope === 'window') return
-      dark.material = 'under-window'
-      dark.scope = 'window'
-      const next = { ...book, mode: 'glass', dark }
-      try {
-        localStorage.setItem(TRANSLUCENCY_KEY, JSON.stringify(next))
-        window.dispatchEvent(new StorageEvent('storage', { key: TRANSLUCENCY_KEY, newValue: JSON.stringify(next) }))
-      } catch {}
-    }
-    // ── Glass backdrop ──
-    // macOS window materials blur hard and lay their own fill over the desktop,
-    // so through them the wallpaper is a dark smear. A terminal's
-    // background-blur is a light blur with no fill. To get that exactly, the
-    // wallpaper itself is baked once (blurred 20px at screen size, a JPEG) and
-    // painted behind the tint, slid by the window's position on screen so it
-    // lines up with the real desktop. One static image: no per-frame blur and
-    // no native material, which is also far cheaper than vibrancy.
     // Narrow rails are hover overlays, not persistent pins over the chat.
     // The host pins them after a titlebar / keyboard reveal; explicitly close
     // that reveal after the pointer leaves their combined chrome + guest area.
@@ -7349,157 +7235,36 @@ export default {
       document.removeEventListener('pointermove', outsideNarrowRail)
     })
 
-    const BACKDROP_STYLE = 'atr-glass-backdrop'
-    let backdrop = ''
-    try { const b = ctx.storage.get('glassBackdrop'); if (typeof b === 'string' && b.startsWith('data:image/')) backdrop = b } catch {}
-    let bx = NaN, by = NaN, trackTimer = 0, trackRaf = 0, still = 0
-    const placeBackdrop = () => {
-      const x = window.screenX - (window.screen.left || 0)
-      const y = window.screenY - (window.screen.top || 0)
-      if (x === bx && y === by) return false
-      bx = x; by = y
-      const root = document.documentElement.style
-      root.setProperty('--atr-bx', `${-x}px`)
-      root.setProperty('--atr-by', `${-y}px`)
-      root.setProperty('--atr-bw', `${window.screen.width}px`)
-      root.setProperty('--atr-bh', `${window.screen.height}px`)
-      return true
-    }
-    const stopTracking = () => { clearTimeout(trackTimer); cancelAnimationFrame(trackRaf); trackTimer = 0; trackRaf = 0 }
-    // While focused, a cheap 4 Hz position check; once the window is moving,
-    // follow it every frame until it has sat still for half a second. Unfocused
-    // or hidden: no timers at all.
-    const trackBackdrop = () => {
-      stopTracking()
-      if (!backdrop || !gruvboxTinted() || document.hidden || !document.hasFocus()) return
-      if (placeBackdrop()) still = 0
-      const burst = () => {
-        if (placeBackdrop()) still = 0
-        else still += 1
-        if (still < 30) trackRaf = requestAnimationFrame(burst)
-        else { trackRaf = 0; trackTimer = setTimeout(poll, 250) }
-      }
-      const poll = () => { if (placeBackdrop()) { still = 0; trackRaf = requestAnimationFrame(burst) } else trackTimer = setTimeout(poll, 250) }
-      trackTimer = setTimeout(poll, 250)
-    }
-    const syncBackdrop = () => {
-      const on = !!backdrop && gruvboxTinted()
-      const root = document.documentElement
-      if (on) root.setAttribute('data-atr-backdrop', '')
-      else root.removeAttribute?.('data-atr-backdrop')
-      let el = document.getElementById(BACKDROP_STYLE)
-      if (!on) { el?.remove(); stopTracking(); return }
-      windowGlassOff()
-      if (!el) { el = document.createElement('style'); el.id = BACKDROP_STYLE; document.head.appendChild(el) }
-      const css = `html:root[data-atr-backdrop] body { background: linear-gradient(rgba(var(--atr-glass-rgb), var(--atr-glass-a)), rgba(var(--atr-glass-rgb), var(--atr-glass-a))) fixed, url("${backdrop}") var(--atr-bx, 0px) var(--atr-by, 0px) / var(--atr-bw, 100vw) var(--atr-bh, 100vh) no-repeat fixed, #000 !important; }`
-      if (el.textContent !== css) el.textContent = css
-      bx = by = NaN
-      placeBackdrop()
-      trackBackdrop()
-    }
-    const onBackdropResize = () => { if (backdrop && gruvboxTinted()) { bx = NaN; placeBackdrop() } }
-    window.addEventListener('focus', trackBackdrop)
-    window.addEventListener('blur', stopTracking)
-    document.addEventListener('visibilitychange', trackBackdrop)
-    window.addEventListener('resize', onBackdropResize)
-    ctx.onDispose?.(() => {
-      stopTracking()
-      window.removeEventListener('focus', trackBackdrop)
-      window.removeEventListener('blur', stopTracking)
-      document.removeEventListener('visibilitychange', trackBackdrop)
-      window.removeEventListener('resize', onBackdropResize)
-      document.getElementById(BACKDROP_STYLE)?.remove()
-      document.documentElement.removeAttribute('data-atr-backdrop')
-    })
-    // Bake: cover-fit to the screen's size in points, blurred like a terminal's
-    // background-blur. Drawn oversize so the blur doesn't darken the edges.
-    const bakeBackdrop = img => {
-      const W = window.screen.width, H = window.screen.height, pad = 60
-      const c = document.createElement('canvas')
-      c.width = W; c.height = H
-      const g = c.getContext('2d')
-      const k = Math.max((W + pad * 2) / img.naturalWidth, (H + pad * 2) / img.naturalHeight)
-      const dw = img.naturalWidth * k, dh = img.naturalHeight * k
-      g.filter = 'blur(20px)'
-      g.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
-      return c.toDataURL('image/jpeg', 0.82)
-    }
-    // With the wallpaper painted here the window is opaque, so the native
-    // material underneath would be pure GPU cost: turn the app's glass off
-    // (its tint slider goes to 0; the user's other glass settings are kept).
-    const windowGlassOff = () => {
-      if (!document.documentElement.hasAttribute('data-hermes-glass-on')) return
-      let book = {}
-      try { book = JSON.parse(localStorage.getItem(TRANSLUCENCY_KEY) || '{}') || {} } catch {}
-      const next = { ...book, dark: { ...(book.dark || {}), intensity: 0 } }
-      try {
-        localStorage.setItem(TRANSLUCENCY_KEY, JSON.stringify(next))
-        window.dispatchEvent(new StorageEvent('storage', { key: TRANSLUCENCY_KEY, newValue: JSON.stringify(next) }))
-      } catch {}
-    }
-
-    const glassState = atom({ ...GLASS })
-    if (gruvboxTinted()) { ensureWindowGlass(); syncBackdrop() }
-    const pushGlass = patch => {
-      setGlass({ ...GLASS, ...patch })
-      glassState.set({ ...GLASS })
-      ctx.storage.set('gruvboxTint', { ...GLASS })
-      if (look.get() !== 'gruvbox') { selectAppearance('gruvbox'); return }
-      setSkin(gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
-      if (gruvboxTinted()) ensureWindowGlass()
-      apply()
-      syncBackdrop()
-    }
-    // Sample a picture small (the palette needs colour, not detail) and derive
-    // every glass colour from it. A tiny copy is kept for the picker swatch.
-    const matchPicture = file => new Promise(resolve => {
-      if (!file) return resolve(false)
-      const url = typeof file === 'string' ? file : URL.createObjectURL(file)
-      const img = new Image()
-      img.onload = () => {
-        try {
-          const c = document.createElement('canvas')
-          c.width = 64; c.height = 36
-          const g = c.getContext('2d')
-          g.drawImage(img, 0, 0, 64, 36)
-          const pal = glassPaletteFrom(g.getImageData(0, 0, 64, 36).data)
-          const t = document.createElement('canvas')
-          t.width = 160; t.height = 90
-          t.getContext('2d').drawImage(img, 0, 0, 160, 90)
-          backdrop = bakeBackdrop(img)
-          try { ctx.storage.set('glassBackdrop', backdrop) } catch {}
-          pushGlass({ ...pal, tint: GLASS.tint || 0.08, thumb: t.toDataURL('image/jpeg', 0.7) })
-          resolve(true)
-        } catch { resolve(false) } finally { if (typeof file !== 'string') URL.revokeObjectURL(url) }
-      }
-      img.onerror = () => { if (typeof file !== 'string') URL.revokeObjectURL(url); resolve(false) }
-      img.src = url
-    })
+    // A knob writes to the record of the look you are looking at. That is the
+    // whole difference between the two looks now: which record the controls
+    // edit. Nothing here switches looks behind your back.
     const pushSkin = patch => {
+      const which = look.get()
       const next = { ...skin.get(), ...patch }
-      // Touching a knob means "I want my own version": switch onto Custom so the
-      // change is actually on screen, rather than silently stored for later.
-      if (look.get() !== 'custom') {
-        selectAppearance('custom')
-      }
       for (const key of Object.keys(next)) if (next[key] === undefined) next[key] = SKIN_DEFAULTS[key]
+      LOOK_SKINS[which] = next
       skin.set(next)
       setSkin(next)
-      ctx.storage.set(STORE_KEYS.skin, next)
-      if (!fromFile) writeConfig(next)
-      if (patch.image !== undefined) {
-        ctx.storage.set(STORE_KEYS.skinImage, next.image)
-        ensurePictureStyle()
-      }
+      writeLookSkin(which, next)
+      // The theme file stays the Custom look's own file, so editing it under
+      // Gruvbox must not rewrite what Custom holds.
+      if (which === 'custom' && !fromFile) writeConfig(next)
+      if (patch.image !== undefined) ensurePictureStyle()
+      // The host theme's colours are skin values, so a palette change has to
+      // re-publish them and not just repaint the sheet.
+      registerLive()
       apply()
     }
     const resetSkin = () => {
-      skin.set({ ...SKIN_DEFAULTS })
-      setSkin({ ...SKIN_DEFAULTS })
-      ctx.storage.set(STORE_KEYS.skin, { ...SKIN_DEFAULTS })
-      ctx.storage.set(STORE_KEYS.skinImage, SKIN_DEFAULTS.image)
+      const which = look.get()
+      const next = { ...SKIN_DEFAULTS, image: PAINTING_URL }
+      LOOK_SKINS[which] = next
+      skin.set(next)
+      setSkin(next)
+      writeLookSkin(which, next)
+      if (which === 'custom') writeConfig(next)
       ensurePictureStyle()
-      writeConfig(SKIN_DEFAULTS)
+      registerLive()
       apply()
     }
     // ── files: the painting, and ~/.hermes/hermes-atrium-theme.json ─────────────
@@ -7557,11 +7322,19 @@ export default {
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
       if (patch.image === 'uploaded') delete patch.image
       else if (patch.image) patch.image = pathToUrl(patch.image)
-      const next = { ...SKIN_DEFAULTS, ...(patch.image ? {} : { image: skin.get().image }), ...patch }
-      if (!switchTo && look.get() !== 'custom') {
+      const next = { ...SKIN_DEFAULTS, ...(patch.image ? {} : { image: LOOK_SKINS.custom.image || skin.get().image }), ...patch }
+      if (!switchTo) {
         // startup: seed Custom quietly, without changing what is on screen
-        skin.set(next)
-        ctx.storage.set(STORE_KEYS.skin, next)
+        LOOK_SKINS.custom = next
+        if (look.get() === 'custom') { skin.set(next); setSkin(next) }
+        writeLookSkin('custom', next)
+        return
+      }
+      if (look.get() !== 'custom') {
+        // The file IS the Custom look. Editing it while Gruvbox is on screen
+        // updates Custom's record and leaves the Gruvbox preset alone.
+        LOOK_SKINS.custom = next
+        writeLookSkin('custom', next)
         return
       }
       fromFile = true
@@ -7659,15 +7432,16 @@ export default {
         }
         // Write the heal back, not just paint it: leaving a dangling path in
         // storage means every later load has to work it out again, and anything
-        // reading `skinImage` directly keeps seeing a file that is not there.
+        // reading a look's picture key directly keeps seeing a file that is not
+        // there. Both looks are healed, because both point at `assets/`.
         if (stale(SKIN.image)) setSkin({ ...SKIN, image: url })
-        if (stale(skin.get().image)) {
-          const next = { ...skin.get(), image: url }
-          skin.set(next)
-          try { ctx.storage.set(STORE_KEYS.skin, next) } catch {}
-        }
-        if (stale(ctx.storage.get(STORE_KEYS.skinImage))) {
-          try { ctx.storage.set(STORE_KEYS.skinImage, url) } catch {}
+        for (const which of ['gruvbox', 'custom']) {
+          const rec = LOOK_SKINS[which]
+          if (!rec || !stale(rec.image)) continue
+          const next = { ...rec, image: url }
+          LOOK_SKINS[which] = next
+          if (look.get() === which) { skin.set(next); setSkin(next) }
+          writeLookSkin(which, next)
         }
         ensurePictureStyle()
         appearanceAssets.set(appearanceAssets.get() + 1)
@@ -8274,40 +8048,22 @@ export default {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
           style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+          title: 'Return this look to the shipped picture, colours and opacities. The other look is untouched.',
           onClick: () => resetSkin(),
           children: 'Reset'
         }),
-        jsx('button', {
+        // Only the Custom look has a theme file; under Gruvbox the button would
+        // write a record that is not on screen, which is the confusion this
+        // redesign is meant to end.
+        look.get() === 'custom' ? jsx('button', {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
           style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
           title: '~/.hermes/hermes-atrium-theme.json: every colour, opacity and filter of the Custom look, as one editable file',
           onClick: () => { openConfig() },
           children: 'Theme file'
-        })
+        }) : null
       ]})
-    }
-
-    const GruvboxTintEditor = () => {
-      const g = useValue(glassState)
-      const btn = { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' }
-      const chip = hex => jsx('span', { title: hex, style: { display: 'inline-block', width: '1.1rem', height: '1.1rem', borderRadius: '4px', background: hex, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)' } }, hex)
-      return jsxs('div', { className: 'flex flex-col gap-2 py-2', children: [
-        jsx(ListRow, {
-          title: 'Your wallpaper',
-          description: 'Pick your wallpaper: it shows through the window, blurred like a terminal, and every colour is drawn from it.',
-          action: jsxs('div', { className: 'flex items-center gap-2', children: [
-            jsx('label', { className: 'cursor-pointer rounded-md px-2 py-1 text-[0.75rem]', style: btn, children: ['Choose wallpaper…',
-              jsx('input', { type: 'file', accept: 'image/*', style: { display: 'none' }, onChange: e => { const f = e.target.files && e.target.files[0]; void matchPicture(f); e.target.value = '' } })] }),
-            jsx('button', { type: 'button', className: 'rounded-md px-2 py-1 text-[0.75rem]', style: btn, onClick: () => { backdrop = ''; try { ctx.storage.set('glassBackdrop', '') } catch {}; pushGlass({ ...GLASS_DEFAULTS }) }, children: 'Reset' })
-          ] })
-        }),
-        jsx(ListRow, {
-          title: 'Tint', description: '0 keeps the painting. Higher values reveal more of the desktop; wallpaper colours are kept for next time.',
-          action: jsx('input', { type: 'range', 'aria-label': 'Gruvbox tint', 'aria-valuetext': Math.round(g.tint * 100) + '% transparency', min: 0, max: 0.92, step: 0.01, value: g.tint, style: { width: '10rem', accentColor: 'var(--atr-accent, currentColor)' }, onChange: e => pushGlass({ tint: Number(e.target.value) }) })
-        }),
-        jsx('div', { className: 'flex flex-wrap gap-1.5', 'aria-label': 'Gruvbox tint palette', children: ['ground', 'cardTint', 'bubbleTint', 'edge', 'accent', 'ink', 'ink2', 'quiet', 'link', 'code', 'quote'].map(k => chip(g[k])) })
-      ] })
     }
 
     const SkinEditor = () => {
@@ -8336,8 +8092,7 @@ export default {
       icon: 'atrium',
       render: function HermesAtriumSettings() {
         useValue(appearanceAssets)
-        useValue(skin)
-        useValue(glassState)
+        const activeSkin = useValue(skin)
         const selectedLook = useValue(appearance)
         const isTint = useValue(tint)
         const isBackdrop = useValue(backdropOn)
@@ -8353,11 +8108,14 @@ export default {
         const lookNow = useValue(look)
         const list = useValue(pins)
 
+        // One sentence for both looks: they now differ only in which saved
+        // skin they show, so the status says which one and where its picture
+        // comes from, not which code path is running.
+        const ownPicture = typeof activeSkin.image === 'string' && activeSkin.image.startsWith('data:')
+        const pictureNote = ownPicture ? 'your own picture' : 'backwater.jpg · 4096 x 2428'
         const status = selectedLook === 'hermes'
           ? 'Hermes appearance · Hermes Atrium appearance paused'
-          : lookNow === 'custom'
-            ? ['Custom picture', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
-            : ['Gruvbox', gruvboxTinted() ? Math.round(GLASS.tint * 100) + '% desktop transparency' : 'backwater.jpg · 4096 × 2428 at full size', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
+          : [lookNow === 'gruvbox' ? 'Gruvbox preset' : 'Custom', pictureNote, isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
 
         const header = jsxs('div', {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
@@ -8395,14 +8153,13 @@ export default {
               style: { height: 'auto', minWidth: 0, padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', whiteSpace: 'normal', textAlign: 'left', ...(selectedLook === item.id ? { outline: '2px solid var(--ui-accent)', outlineOffset: '2px' } : {}) },
               onClick: () => selectAppearance(item.id),
               children: [
-                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: item.id === 'gruvbox' && gruvboxTinted() ? (GLASS.thumb ? `linear-gradient(rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))}), rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))})), center / cover url("${GLASS.thumb}")` : `linear-gradient(135deg, ${GLASS.ground} 40%, ${GLASS.bubbleTint} 70%, ${GLASS.accent})`) : item.id === 'gruvbox' ? `center / cover url("${PAINTING_URL}")` : item.id === 'custom' && skin.get().image ? `center / cover url("${String(skin.get().image).replace(/"/g, '%22')}")` : item.preview } }),
+                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: skinOf(item.id).image ? `center / cover url("${String(skinOf(item.id).image).replace(/"/g, '%22')}")` : item.preview } }),
                 jsxs('span', { style: { display: 'flex', justifyContent: 'space-between' }, children: [item.label, selectedLook === item.id ? jsx(Codicon, { name: 'check', size: '1rem' }) : null] }),
                 jsx('span', { className: 'text-xs text-muted-foreground', children: item.description })
               ]
             }, item.id))
           }),
           selectedLook === 'hermes' ? jsx('p', { className: 'text-sm text-muted-foreground', children: 'Hermes appearance is active. Choose a look above to resume Hermes Atrium styling.' }) : null,
-          selectedLook === 'gruvbox' ? jsx(GruvboxTintEditor, {}) : null,
           selectedLook !== 'hermes' ? jsx(ToggleRow, {
             checked: isBackdrop, label: 'Background', description: 'Show the painting or picture behind the app. Off keeps the colours and Hermes Atrium styling.',
             onChange: on => { backdropOn.set(on); persist(); repaint() }
@@ -8416,23 +8173,22 @@ export default {
               persist()
               repaint()
             }
-          }) : null,
-          jsx(ListRow, { description: 'Use your last Hermes theme and pause Hermes Atrium appearance.', action: jsx(Button, { size: 'sm', variant: 'outline', disabled: selectedLook === 'hermes', onClick: () => selectAppearance('hermes'), children: 'Use Hermes appearance' }) })
+          }) : null
         ])
 
-        const skinSection = selectedLook === 'custom'
+        // The same editor for both looks, because both looks are now the same
+        // thing: a saved skin. Every control below edits whichever look is
+        // selected, and the other look keeps its own values.
+        //
+        // The colour/glass block is a `section` with `collapse`, not a
+        // hand-rolled <details>: that one helper is what gives the other menus
+        // (Fine-tune appearance, Chat & motion, Snippets) their icon and type,
+        // so building it by hand drifted to 0.75rem tertiary text with no
+        // icon. Reusing the helper keeps every disclosure row the same shape.
+        const skinSection = selectedLook !== 'hermes'
           ? section('paintcan', 'Picture & glass', [
             jsx(SkinPicture, {}),
-            jsx('details', {
-              className: 'mb-2',
-              children: [
-                jsx('summary', {
-                  className: 'cursor-pointer py-1 text-[0.75rem] text-(--ui-text-tertiary)',
-                  children: 'Colour, glass and fit'
-                }),
-                jsx(SkinEditor, {})
-              ]
-            })
+            section('color-mode', 'Colour, glass and fit', [jsx(SkinEditor, {})], { collapse: true })
           ])
           : null
 
