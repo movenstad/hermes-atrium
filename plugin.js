@@ -1505,15 +1505,29 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // Gruvbox's own night factor: how much weight the glass carries over a
   // picture. It is a constant of the look, not of the clock.
   const NIGHT = zf.night
+  // The reading pane and the cards hold the picture back differently; the
+  // sidebar's own numbers live in `sideFill` below.
   const density = glass ? '0' : String(skinNumber(SKIN.chrome, 0.88))
-  // The painting has real light and shade, so the three neutrals are tuned
-  // separately: the reading pane lets the painting through, the sidebar
-  // (smallest text) and the cards hold it back.
-  const sideDensity = glass ? '0.22' : String(skinNumber(SKIN.sidebar, 0.92))
   const cardDensity = glass ? '0.55' : String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
   // gruvbox has no white in its palette; fg0 is the brightest ink it uses.
   const solidInk = glass ? GLASS.ink : gbHex(GB.fg0)
+  // The sidebar's own fill, in one place: the sidebar cards, the app's sidebar
+  // token (menus, the settings rail, hover rows) and its in-between gaps all
+  // read it, so the one Sidebar opacity slider moves the whole column. It is
+  // the deeper ground with the ink mixed in, because a card that was only the
+  // ground was the same colour as the gaps and the surface disappeared. Glass
+  // keeps the terminal look: a faint lift of the ink, no ground at all.
+  const sideFill = glass
+    ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
+    : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(skinNumber(SKIN.sidebar, 0.92))})`
+  // Zero, always: the host's token chain puts the theme's seed at
+  // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
+  // opaque seed decides the fill on its own and swallows the neutral above
+  // (and its alpha), which is exactly how this slider stopped working.
+  // Measured in Chromium: at 0% the neutral arrives with its own alpha intact,
+  // 0.74 in and 0.74 out, so the token follows the slider.
+  const sideSeedMix = '0%'
 
   // Keep the sections in cascade order. The clock only changes the backdrop
   // and material, so a refresh doesn't reparse the layout and widget rules.
@@ -1541,7 +1555,16 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // The panes ARE the palette (bg0 chrome, bg0_hard sidebar, bg1 cards), so
     // each is a gruvbox surface with the painting behind it, not soot.
     `  --theme-neutral-chrome: rgba(${hexTriple(SKIN.ground)}, ${density});`,
-    `  --theme-neutral-sidebar: rgba(${hexTriple(SKIN.deeper)}, ${sideDensity});`,
+    `  --theme-neutral-sidebar: ${sideFill};`,
+    // The host builds every sidebar fill (the rail, the settings list, hover
+    // rows, and the whole window in the sidebar's own colour mode) as
+    // `color-mix(<seed> var(--theme-mix-sidebar), var(--theme-neutral-sidebar))`.
+    // Its own themes leave the seed transparent at 100%, so the neutral is the
+    // one input that decides the fill; Atrium publishes an opaque seed, and at
+    // 100% that seed alone decides it. Point the mix at the seed's own alpha
+    // instead, so the neutral above is what reaches the screen and the slider
+    // is not overwritten by the theme.
+    `  --theme-mix-sidebar: ${sideSeedMix};`,
     `  --theme-neutral-card: rgba(${hexTriple(SKIN.cardTint)}, ${cardDensity});`,
     `  --ui-text-primary: ${SKIN.ink};`,
     '  --ui-text-secondary: var(--atr-ink-2);',
@@ -1578,9 +1601,21 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // No live backdrop-filter here: re-blurring the picture behind the whole
     // column costs a full-window pass on every scroll.
+    //
+    // The column is not transparent any more. It was, so the gaps between the
+    // cards showed the painting, but with the cards only a hair of ink over the
+    // same ground the whole rail read as one flat strip: the surface was there
+    // and you could not see it. The rails wear the cards' own fill, so each
+    // card is a step up from its gap and Sidebar opacity moves both.
     "[data-tour='sessions-sidebar'] {",
-    '  background: transparent;',
+    `  background: ${sideFill};`,
     '  border-color: transparent;',
+    '}',
+    // The wrapper below the window's own theme scope, so it is the host's
+    // color-mix that would win here; the seed mix is what makes that mix follow
+    // the slider instead of the theme's opaque seed.
+    "[data-slot='sidebar-wrapper'] {",
+    `  background-color: ${sideFill} !important;`,
     '}',
     "[data-slot='sidebar-content'] {",
     '  gap: 0.5rem;',
@@ -2330,7 +2365,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Every card, the composer and the sidebar are the same tier now; the
     // night grey is carried by `--atr-tint` itself, so a material can never be
     // opaque on one surface and translucent on the next after dark.
-    '  --atr-side-card: var(--atr-glass);',
+    // Sidebar cards are the exception: they are the Sidebar opacity slider's
+    // surface, so they read the sidebar's own fill rather than the tint.
+    `  --atr-side-card: ${sideFill};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
     '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
     '  --atr-hover: rgba(255, 255, 255, 0.065);',
@@ -2362,7 +2399,6 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='sidebar-content'] > [data-sessions-mode],",
     "[data-slot='sidebar-content'] > div:has(input),",
     "[data-slot='sidebar-content'] > div:last-child {",
-    // flat: no 1px edge, like the status card
     '  box-shadow: none !important;',
     '}',
     // One gutter and one row shape inside every sidebar card. The nav card used
