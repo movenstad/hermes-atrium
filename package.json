@@ -1,0 +1,11 @@
+{
+  "name": "atrium",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Atrium: your own picture behind Hermes",
+  "scripts": {
+    "check": "node --check plugin.js"
+  },
+  "license": "MIT"
+}
