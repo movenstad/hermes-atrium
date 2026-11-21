@@ -1,4 +1,4 @@
-# Atrium
+# Hermes Atrium
 
 A desktop plugin for Hermes Agent. It puts a painting, or any picture you
 choose, behind the app. It lays tinted glass over it.
@@ -17,17 +17,18 @@ this plugin leaves your computer.
 Copy this folder to your Hermes desktop-plugins directory:
 
 ```
-~/.hermes/desktop-plugins/atrium/
+~/.hermes/desktop-plugins/hermes-atrium/
 ├── plugin.js
 └── assets/
     └── gruvbox.jpg
 ```
 
-On Windows that is `%USERPROFILE%\.hermes\desktop-plugins\atrium\`. Then restart
+On Windows that is `%USERPROFILE%\.hermes\desktop-plugins\hermes-atrium\`. Then restart
 Hermes, or toggle the plugin in **Settings ▸ Plugins**.
 
 The folder must keep this shape: `plugin.js` at the top, pictures in `assets/`.
-The plugin finds itself by its id, so the folder itself can be renamed.
+The plugin finds itself by the id it declares, `hermes-atrium`, so the folder
+itself can be renamed.
 
 ## Pictures
 
@@ -39,13 +40,13 @@ Every picture comes from `assets/`, and only from `assets/`:
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
   never picked up.
 
-To use your own wallpaper instead, open **Settings --> Atrium** and switch on
+To use your own wallpaper instead, open **Settings --> Hermes Atrium** and switch on
 **Tint** under Gruvbox: the painting fades out and the desktop shows through the
 glass. The painting's own colours are kept for when you switch back.
 
 ## Reply panels
 
-**Settings --> Atrium --> Chat & motion --> Reply panels** gives every reply a solid
+**Settings --> Hermes Atrium --> Chat & motion --> Reply panels** gives every reply a solid
 panel, so prose never sits directly on the picture. With it on, five sliders
 appear:
 
@@ -63,7 +64,7 @@ photograph you drop in. **Reset panel** returns all five to the shipped values.
 
 ## Custom look
 
-`~/.hermes/atrium-theme.json` *is* the Custom look. Every key is optional.
+`~/.hermes/hermes-atrium-theme.json` *is* the Custom look. Every key is optional.
 Anything left out keeps its default. Edit it in any editor and the app follows
 within a couple of seconds. Moving a knob in Settings writes it back.
 
@@ -76,4 +77,4 @@ within a couple of seconds. Moving a knob in Settings writes it back.
 - A status panel at the foot of the sidebar in Simple mode.
 - Suggestions on a new tab, learned only from local session activity.
 
-Every one of those is a switch in **Settings --> Atrium**.
+Every one of those is a switch in **Settings --> Hermes Atrium**.

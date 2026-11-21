@@ -1,7 +1,7 @@
-name: atrium
+name: hermes-atrium
 manifest_version: 2
 version: "1.0.0"
-description: "Atrium: your own picture behind Hermes"
+description: "A painting or your own picture behind Hermes, tinted glass over it, and a panel behind every reply"
 license: "MIT"
 requires_hermes: ">=0.21.3"
 tags:

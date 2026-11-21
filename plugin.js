@@ -1,18 +1,18 @@
 /**
- * Atrium (light) — a better UI for Hermes Agent, over a painting of your own.
+ * Hermes Atrium — a better UI for Hermes Agent, over a painting of your own.
  *
- * Loaded as a RUNTIME plugin from <HERMES_HOME>/desktop-plugins/atrium/plugin.js:
+ * Loaded as a RUNTIME plugin from <HERMES_HOME>/desktop-plugins/hermes-atrium/plugin.js:
  * plain ESM, imports rewritten to the app's SDK/react shims, registered through
  * the same contribution areas the built-in UI uses. Nothing here forks the app,
  * so an update cannot revert it.
  *
  * This build is the two-look edition: **Gruvbox** (a painting behind tinted
- * glass) and **Custom** (the same machinery driven by atrium-theme.json). There
+ * glass) and **Custom** (the same machinery driven by hermes-atrium-theme.json). There
  * is no weather, no feed and no network access of any kind: nothing leaves the
  * computer, ever.
  *
  * Each feature rides the cheapest existing mechanism:
- *   appearance        -> contributed themes (one stable "Atrium" entry whose
+ *   appearance        -> contributed themes (one stable "Hermes Atrium" entry whose
  *                        colours follow the chosen look) + CSS over the app
  *   reply panels      -> five live dials that solve a panel tone against the
  *                        picture behind the reading column (§2)
@@ -76,7 +76,7 @@ const putText = (el, value) => { if (el && el.textContent !== value) el.textCont
 // resize and no re-encode. Panels are gruvbox surfaces at high alpha — tinted
 // glass rather than a clear pane — because fg1 on bg0 is a 9.5:1 pair and that
 // is the only way prose stays readable over a picture with real highlights.
-const GROUND_THEME = 'atrium-gruvbox'
+const GROUND_THEME = 'hermes-atrium-gruvbox'
 const GRUVBOX_ACCENT = '#fe8019'
 // Resolved at startup from wherever the plugin is installed (assets/ in a
 // clone, or next to plugin.js); see resolvePluginFiles.
@@ -293,15 +293,15 @@ const materialVars = () => {
   const g = k => skinNumber(SKIN[k], 0.78)
   return [
     'html:root {',
-    `  --zf-hi: ${hexTriple(SKIN.ink)};`,
-    `  --zf-m-solid: rgb(${tri(mixHex(deep, ground, 0.6))});`,
-    `  --zf-m-tab: rgba(${hexTriple(bub)}, 0.86);`,
-    `  --zf-m-pin-a: rgba(${hexTriple(ground)}, ${(g('sidebar') * 0.68).toFixed(3)}); --zf-m-pin-b: rgba(${hexTriple(deep)}, ${(g('sidebar') * 0.78).toFixed(3)});`,
-    `  --zf-m-comp-a: rgba(${hexTriple(bub)}, ${(g('chrome') * 0.62).toFixed(3)}); --zf-m-comp-b: rgba(${hexTriple(card)}, ${(g('chrome') * 0.70).toFixed(3)});`,
-    `  --zf-m-bub-a: rgba(${hexTriple(bub)}, ${(g('bubble') * 0.60).toFixed(3)}); --zf-m-bub-b: rgba(${hexTriple(card)}, ${(g('bubble') * 0.68).toFixed(3)});`,
-    `  --zf-m-sheet: rgba(${tri(mixHex(deep, ground, 0.5))}, ${(g('card') * 0.92).toFixed(3)});`,
-    `  --zf-m-on: ${deep};`,
-    '  --ui-row-active-background: var(--zf-selected, rgba(255, 255, 255, 0.10)) !important;',
+    `  --atr-hi: ${hexTriple(SKIN.ink)};`,
+    `  --atr-m-solid: rgb(${tri(mixHex(deep, ground, 0.6))});`,
+    `  --atr-m-tab: rgba(${hexTriple(bub)}, 0.86);`,
+    `  --atr-m-pin-a: rgba(${hexTriple(ground)}, ${(g('sidebar') * 0.68).toFixed(3)}); --atr-m-pin-b: rgba(${hexTriple(deep)}, ${(g('sidebar') * 0.78).toFixed(3)});`,
+    `  --atr-m-comp-a: rgba(${hexTriple(bub)}, ${(g('chrome') * 0.62).toFixed(3)}); --atr-m-comp-b: rgba(${hexTriple(card)}, ${(g('chrome') * 0.70).toFixed(3)});`,
+    `  --atr-m-bub-a: rgba(${hexTriple(bub)}, ${(g('bubble') * 0.60).toFixed(3)}); --atr-m-bub-b: rgba(${hexTriple(card)}, ${(g('bubble') * 0.68).toFixed(3)});`,
+    `  --atr-m-sheet: rgba(${tri(mixHex(deep, ground, 0.5))}, ${(g('card') * 0.92).toFixed(3)});`,
+    `  --atr-m-on: ${deep};`,
+    '  --ui-row-active-background: var(--atr-selected, rgba(255, 255, 255, 0.10)) !important;',
     '}'
   ]
 }
@@ -359,7 +359,7 @@ const gruvboxLayers = () => {
     `    linear-gradient(rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.70).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.70).toFixed(3)})),`,
     // the artwork itself: a custom property, so swapping the picture is one tiny
     // style element instead of rebuilding a multi-megabyte CSS string
-    `    var(--zf-pic, url("${PAINTING_URL}"));`,
+    `    var(--atr-pic, url("${PAINTING_URL}"));`,
     `  background-size: 160px 160px, cover, cover, ${SKIN.fit === 'contain' ? 'contain' : 'cover'};`,
     `  background-position: 0 0, center, center, ${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%;`,
     '  background-repeat: repeat, no-repeat, no-repeat, no-repeat;',
@@ -382,21 +382,21 @@ const glassLayers = () => [
 ]
 const glassChromeCss = () => [
   "html:root {",
-  `  --zf-glass-rgb: ${hexTriple(GLASS.ground)};`,
-  `  --zf-glass-a: ${Number((1 - GLASS.tint).toFixed(4))};`,
+  `  --atr-glass-rgb: ${hexTriple(GLASS.ground)};`,
+  `  --atr-glass-a: ${Number((1 - GLASS.tint).toFixed(4))};`,
   `  --ui-text-tertiary: ${GLASS.quiet} !important;`,
   `  --ui-text-quaternary: rgba(${hexTriple(GLASS.quiet)}, 0.8) !important;`,
-  `  --zf-ink-3: ${GLASS.quiet} !important;`,
+  `  --atr-ink-3: ${GLASS.quiet} !important;`,
   // One surface, like a terminal: panels are a faint lift of the ink over the
   // same tint, never a second slab of colour, and nothing casts a shadow.
-  `  --zf-side-card: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --zf-side-card-hi: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
-  `  --zf-glass: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --zf-glass-hover: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
+  `  --atr-side-card: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
+  `  --atr-side-card-hi: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
+  `  --atr-glass: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
+  `  --atr-glass-hover: rgba(${hexTriple(GLASS.ink)}, 0.07) !important;`,
   `  --theme-neutral-card: rgba(${hexTriple(GLASS.ink)}, 0.035) !important;`,
-  `  --zf-edge: rgba(${hexTriple(GLASS.ink)}, 0.09) !important;`,
-  "  --zf-lift: none !important;",
-  "  --zf-lift-high: none !important; --zf-lift-float: none !important; --zf-frost: none !important;",
+  `  --atr-edge: rgba(${hexTriple(GLASS.ink)}, 0.09) !important;`,
+  "  --atr-lift: none !important;",
+  "  --atr-lift-high: none !important; --atr-lift-float: none !important; --atr-frost: none !important;",
   "}",
   // Nothing in this look needs a live blur: the OS already blurred what is
   // behind the window, and blurring our own flat tint again is pure GPU cost.
@@ -418,13 +418,13 @@ const glassChromeCss = () => [
 // re-stringified on every clock tick.
 const ensurePictureStyle = url => {
   if (typeof document === 'undefined' || !document.head) return
-  let el = document.getElementById('atrium-picture')
+  let el = document.getElementById('atr-picture')
   if (!el) {
     el = document.createElement('style')
-    el.id = 'atrium-picture'
+    el.id = 'atr-picture'
     document.head.appendChild(el)
   }
-  const value = `:root { --zf-pic: url("${String(url).replace(/"/g, '%22')}"); }`
+  const value = `:root { --atr-pic: url("${String(url).replace(/"/g, '%22')}"); }`
   if (el.textContent !== value) { el.textContent = value; pictureRevision += 1 }
 }
 
@@ -487,7 +487,7 @@ const pictureBackdrop = (bounds, filtered = true) => {
   const pixels = source.pixels.data, samples = [], deeper = hexRgb(SKIN.deeper)
   const scrim = skinNumber(SKIN.scrim, 0.31)
   const blend = (a, b, t) => [0, 1, 2].map(i => a[i] * (1 - t) + b[i] * t)
-  const chat = filtered && document.documentElement.matches?.("html[data-zf-chat='1']")
+  const chat = filtered && document.documentElement.matches?.("html[data-atr-chat='1']")
   const applyBackdrop = (rgb, sx, sy) => {
     // Transparent image pixels reveal the CSS background color before either scrim.
     if (rgb.length > 3) rgb = blend(rgb, deeper, 1 - rgb[3] / 255)
@@ -541,56 +541,56 @@ const SESSION_TAB_CSS = [
   // Top tabs: soft pills, sentence case, no rules between them. The active tab
   // is a flat matte block of the same material as the cards; the rest stay
   // quiet until hovered.
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) {",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) {",
   '  position: relative;',
   '  height: 26px !important; min-height: 26px !important; margin: 4px 1px 0 !important;',
   '  padding-inline: 4px 6px !important;',
   '  border: 0 !important; border-radius: 8px !important;',
   '  background: transparent !important; box-shadow: none !important;',
-  '  color: var(--zf-ink-2, #ebdbb2) !important; opacity: 0.78;',
+  '  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;',
   '  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *)::before { display: none !important; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) .uppercase {",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
   '  text-transform: none !important; letter-spacing: 0 !important;',
   '  font-size: 12px !important; font-weight: 500 !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *):is(:hover, [aria-selected='true']) { opacity: 1; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *):hover {",
-  '  color: var(--zf-ink-1, #ebdbb2) !important;',
-  '  background: rgba(var(--zf-hi), 0.06) !important;',
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) { opacity: 1; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):hover {",
+  '  color: var(--atr-ink-1, #ebdbb2) !important;',
+  '  background: rgba(var(--atr-hi), 0.06) !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *)[aria-selected='true'] {",
-  '  color: var(--zf-ink-0, #fbf1c7) !important;',
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)[aria-selected='true'] {",
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
   // The active tab wears the same matte material as the suggestion cards: one
   // flat opaque fill, no white wash, no inset ring, no drop shadow. Lifted one
   // step toward the ink so it still reads as raised on the bar.
-  '  background: color-mix(in srgb, var(--zf-m-solid, rgb(17, 18, 24)) 90%, rgb(var(--zf-hi, 255, 255, 255))) !important;',
+  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
   '  box-shadow: none !important;',
   '}',
   // the + button: a quiet rounded square in line with the pills
   "button[aria-label='New session tab'] {",
   '  width: 26px !important; height: 26px !important; margin: 4px 0 0 4px !important; border-radius: 8px !important;',
-  '  color: var(--zf-ink-3, #d5c4a1) !important; background: transparent !important; border: 0 !important;',
+  '  color: var(--atr-ink-3, #d5c4a1) !important; background: transparent !important; border: 0 !important;',
   '  transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;',
   '}',
-  "button[aria-label='New session tab']:hover { background: rgba(var(--zf-hi), 0.08) !important; color: var(--zf-ink-0, #fbf1c7) !important; }",
+  "button[aria-label='New session tab']:hover { background: rgba(var(--atr-hi), 0.08) !important; color: var(--atr-ink-0, #fbf1c7) !important; }",
   "button[aria-label='New session tab']:active { transform: scale(0.94); }",
   "button[aria-label='New session tab'] :is(svg, i) { width: 14px !important; height: 14px !important; font-size: 14px !important; }",
   // a tab's close button: hidden until the tab is hovered or active
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) button:hover { opacity: 1; background: rgba(var(--zf-hi), 0.10) !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button:hover { opacity: 1; background: rgba(var(--atr-hi), 0.10) !important; }",
   // Wider tabs: the app caps them at 12rem and sizes them to the title. Give
   // every tab a generous fixed span (Chrome-style), shrinking only when crowded.
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) { flex: 0 1 220px !important; width: 220px !important; min-width: 120px !important; max-width: 260px !important; height: 28px !important; padding-inline: 10px 6px !important; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) .truncate { flex: 1 1 auto !important; min-width: 0 !important; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) button[aria-label='Close'] { width: 18px !important; height: 18px !important; margin-left: 6px !important; flex: none !important; align-self: center !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) { flex: 0 1 220px !important; width: 220px !important; min-width: 120px !important; max-width: 260px !important; height: 28px !important; padding-inline: 10px 6px !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .truncate { flex: 1 1 auto !important; min-width: 0 !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button[aria-label='Close'] { width: 18px !important; height: 18px !important; margin-left: 6px !important; flex: none !important; align-self: center !important; }",
   // the app hides the close slot (opacity 0, no pointer) until hover; show it on the active tab too
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *):is(:hover, [aria-selected='true']) span:has(> button[aria-label='Close']) { opacity: 1 !important; pointer-events: auto !important; z-index: 2; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) .pane-tab-content { padding-right: 22px !important; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) span:has(> button[aria-label='Close']) { align-items: center !important; padding-right: 6px; }",
-  "[role='tab'][data-tree-tab]:not([data-zf-arc-col] *) button[aria-label='Close'] .codicon { opacity: 1 !important; visibility: visible !important; font-size: 12px !important; color: var(--zf-ink-2, #ebdbb2) !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) span:has(> button[aria-label='Close']) { opacity: 1 !important; pointer-events: auto !important; z-index: 2; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .pane-tab-content { padding-right: 22px !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) span:has(> button[aria-label='Close']) { align-items: center !important; padding-right: 6px; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button[aria-label='Close'] .codicon { opacity: 1 !important; visibility: visible !important; font-size: 12px !important; color: var(--atr-ink-2, #ebdbb2) !important; }",
 ]
 
 // ── Refinement pass ────────────────────────────────────────────────────────
@@ -611,25 +611,25 @@ const polishCss = () => [
   `  --ui-text-tertiary: ${gruvboxTinted() ? GLASS.quiet : '#bdae93'} !important;`,
   `  --ui-text-quaternary: ${gruvboxTinted() ? GLASS.quiet : '#a89984'} !important;`,
   '}',
-  // `--zf-` is the app's namespace too: it ships its own --zf-ink-2, which is
+  // `--atr-` is the app's namespace too: it ships its own --atr-ink-2, which is
   // rgb(33 3 25) — near-black. Every rule of ours that said
-  // var(--zf-ink-2, #d5c4a1) got the app's value instead of the fallback, which
+  // var(--atr-ink-2, #d5c4a1) got the app's value instead of the fallback, which
   // is why pane-tab labels and timestamps stayed invisible. Reclaim the ramp.
   'html:root {',
-  `  --zf-ink-0: ${SKIN.ink} !important;`,
-  `  --zf-ink-1: ${SKIN.ink2} !important;`,
-  `  --zf-ink-2: ${SKIN.ink2} !important;`,
-  `  --zf-ink-3: ${gruvboxTinted() ? GLASS.quiet : '#d5c4a1'} !important;`,
+  `  --atr-ink-0: ${SKIN.ink} !important;`,
+  `  --atr-ink-1: ${SKIN.ink2} !important;`,
+  `  --atr-ink-2: ${SKIN.ink2} !important;`,
+  `  --atr-ink-3: ${gruvboxTinted() ? GLASS.quiet : '#d5c4a1'} !important;`,
   '}',
   ':root {',
   // One ladder, four steps: chip 4, control/row/well 8, card 12, sheet 16.
-  '  --zf-r-1: 4px;',
-  '  --zf-r-2: 8px;',
-  '  --zf-r-3: 12px;',
-  '  --zf-r-4: 16px;',
-  '  --zf-r-chip: var(--zf-r-1);',
-  '  --zf-r-control: var(--zf-r-2);',
-  '  --zf-r-card: var(--zf-r-3);',
+  '  --atr-r-1: 4px;',
+  '  --atr-r-2: 8px;',
+  '  --atr-r-3: 12px;',
+  '  --atr-r-4: 16px;',
+  '  --atr-r-chip: var(--atr-r-1);',
+  '  --atr-r-control: var(--atr-r-2);',
+  '  --atr-r-card: var(--atr-r-3);',
   // The app's utility radii are computed from `--radius-scalar`, pinned to .2
   // by its own base sheet: `rounded-xl` was 3.2px, `rounded-lg` 2.4px, while
   // Atrium drew 8-16px surfaces beside them. That is why a command well, a
@@ -644,20 +644,20 @@ const polishCss = () => [
   // --radius stays as the app's standalone base token.
   '  --radius: 12px;',
   // Atrium's two surface aliases: cards/floating lists, and sheets.
-  '  --zf-radius: var(--zf-r-3);',
-  '  --zf-radius-lg: var(--zf-r-4);',
+  '  --atr-radius: var(--atr-r-3);',
+  '  --atr-radius-lg: var(--atr-r-4);',
   // The painting's edge is a green hairline.
-  `  --zf-hair: rgba(${hexTriple(SKIN.edge)}, 0.55);`,
-  '  --zf-selected: color-mix(in srgb, var(--zf-accent, #fe8019) 14%, transparent);',
-  '  --zf-ease: cubic-bezier(0.2, 0, 0, 1);',
+  `  --atr-hair: rgba(${hexTriple(SKIN.edge)}, 0.55);`,
+  '  --atr-selected: color-mix(in srgb, var(--atr-accent, #fe8019) 14%, transparent);',
+  '  --atr-ease: cubic-bezier(0.2, 0, 0, 1);',
   '}',
 
   // One radius per role. Buttons, inputs and rows are controls; cards and code
-  // are surfaces; chips are inline. Atrium's own components (`zf-*`) opt out:
+  // are surfaces; chips are inline. Atrium's own components (`atr-*`) opt out:
   // their sheet/card radius must not be flattened to the control radius just
   // because the host renders them as a <button> (the new-tab shelf cards were).
-  "button:not([class*='rounded-full']):not([class*='zf-']), input, select, textarea, [role='button']:not([class*='rounded-full']):not([class*='zf-']), [role='tab'], [role='option'] {",
-  '  border-radius: var(--zf-r-control) !important;',
+  "button:not([class*='rounded-full']):not([class*='atr-']), input, select, textarea, [role='button']:not([class*='rounded-full']):not([class*='atr-']), [role='tab'], [role='option'] {",
+  '  border-radius: var(--atr-r-control) !important;',
   '}',
   // Search fields are the exception: the app's Input primitive draws the border,
   // fill and radius on a <span> wrapping the real <input>, so the rule above
@@ -665,14 +665,14 @@ const polishCss = () => [
   // kept the app's 12px radius on a 32px row and read as a pill beside 8px
   // controls. Round the wrapper to the same control radius.
   ":is(span, div):has(> input[role='searchbox']) {",
-  '  border-radius: var(--zf-r-control) !important;',
+  '  border-radius: var(--atr-r-control) !important;',
   '}',
   "[data-slot='aui_message'] :is(pre, table),",
   "[data-slot='aui_message'] :is(.rounded-lg, .rounded-xl, .rounded-2xl) {",
-  '  border-radius: var(--zf-r-card) !important;',
+  '  border-radius: var(--atr-r-card) !important;',
   '}',
   "[data-slot='aui_message'] :not(pre) > code {",
-  '  border-radius: var(--zf-r-chip) !important;',
+  '  border-radius: var(--atr-r-chip) !important;',
   '}',
 
   // One hairline colour everywhere a border is drawn by the app, so dividers
@@ -683,22 +683,22 @@ const polishCss = () => [
   // ...but never on an edge the app meant to be invisible: re-colouring
   // border-transparent drew a box around every nav row in Settings and the sidebar.
   "html body :is(div, span, button, a, li, table, th, td, input, textarea, select, section, header, footer, aside, nav)[class]:not([class*='border-transparent']):not([class*='border-destructive']):not([class*='border-red']) {",
-  '  border-color: var(--zf-hair) !important;',
+  '  border-color: var(--atr-hair) !important;',
   '}',
   // the accent is for state, not decoration: a focused control keeps its ring
   ':focus-visible {',
-  '  border-color: color-mix(in srgb, var(--zf-accent, #fe8019) 55%, transparent) !important;',
+  '  border-color: color-mix(in srgb, var(--atr-accent, #fe8019) 55%, transparent) !important;',
   '}',
 
   // Focus is visible, consistent, and only on keyboard focus.
   ':focus-visible {',
-  '  outline: 2px solid color-mix(in srgb, var(--zf-accent, #fe8019) 70%, transparent);',
+  '  outline: 2px solid color-mix(in srgb, var(--atr-accent, #fe8019) 70%, transparent);',
   '  outline-offset: 2px;',
   '}',
 
   // One hover, one duration. The app animates some rows and snaps others.
   "button, [role='button'], [role='tab'], [role='option'], [role='menuitem'] {",
-  '  transition: background-color 120ms var(--zf-ease), color 120ms var(--zf-ease), border-color 120ms var(--zf-ease);',
+  '  transition: background-color 120ms var(--atr-ease), color 120ms var(--atr-ease), border-color 120ms var(--atr-ease);',
   '}',
   "@media (prefers-reduced-motion: reduce) {",
   "  button, [role='button'], [role='tab'], [role='option'] { transition: none !important; }",
@@ -708,13 +708,13 @@ const polishCss = () => [
   '::-webkit-scrollbar { width: 10px; height: 10px; }',
   '::-webkit-scrollbar-track { background: transparent; }',
   '::-webkit-scrollbar-thumb {',
-  '  background: color-mix(in srgb, var(--zf-ink-3, #a89984) 26%, transparent);',
+  '  background: color-mix(in srgb, var(--atr-ink-3, #a89984) 26%, transparent);',
   '  border: 3px solid transparent;',
   '  border-radius: 999px;',
   '  background-clip: content-box;',
   '}',
   '::-webkit-scrollbar-thumb:hover {',
-  '  background: color-mix(in srgb, var(--zf-ink-3, #a89984) 44%, transparent);',
+  '  background: color-mix(in srgb, var(--atr-ink-3, #a89984) 44%, transparent);',
   '  background-clip: content-box;',
   '}',
 
@@ -730,15 +730,15 @@ const polishCss = () => [
   '}',
   "[data-slot='aui_thread-content'] :is(ul, ol) { padding-inline-start: 2.4em; margin-block: 0.6em; }",
   "[data-slot='aui_thread-content'] li { margin-block: 0.22em !important; }",
-  "[data-slot='aui_thread-content'] li::marker { color: var(--zf-ink-3, #a89984); }",
+  "[data-slot='aui_thread-content'] li::marker { color: var(--atr-ink-3, #a89984); }",
   "[data-slot='aui_thread-content'] hr {",
-  '  border: 0; border-top: 1px solid var(--zf-hair); margin-block: 1.4em;',
+  '  border: 0; border-top: 1px solid var(--atr-hair); margin-block: 1.4em;',
   '}',
   "[data-slot='aui_thread-content'] blockquote {",
-  '  border-inline-start: 2px solid var(--zf-hair);',
+  '  border-inline-start: 2px solid var(--atr-hair);',
   '  padding-inline-start: 0.9em;',
   '  margin-inline: 0;',
-  '  color: var(--zf-ink-2, #d5c4a1);',
+  '  color: var(--atr-ink-2, #d5c4a1);',
   '}',
   "[data-slot='aui_thread-content'] a {",
   '  text-underline-offset: 2px;',
@@ -746,13 +746,13 @@ const polishCss = () => [
   '  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);',
   '}',
   "[data-slot='aui_thread-content'] a:hover { text-decoration-color: currentColor; }",
-  "[data-slot='aui_thread-content'] img { max-width: 100%; border-radius: var(--zf-r-control); }",
+  "[data-slot='aui_thread-content'] img { max-width: 100%; border-radius: var(--atr-r-control); }",
 
   // Code: one padding, one radius, one border, tabular figures in blocks.
   "[data-slot='aui_thread-content'] pre {",
   '  padding: 12px !important;',
-  '  border-radius: var(--zf-r-card) !important;',
-  '  border: 1px solid var(--zf-hair) !important;',
+  '  border-radius: var(--atr-r-card) !important;',
+  '  border: 1px solid var(--atr-hair) !important;',
   '  line-height: 1.55 !important;',
   '  font-variant-numeric: tabular-nums;',
   '}',
@@ -803,12 +803,12 @@ const polishCss = () => [
   '}',
   "[data-slot='aui_thread-content'] :is(th, td) {",
   '  padding: 6px 10px;',
-  '  border-bottom: 1px solid var(--zf-hair);',
+  '  border-bottom: 1px solid var(--atr-hair);',
   '  text-align: start;',
   '}',
   "[data-slot='aui_thread-content'] th {",
   '  font-weight: 600;',
-  '  color: var(--zf-ink-1, #ebdbb2);',
+  '  color: var(--atr-ink-1, #ebdbb2);',
   '}',
 
   // The 16px overflow: message groups are flex children that refuse to shrink.
@@ -820,73 +820,73 @@ const polishCss = () => [
 
   // Settings nav: the open group is shown by its children, not by a second
   // filled box above the selected child
-  "html body button[data-tour][class*='bg-(--ui-bg-tertiary)'][class*='border-(--ui-stroke-tertiary)'] { background: transparent !important; border-color: transparent !important; color: var(--zf-ink-0, #fbf1c7) !important; }",
+  "html body button[data-tour][class*='bg-(--ui-bg-tertiary)'][class*='border-(--ui-stroke-tertiary)'] { background: transparent !important; border-color: transparent !important; color: var(--atr-ink-0, #fbf1c7) !important; }",
   // No orange or yellow text, anywhere: the app's accent-coloured text
   // utilities, spinners and time stamps all fall back to the ink ramp.
-  "html body :is([class*='text-(--ui-accent)'], [class*='text-(--accent)'], [class*='text-primary']:not([class*='text-primary-foreground']), [class*='text-amber'], [class*='text-yellow'], [class*='text-orange'], [class*='text-(--theme-primary)'], .glyph-spinner, .glyph-spinner *) { color: var(--zf-ink-2, #cdc4b4) !important; }",
-  "html body time { color: var(--zf-ink-3, #a8a092) !important; }",
+  "html body :is([class*='text-(--ui-accent)'], [class*='text-(--accent)'], [class*='text-primary']:not([class*='text-primary-foreground']), [class*='text-amber'], [class*='text-yellow'], [class*='text-orange'], [class*='text-(--theme-primary)'], .glyph-spinner, .glyph-spinner *) { color: var(--atr-ink-2, #cdc4b4) !important; }",
+  "html body time { color: var(--atr-ink-3, #a8a092) !important; }",
   // unread badge and tab dots: no orange
-  "html body div.fixed[data-zf-sbbtn] [class*='bg-primary'] { background: var(--zf-ink-1, #e2dacb) !important; color: var(--zf-m-on) !important; }",
-  "[role='tab'][data-tree-tab] [class*='rounded-full'][class*='bg-'] { background: var(--zf-ink-2, #cdc4b4) !important; }",
+  "html body div.fixed[data-atr-sbbtn] [class*='bg-primary'] { background: var(--atr-ink-1, #e2dacb) !important; color: var(--atr-m-on) !important; }",
+  "[role='tab'][data-tree-tab] [class*='rounded-full'][class*='bg-'] { background: var(--atr-ink-2, #cdc4b4) !important; }",
   // Landing for an empty tab: the app only draws its intro for the very first
   // draft, so a fresh tab was a blank smear. Same wordmark, same mood.
-  ':is(#zf-landing, .zf-landing-x) { position: fixed; z-index: 1; pointer-events: none; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; opacity: 0; transition: opacity 260ms ease; container-type: inline-size; overflow: hidden; }',
-  "html[data-zf-landing='1'] :is(#zf-landing, .zf-landing-x) { display: flex; opacity: 1; }",
-  ':is(#zf-landing, .zf-landing-x) .zf-land-mark { font-family: Collapse, ui-serif, serif; font-size: clamp(26px, 11cqw, 112px); font-weight: 700; letter-spacing: 0.02em; line-height: 1; color: rgba(var(--zf-hi), 0.92); mix-blend-mode: plus-lighter; white-space: nowrap; }',
-  ':is(#zf-landing, .zf-landing-x) .zf-land-line { font-size: 15px; color: var(--zf-ink-2, #ebdbb2); max-width: 34rem; }',
-  '@keyframes zf-land-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
-  "html[data-zf-landing='1'] :is(#zf-landing, .zf-landing-x) > * { animation: zf-land-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }",
-  "html[data-zf-landing='1'] :is(#zf-landing, .zf-landing-x) .zf-land-line { animation-delay: 80ms; }",
+  ':is(#atr-landing, .atr-landing-x) { position: fixed; z-index: 1; pointer-events: none; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; opacity: 0; transition: opacity 260ms ease; container-type: inline-size; overflow: hidden; }',
+  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) { display: flex; opacity: 1; }",
+  ':is(#atr-landing, .atr-landing-x) .atr-land-mark { font-family: Collapse, ui-serif, serif; font-size: clamp(26px, 11cqw, 112px); font-weight: 700; letter-spacing: 0.02em; line-height: 1; color: rgba(var(--atr-hi), 0.92); mix-blend-mode: plus-lighter; white-space: nowrap; }',
+  ':is(#atr-landing, .atr-landing-x) .atr-land-line { font-size: 15px; color: var(--atr-ink-2, #ebdbb2); max-width: 34rem; }',
+  '@keyframes atr-land-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
+  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) > * { animation: atr-land-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }",
+  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) .atr-land-line { animation-delay: 80ms; }",
   // Settings is a floating sheet, solid enough that nothing reads through it
-  "div.rounded-xl[data-zf-setbox] { background: var(--zf-glass-strong) !important; border-radius: var(--zf-radius-lg) !important; box-shadow: var(--zf-lift-float) !important; isolation: isolate; }",
+  "div.rounded-xl[data-atr-setbox] { background: var(--atr-glass-strong) !important; border-radius: var(--atr-radius-lg) !important; box-shadow: var(--atr-lift-float) !important; isolation: isolate; }",
   "[class*='grid-cols-[13rem_minmax(0,1fr)]'] > aside { background: rgba(0, 0, 0, 0.16) !important; }",
   // focus: a soft cream ring, never the orange accent; the composer gets none
-  "html body :focus-visible { outline: 1.5px solid rgba(var(--zf-hi), 0.38) !important; outline-offset: 2px; border-color: rgba(var(--zf-hi), 0.28) !important; }",
+  "html body :focus-visible { outline: 1.5px solid rgba(var(--atr-hi), 0.38) !important; outline-offset: 2px; border-color: rgba(var(--atr-hi), 0.28) !important; }",
   "html body :is([data-slot='composer-rich-input'], [data-slot^='composer'] textarea, [data-slot^='composer'] [contenteditable='true'], [data-slot^='composer'] input):is(:focus, :focus-visible) { outline: none !important; box-shadow: none !important; border-color: transparent !important; }",
-  "html body [data-slot='composer-surface']:focus-within { box-shadow: inset 0 0 0 1px rgba(var(--zf-hi), 0.16), var(--zf-lift, 0 8px 24px rgba(0,0,0,.3)) !important; }",
+  "html body [data-slot='composer-surface']:focus-within { box-shadow: inset 0 0 0 1px rgba(var(--atr-hi), 0.16), var(--atr-lift, 0 8px 24px rgba(0,0,0,.3)) !important; }",
   // The composer's backing div paints `--composer-fill`, which the app mixes out
   // of --dt-card; in a light host theme that resolves to near-white, so
   // the bar read as a lighter material than the cards beside it. Give it the same
   // glass every other surface wears, in every phase — the night branch below only
   // ever covered the dark hours.
   ":is([data-slot='composer-root'], [data-slot='composer-surface'], [class~='group/composer-surface']) {",
-  '  --composer-fill: color-mix(in srgb, var(--zf-tint) 88%, transparent) !important;',
+  '  --composer-fill: color-mix(in srgb, var(--atr-tint) 88%, transparent) !important;',
   '}',
   ":is([data-slot='composer-surface'], [class~='group/composer-surface']) > div:first-child,",
   ":is([data-slot='composer-surface'], [class~='group/composer-surface']) [class*='composerInputBacking'] {",
-  '  background: color-mix(in srgb, var(--zf-tint) 88%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint) 88%, transparent) !important;',
   '}',
   // The status bar is app chrome at the window's foot; untouched it paints the
   // theme's opaque surface and cuts a pale band across the picture.
   "[data-slot='statusbar'] {",
-  '  background: color-mix(in srgb, var(--zf-tint) 74%, transparent) !important;',
-  '  backdrop-filter: var(--zf-frost) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint) 74%, transparent) !important;',
+  '  backdrop-filter: var(--atr-frost) !important;',
   '}',
   // a session opened through the row's own menu: the menu is the mechanism, not
   // something to watch, so it stays invisible while it is driven
-  "html[data-zf-ghost-menu='1'] :is([data-radix-popper-content-wrapper], [role='menu']) { opacity: 0 !important; pointer-events: none !important; }",
+  "html[data-atr-ghost-menu='1'] :is([data-radix-popper-content-wrapper], [role='menu']) { opacity: 0 !important; pointer-events: none !important; }",
   // The composer and your own messages wear the gruvbox glass, the material
-  // every other surface wears (--zf-glass): a plain white wash over the
+  // every other surface wears (--atr-glass): a plain white wash over the
   // painting reads as a different, lighter thing than the cards beside it.
   ...(!gruvboxTinted() ? [
-    "html body div[data-slot='composer-surface'][data-slot][class] { background: linear-gradient(var(--zf-m-comp-a), var(--zf-m-comp-b)) !important; backdrop-filter: blur(18px) saturate(1.25) brightness(1.08) !important; box-shadow: inset 0 1px 0 rgba(var(--zf-hi), 0.07), inset 0 0 0 1px rgba(var(--zf-hi), 0.06), 0 10px 30px rgba(0, 0, 0, 0.22) !important; }",
-    "html body :is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container) { background: linear-gradient(var(--zf-m-bub-a), var(--zf-m-bub-b)) !important; box-shadow: inset 0 1px 0 rgba(var(--zf-hi), 0.07), inset 0 0 0 1px rgba(var(--zf-hi), 0.06), 0 6px 20px rgba(0, 0, 0, 0.16) !important; border-color: transparent !important; }",
+    "html body div[data-slot='composer-surface'][data-slot][class] { background: linear-gradient(var(--atr-m-comp-a), var(--atr-m-comp-b)) !important; backdrop-filter: blur(18px) saturate(1.25) brightness(1.08) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 10px 30px rgba(0, 0, 0, 0.22) !important; }",
+    "html body :is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container) { background: linear-gradient(var(--atr-m-bub-a), var(--atr-m-bub-b)) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 6px 20px rgba(0, 0, 0, 0.16) !important; border-color: transparent !important; }",
   ] : []),
   // No live backdrop blur on a full-height sheet: the frosted glass it sat
   // behind is already baked, and the 28px pass was the most expensive one left.
-  "div.rounded-xl[data-zf-setbox] { backdrop-filter: none !important; }",
+  "div.rounded-xl[data-atr-setbox] { backdrop-filter: none !important; }",
 
   // Two text roles still resolved to a colour the theme never chose — the pane
   // tab label and the sidebar timestamps both computed to rgb(33 3 25), which is
   // 1.1:1 on this ground. Named explicitly rather than guessed at the token.
   "[data-slot='pane-tab'] :is(span, div) {",
-  '  color: var(--zf-ink-2, #d5c4a1) !important;',
+  '  color: var(--atr-ink-2, #d5c4a1) !important;',
   '}',
   "[data-slot='pane-tab']:is([aria-selected='true'], [data-active='true']) :is(span, div) {",
-  '  color: var(--zf-ink-0, #fbf1c7) !important;',
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
   '}',
   "[data-slot='sidebar'] time, time[tooltip-trigger] {",
-  '  color: var(--zf-ink-3, #a89984) !important;',
+  '  color: var(--atr-ink-3, #a89984) !important;',
   '}',
 
   "[role='tab'][data-tree-tab]:not([data-slot='pane-tab']) :is(span, div) {",
@@ -896,7 +896,7 @@ const polishCss = () => [
   // Floating surfaces: menus, dialogs, popovers and tooltips share one radius
   // and one shadow, instead of each carrying its own.
   ":is([role='menu'], [role='dialog'], [role='listbox'], [role='tooltip'], [data-slot*='popover']) {",
-  '  border-radius: var(--zf-r-card) !important;',
+  '  border-radius: var(--atr-r-card) !important;',
   '}',
   ":is([role='tooltip']) {",
   '  border-radius: 6px !important;',
@@ -925,8 +925,8 @@ const groupedFieldCss = () => {
     '  outline: none !important;',
     '}',
     'html body ' + group + '[class]:has(> input:focus-visible) {',
-    '  border-radius: var(--zf-r-control, 8px) !important;',
-    '  outline: 1.5px solid rgba(var(--zf-hi, 255, 255, 255), 0.38) !important;',
+    '  border-radius: var(--atr-r-control, 8px) !important;',
+    '  outline: 1.5px solid rgba(var(--atr-hi, 255, 255, 255), 0.38) !important;',
     '  outline-offset: 2px;',
     '  box-shadow: none !important;',
     '}',
@@ -953,14 +953,14 @@ const gruvboxTextCss = () => [
   // thread element's width ends at the pane boundary, and that boundary is the
   // hard line we are trying to get rid of.
   ...(gruvboxTinted() ? [] : [
-  "html[data-zf-chat='1']::after {",
+  "html[data-atr-chat='1']::after {",
   "  content: '';",
   '  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;',
   '  pointer-events: none;',
   `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`,
   `  backdrop-filter: blur(${skinNumber(SKIN.blur, 16)}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
   '}',
-  "html[data-zf-chat='1'][data-zf-clip='1']::after { clip-path: var(--zf-chat-clip); }",
+  "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
   ]),
   `::selection { background: ${SKIN.edge} !important; color: ${SKIN.ink} !important; }`,
   // The tab bar floats on the picture with nothing marking where it ends. The very top of the
@@ -973,7 +973,7 @@ const gruvboxTextCss = () => [
 
   // Title
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) :is(h1, h2, h3, h4, h5, h6) {",
-  '  color: var(--zf-ink-0, #fbf1c7) !important;',
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
   '}',
   // Underlined
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) a {",
@@ -1059,7 +1059,7 @@ const REPLY_TARGET = 4.5
 // ── Panel tuning ───────────────────────────────────────────────────────────
 // The wash used to be a pure legibility fallback: solved for REPLY_TARGET and
 // absent (alpha 0) whenever the backdrop already passed AA. These dials make it
-// a panel in its own right, exposed in Settings -> Atrium -> Chat & motion as
+// a panel in its own right, exposed in Settings -> Hermes Atrium -> Chat & motion as
 // five live sliders (PANEL_DEFAULTS seeds the stored values, so an existing
 // install keeps the shipped look until a control is touched).
 //
@@ -1155,8 +1155,8 @@ const replyGroundCss = material => {
   const shell = 'html body ' + REPLY_SHELL
   return [
     ':root {',
-    `  --zf-reply-ground: rgba(${material.color.join(', ')}, ${material.alpha});`,
-    `  --zf-reply-pad: ${REPLY_PAD()};`,
+    `  --atr-reply-ground: rgba(${material.color.join(', ')}, ${material.alpha});`,
+    `  --atr-reply-pad: ${REPLY_PAD()};`,
     '}',
     // The host shell pads only the left gutter, so a wash painted on its bare
     // box put the first line on the top edge and full lines on the right edge,
@@ -1165,22 +1165,22 @@ const replyGroundCss = material => {
     // column, so it keeps lining up with the composer, and the measure only
     // loses ~10px.
     //
-    // `--zf-reply-ground` is a translucent tint of the panel's own tone, so the
+    // `--atr-reply-ground` is a translucent tint of the panel's own tone, so the
     // card still reads as glass; the inset hairline and the outer shadow give it
     // a defined edge, which is what stops it reading as a rectangle of slightly
     // different backdrop.
     shell + ' {',
-    '  background: var(--zf-reply-ground) !important;',
-    '  border-radius: var(--zf-radius, 12px) !important;',
-    '  padding-block: var(--zf-reply-pad) !important;',
-    '  padding-inline-end: var(--zf-reply-pad) !important;',
+    '  background: var(--atr-reply-ground) !important;',
+    '  border-radius: var(--atr-radius, 12px) !important;',
+    '  padding-block: var(--atr-reply-pad) !important;',
+    '  padding-inline-end: var(--atr-reply-pad) !important;',
     '  border-color: transparent !important; outline: 0 !important;',
-    '  box-shadow: inset 0 0 0 1px rgba(var(--zf-hi, 255, 255, 255), 0.06), 0 6px 18px rgba(0, 0, 0, 0.16) !important;',
+    '  box-shadow: inset 0 0 0 1px rgba(var(--atr-hi, 255, 255, 255), 0.06), 0 6px 18px rgba(0, 0, 0, 0.16) !important;',
     '}',
     // Content primitives lose their fill; the reply is their sole ground.
     // Card containers keep one material step, while pre/code inside a card
     // cannot paint a second framed well (including Gruvbox/Shiki overrides).
-    shell + " :is(.aui-md, pre, pre code, table, thead, tbody, tr, th, td, blockquote, .atrium-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open])) {",
+    shell + " :is(.aui-md, pre, pre code, table, thead, tbody, tr, th, td, blockquote, .atr-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open])) {",
     '  background: transparent !important; box-shadow: none !important;',
     '}',
     shell + ' :is(pre, pre code, blockquote) { border-color: transparent !important; outline: 0 !important; }',
@@ -1189,7 +1189,7 @@ const replyGroundCss = material => {
     shell + " :is([data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open])) { border-color: transparent !important; }",
     // These are cards, not another reply wash. Keep their current materials;
     // only the redundant ring/lift disappears inside the unframed shell.
-    shell + " :is([data-slot='code-card'], [data-slot='file-diff-panel'], [data-slot='tool-block'][data-tool-open], [data-slot='clarify-inline'], .zf-snip, [class*='bg-(--ui-widget-surface-background)'], [class*='bg-(--ui-chat-surface-background)']) {",
+    shell + " :is([data-slot='code-card'], [data-slot='file-diff-panel'], [data-slot='tool-block'][data-tool-open], [data-slot='clarify-inline'], .atr-snip, [class*='bg-(--ui-widget-surface-background)'], [class*='bg-(--ui-chat-surface-background)']) {",
     '  box-shadow: none !important;',
     '}',
     // Tool command wells and inner diff/code wrappers otherwise add a second
@@ -1200,20 +1200,20 @@ const replyGroundCss = material => {
     '}',
     // Fold/thinking/tool labels and actions share the body ground. Without
     // this, tertiary ink still disappeared even after the prose passed AA.
-    shell + " :is(.atrium-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open]), [data-slot*='actions'], [data-slot*='feedback'], time) {",
+    shell + " :is(.atr-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open]), [data-slot*='actions'], [data-slot*='feedback'], time) {",
     '  color: inherit !important; text-shadow: none !important;',
     '}',
     // The app normally places actions beside content; keep that cluster on
     // the same ground when it is a sibling, without framing the whole root.
     'html body [data-slot=\'aui_assistant-message-root\'] > :is([data-slot*=\'actions\'], [data-slot*=\'feedback\']) {',
-    '  background: var(--zf-reply-ground) !important; border-radius: var(--zf-radius, 12px);',
+    '  background: var(--atr-reply-ground) !important; border-radius: var(--atr-radius, 12px);',
     '  color: inherit !important; text-shadow: none !important;',
     '}',
   ].join('\n')
 }
 
 // Read only theme/viewport state, never individual messages. Hermes themes can
-// supply dark ink too, so inactive Atrium appearance shares the same solver.
+// supply dark ink too, so inactive Hermes Atrium appearance shares the same solver.
 const replyCssRgb = value => {
   if (SKIN_HEX.test(String(value).trim())) return hexRgb(String(value).trim())
   const numbers = String(value).match(/[\d.]+/g)?.map(Number)
@@ -1256,7 +1256,7 @@ const replyHostGround = () => {
 // outlines run together as one S-curve. The geometry is measured (inset,
 // composer radius, border width, fill colour), so it follows any theme or
 // font size; it is drawn by two pseudo-elements on the stack's wrapper.
-const STACK_FLARE_ATTR = 'data-zf-flare'
+const STACK_FLARE_ATTR = 'data-atr-flare'
 const fitStatusStack = () => {
   if (typeof document === 'undefined') return
   const stack = document.querySelector("[data-slot='composer-status-stack']")
@@ -1320,14 +1320,14 @@ const STACK_FLARE_CSS = [
 
 // The sidebar's own strip: a header on the sidebar surface that owns a tablist.
 // The workspace tab bar and the terminal rail do not match it.
-const STRIP_HOOK = '[data-zf-strip]'
+const STRIP_HOOK = '[data-atr-strip]'
 
 // Only a two-way strip becomes a switch — SESSIONS | BOTS. A three-way strip
 // falls back to the app's own tabs rather than getting a pill that cannot land.
 const PIN_MASK_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E")`
 const MENU_SURFACES = ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'], [data-slot='dialog-content'] [data-slot='command'])"
 const MENU_ROWS = ":is([role='menuitem'], [role='option'], [role='menuitemcheckbox'], [role='menuitemradio'], [cmdk-item], [data-slot='command-item'])"
-const SWITCH_HOOK = '[data-zf-strip][data-zf-switch]'
+const SWITCH_HOOK = '[data-atr-strip][data-atr-switch]'
 
 // ══ §4 APP CSS (sheetCss: layout, glass material, every surface) ═══════════
 
@@ -1340,42 +1340,42 @@ const SWITCH_HOOK = '[data-zf-strip][data-zf-switch]'
 // to their new boxes on Cmd+S. Emitted only when the platform has view
 // transitions, because the rules do nothing otherwise.
 const MORPH_CSS = [
-  "::view-transition-group(zf-side), ::view-transition-group(zf-main), ::view-transition-group(zf-home) { animation-duration: 300ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }",
-  "::view-transition-old(zf-home), ::view-transition-new(zf-home) { animation-duration: 300ms; }",
-  "::view-transition-old(zf-main), ::view-transition-new(zf-main) { width: 100%; height: 100%; object-fit: none; object-position: center top; animation-duration: 300ms; }",
-  "::view-transition-old(zf-side), ::view-transition-new(zf-side) { animation-duration: 220ms; }",
+  "::view-transition-group(atr-side), ::view-transition-group(atr-main), ::view-transition-group(atr-home) { animation-duration: 300ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }",
+  "::view-transition-old(atr-home), ::view-transition-new(atr-home) { animation-duration: 300ms; }",
+  "::view-transition-old(atr-main), ::view-transition-new(atr-main) { width: 100%; height: 100%; object-fit: none; object-position: center top; animation-duration: 300ms; }",
+  "::view-transition-old(atr-side), ::view-transition-new(atr-side) { animation-duration: 220ms; }",
   "::view-transition-old(root), ::view-transition-new(root) { animation: none; }"
 ]
 
 const SIDEBAR_CSS = [
   // The host replaces the desktop rail with a native overlay below its narrow
-  // breakpoint. It is not data-zf-arc-col, and must mask the transcript even
+  // breakpoint. It is not data-atr-arc-col, and must mask the transcript even
   // when the theme deliberately makes pinned sidebar surfaces transparent.
-  "html:root body [data-narrow-overlay] { background: var(--zf-m-solid, var(--ui-bg-chrome)) !important; background-image: none !important; }",
+  "html:root body [data-narrow-overlay] { background: var(--atr-m-solid, var(--ui-bg-chrome)) !important; background-image: none !important; }",
   // ── The floating sidebar ──────────────────────────────────────────────────────────────
   // The sidebar column never unmounts. "Collapsed" takes it out of the flow
   // (position: fixed, so the chat never reflows) and parks it off-screen; a
   // hover slides it back. Only translate and opacity animate: compositor work,
   // no React, no layout.
-  "html[data-zf-arc='1'] [data-zf-arc-col] {",
+  "html[data-atr-arc='1'] [data-atr-arc-col] {",
   '  position: fixed !important; left: 10px !important; top: 10px !important; bottom: 10px !important;',
   '  width: 272px !important; height: auto !important; min-width: 0 !important; max-width: none !important;',
   '  flex: none !important; z-index: 60 !important;',
   '  border-radius: 16px !important; overflow: hidden !important;',
-  '  background: var(--zf-m-solid) !important; background-image: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;',
-  '  box-shadow: var(--zf-lift-float) !important;',
+  '  background: var(--atr-m-solid) !important; background-image: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;',
+  '  box-shadow: var(--atr-lift-float) !important;',
   '  translate: calc(-100% - 28px) 0; opacity: 0; pointer-events: none;',
   '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease;',
   '  will-change: translate, opacity; contain: layout paint;',
   '}',
-  "html[data-zf-arc='1'][data-zf-arc-open='1'] [data-zf-arc-col] {",
+  "html[data-atr-arc='1'][data-atr-arc-open='1'] [data-atr-arc-col] {",
   '  translate: 0 0; opacity: 1; pointer-events: auto;',
   '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease;',
   '}',
   // In floating mode the card's own surfaces are see-through, so the column is
   // one piece of glass. Pinned does not flatten them: with no outer card, the
   // inner surfaces have to paint themselves or the list would be a hole.
-  "html[data-zf-arc='1'] [data-zf-arc-col] > div, html[data-zf-arc='1'] [data-zf-arc-col] [data-slot='sidebar'] {",
+  "html[data-atr-arc='1'] [data-atr-arc-col] > div, html[data-atr-arc='1'] [data-atr-arc-col] [data-slot='sidebar'] {",
   '  background: transparent !important; border: 0 !important;',
   '}',
   // room at the bottom of the column for snippets + status
@@ -1384,31 +1384,31 @@ const SIDEBAR_CSS = [
   // they stay put while the card slides, then jump when the app re-measures.
   // They ride the same slide on the same curve instead, and their re-measure
   // glides rather than snapping.
-  "html[data-zf-arc-ready='1'] body #atrium-snips {",
+  "html[data-atr-arc-ready='1'] body #atr-snips {",
   '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease,',
   '    left 300ms cubic-bezier(0.22, 1, 0.36, 1), top 300ms cubic-bezier(0.22, 1, 0.36, 1);',
   '}',
-  "html[data-zf-arc-ready='1'] body #atrium-statusdock-head {",
+  "html[data-atr-arc-ready='1'] body #atr-statusdock-head {",
   '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease,',
   '    left 300ms cubic-bezier(0.22, 1, 0.36, 1), top 300ms cubic-bezier(0.22, 1, 0.36, 1),',
-  '    height var(--zf-sd-dur) var(--zf-sd-ease), color var(--zf-t-2, 150ms) var(--zf-ease, ease),',
-  '    box-shadow var(--zf-t-2, 150ms) var(--zf-ease, ease);',
+  '    height var(--atr-sd-dur) var(--atr-sd-ease), color var(--atr-t-2, 150ms) var(--atr-ease, ease),',
+  '    box-shadow var(--atr-t-2, 150ms) var(--atr-ease, ease);',
   '}',
   // They paint in the card's own plane. Behind it (the app's z-40 against the
   // card's z-60) they only showed once the slide had finished, which read as
   // arriving late, while the card was already there.
-  "html[data-zf-arc='1'] body :is(#atrium-snips, #atrium-statusdock-head) { z-index: 61 !important; }",
+  "html[data-atr-arc='1'] body :is(#atr-snips, #atr-statusdock-head) { z-index: 61 !important; }",
   // Their x is the card's own, not the app's next measurement: with the column
   // parked, the app's own re-measure lands late (its heartbeat is a second) and
   // the two arrive after the card. Fixed to the card, they ride it exactly.
-  "html[data-zf-arc='1'] body :is(#atrium-snips, #atrium-statusdock-head) {",
-  '  left: var(--zf-rail-x, 20px) !important;',
-  '  width: var(--zf-rail-w, 252px) !important;',
+  "html[data-atr-arc='1'] body :is(#atr-snips, #atr-statusdock-head) {",
+  '  left: var(--atr-rail-x, 20px) !important;',
+  '  width: var(--atr-rail-w, 252px) !important;',
   '}',
-  "html[data-zf-arc='1']:not([data-zf-arc-open='1']) body :is(#atrium-snips, #atrium-statusdock-head) {",
+  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body :is(#atr-snips, #atr-statusdock-head) {",
   '  translate: calc(-100% - 28px) 0; opacity: 0; pointer-events: none;',
   '}',
-  "html[data-zf-arc='1'][data-zf-arc-open='1'] body :is(#atrium-snips, #atrium-statusdock-head) {",
+  "html[data-atr-arc='1'][data-atr-arc-open='1'] body :is(#atr-snips, #atr-statusdock-head) {",
   '  translate: 0 0; opacity: 1; pointer-events: auto;',
   '}',
   // The open status card's body is the app's real footer, pinned under the
@@ -1416,26 +1416,26 @@ const SIDEBAR_CSS = [
   // behind, it stayed on screen over the chat after the sidebar tucked away.
   // Its transition list is the dock's (!important); the translate leg there
   // reads these two tokens.
-  "html[data-zf-arc='1'] body footer[data-slot='statusbar'][data-atrium-dock-side] {",
-  '  left: var(--zf-rail-x, 20px) !important; width: var(--zf-rail-w, 252px) !important; z-index: 61 !important;',
-  '  --zf-arc-dur: 300ms; --zf-arc-ease: cubic-bezier(0.22, 1, 0.36, 1);',
+  "html[data-atr-arc='1'] body footer[data-slot='statusbar'][data-atr-dock-side] {",
+  '  left: var(--atr-rail-x, 20px) !important; width: var(--atr-rail-w, 252px) !important; z-index: 61 !important;',
+  '  --atr-arc-dur: 300ms; --atr-arc-ease: cubic-bezier(0.22, 1, 0.36, 1);',
   '}',
-  "html[data-zf-arc='1']:not([data-zf-arc-open='1']) body footer[data-slot='statusbar'][data-atrium-dock-side] {",
+  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body footer[data-slot='statusbar'][data-atr-dock-side] {",
   '  translate: calc(-100% - 28px) 0; opacity: 0 !important; pointer-events: none !important;',
-  '  --zf-arc-dur: 150ms; --zf-arc-ease: cubic-bezier(0.4, 0, 1, 1);',
+  '  --atr-arc-dur: 150ms; --atr-arc-ease: cubic-bezier(0.4, 0, 1, 1);',
   '}',
   // the tucked state has to leave too, at the closing speed
-  "html[data-zf-arc='1']:not([data-zf-arc-open='1']) body #atrium-snips {",
+  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body #atr-snips {",
   '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease,',
   '    left 150ms cubic-bezier(0.4, 0, 1, 1), top 150ms cubic-bezier(0.4, 0, 1, 1);',
   '}',
-  "html[data-zf-arc='1']:not([data-zf-arc-open='1']) body #atrium-statusdock-head {",
+  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body #atr-statusdock-head {",
   '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease,',
   '    left 150ms cubic-bezier(0.4, 0, 1, 1), top 150ms cubic-bezier(0.4, 0, 1, 1),',
-  '    height var(--zf-sd-dur) var(--zf-sd-ease);',
+  '    height var(--atr-sd-dur) var(--atr-sd-ease);',
   '}',
   // the chat keeps the toggle's corner clear once the sidebar is out of the flow
-  "html[data-zf-arc='1'] [data-tree-split] > div:not([data-zf-arc-col]) [data-window-top] {",
+  "html[data-atr-arc='1'] [data-tree-split] > div:not([data-atr-arc-col]) [data-window-top] {",
   // the mode button lives inside the card here, so the tabs can take the corner
   '  --panel-titlebar-left: 12px !important;',
   '}',
@@ -1443,48 +1443,48 @@ const SIDEBAR_CSS = [
   "[data-radix-popper-content-wrapper], [role='menu'], [role='listbox'], [role='tooltip'], [data-slot$='-content'][data-state='open'][style*='--radix'] { z-index: 70 !important; }",
   "[data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='sheet-overlay'], [data-slot='sheet-content'], [data-slot='alert-dialog-overlay'], [data-slot='alert-dialog-content'] { z-index: 72 !important; }",
   // the sidebar toggle hides while the sidebar is out; the card is the control then
-  "html[data-zf-arc-ready='1'] div.fixed[data-zf-sbbtn] { opacity: 0 !important; pointer-events: none !important; }",
+  "html[data-atr-arc-ready='1'] div.fixed[data-atr-sbbtn] { opacity: 0 !important; pointer-events: none !important; }",
   // Keyed on the BUTTON as well as the marked wrapper: the mark comes from the page
   // observer, which fires on sidebar rows and tab strips, and in a pinned window the
   // app's own toggle kept painting in the same corner as the mode button (two
   // sidebar controls on top of each other). A rule on the element itself cannot miss.
-  "html[data-zf-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#zf-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 0 !important; pointer-events: none !important; }",
+  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 0 !important; pointer-events: none !important; }",
   // Below the host's 640px dock floor there is no Arc column / mode button.
   // The native titlebar toggle is the only persistent way to close AND reopen
   // its narrow overlay, including after the overlay has unmounted.
   '@media (max-width: 639.98px) {',
-  "  html[data-zf-arc-ready='1'] body div.fixed[data-zf-sbbtn] { opacity: 1 !important; pointer-events: auto !important; }",
-  "  html[data-zf-arc-ready='1'] body div.fixed[data-zf-sbbtn] button { pointer-events: auto !important; }",
-  "  html[data-zf-arc-ready='1'] body :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#zf-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 1 !important; pointer-events: auto !important; }",
+  "  html[data-atr-arc-ready='1'] body div.fixed[data-atr-sbbtn] { opacity: 1 !important; pointer-events: auto !important; }",
+  "  html[data-atr-arc-ready='1'] body div.fixed[data-atr-sbbtn] button { pointer-events: auto !important; }",
+  "  html[data-atr-arc-ready='1'] body :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 1 !important; pointer-events: auto !important; }",
   '}',
   // Pinned: no card. The column keeps the app's own gravity and inset, but
-  // paints nothing: the surfaces inside it are the sidebar, not a Atrium panel.
+  // paints nothing: the surfaces inside it are the sidebar, not a Hermes Atrium panel.
   // Floating mode below is the one piece of glass.
-  "html:not([data-zf-arc='1']) [data-zf-arc-col] {",
+  "html:not([data-atr-arc='1']) [data-atr-arc-col] {",
   '  margin: 10px 0 10px 10px !important; height: calc(100vh - 20px) !important; align-self: flex-start;',
   '}',
   // sidebar mode switch, sitting in the command-center row
-  "#zf-mode-btn { position: absolute; left: 8px; top: 4px; z-index: 5; display: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--zf-ink-2, #ebdbb2); cursor: pointer; -webkit-app-region: no-drag; transition: background-color 120ms ease, color 120ms ease, transform 120ms ease; }",
-  "[data-zf-arc-col] > #zf-mode-btn { display: inline-grid; position: absolute !important; left: 10px !important; top: 3px !important; width: 24px !important; height: 24px !important; margin: 0 !important; transform: none; }",
-  "html:not([data-zf-arc='1']) [data-zf-arc-col] { position: relative !important; }",
-  "html[data-zf-settings] #zf-mode-btn { display: none; }",
-  "#zf-mode-btn svg { width: 16px; height: 16px; }",
+  "#atr-mode-btn { position: absolute; left: 8px; top: 4px; z-index: 5; display: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--atr-ink-2, #ebdbb2); cursor: pointer; -webkit-app-region: no-drag; transition: background-color 120ms ease, color 120ms ease, transform 120ms ease; }",
+  "[data-atr-arc-col] > #atr-mode-btn { display: inline-grid; position: absolute !important; left: 10px !important; top: 3px !important; width: 24px !important; height: 24px !important; margin: 0 !important; transform: none; }",
+  "html:not([data-atr-arc='1']) [data-atr-arc-col] { position: relative !important; }",
+  "html[data-atr-settings] #atr-mode-btn { display: none; }",
+  "#atr-mode-btn svg { width: 16px; height: 16px; }",
   // sidebar: the button belongs to the card, top-left inside it, and rides
   // the same slide; pinned keeps it in the window corner
-  "html[data-zf-arc='1'] #zf-mode-btn { left: 20px; top: 12px; translate: -300px 0; opacity: 0; pointer-events: none; transition: translate 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, background-color 120ms ease, color 120ms ease; }",
-  "html[data-zf-arc='1'][data-zf-arc-open='1'] #zf-mode-btn { translate: 0 0; opacity: 1; pointer-events: auto; transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease, background-color 120ms ease, color 120ms ease; }",
-  "#zf-mode-btn:hover, #zf-mode-btn:focus-visible { background: rgba(var(--zf-hi), 0.10); color: var(--zf-ink-0, #fbf1c7); outline: none !important; }",
-  "#zf-mode-btn:active { transform: scale(0.92); }",
+  "html[data-atr-arc='1'] #atr-mode-btn { left: 20px; top: 12px; translate: -300px 0; opacity: 0; pointer-events: none; transition: translate 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, background-color 120ms ease, color 120ms ease; }",
+  "html[data-atr-arc='1'][data-atr-arc-open='1'] #atr-mode-btn { translate: 0 0; opacity: 1; pointer-events: auto; transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease, background-color 120ms ease, color 120ms ease; }",
+  "#atr-mode-btn:hover, #atr-mode-btn:focus-visible { background: rgba(var(--atr-hi), 0.10); color: var(--atr-ink-0, #fbf1c7); outline: none !important; }",
+  "#atr-mode-btn:active { transform: scale(0.92); }",
   // left-edge hot zone, invisible. An 8px strip was a fiddly target: at 18px the
   // edge grab reads as deliberate instead of accidental.
-  '#zf-rail-hot { position: fixed; left: 0; top: 40px; bottom: 0; width: 18px; z-index: 59; display: none; background: transparent; }',
-  "html[data-zf-arc='1']:not([data-zf-arc-open='1']) #zf-rail-hot { display: block; }",
+  '#atr-rail-hot { position: fixed; left: 0; top: 40px; bottom: 0; width: 18px; z-index: 59; display: none; background: transparent; }',
+  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) #atr-rail-hot { display: block; }",
 
 
   // The card slides on its own: the app keeps its status bar, its snippet card
   // and the command center exactly where they were.
   '@media (prefers-reduced-motion: reduce) {',
-  "  [data-zf-arc-col] { transition: none !important; }",
+  "  [data-atr-arc-col] { transition: none !important; }",
   '}',
 ]
 
@@ -1494,7 +1494,7 @@ const SIDEBAR_CSS = [
 // glass can stay without a backdrop behind it.
 //
 // Only two looks exist now: Gruvbox (built in) and Custom (the same machinery
-// driven by atrium-theme.json). Both are the skin -- one set of colours and
+// driven by hermes-atrium-theme.json). Both are the skin -- one set of colours and
 // opacities, so nothing here reads the clock or anything live.
 const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = false } = {}) => {
   const glass = gruvboxTinted()
@@ -1544,26 +1544,26 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `  --theme-neutral-sidebar: rgba(${hexTriple(SKIN.deeper)}, ${sideDensity});`,
     `  --theme-neutral-card: rgba(${hexTriple(SKIN.cardTint)}, ${cardDensity});`,
     `  --ui-text-primary: ${SKIN.ink};`,
-    '  --ui-text-secondary: var(--zf-ink-2);',
-    '  --ui-text-tertiary: var(--zf-ink-3);',
-    '  --sidebar-foreground: var(--zf-ink-1);',
-    '  --sidebar-accent-foreground: var(--zf-ink-0);',
-    '  --sidebar-muted-foreground: var(--zf-ink-2);',
-    '  --ui-sidebar-foreground: var(--zf-ink-1);',
-    '  --ui-sidebar-accent-foreground: var(--zf-ink-0);',
-    '  --ui-sidebar-muted-foreground: var(--zf-ink-2);',
-    '  --accent-foreground: var(--zf-ink-1);',
-    '  --ui-accent-foreground: var(--zf-ink-1);',
+    '  --ui-text-secondary: var(--atr-ink-2);',
+    '  --ui-text-tertiary: var(--atr-ink-3);',
+    '  --sidebar-foreground: var(--atr-ink-1);',
+    '  --sidebar-accent-foreground: var(--atr-ink-0);',
+    '  --sidebar-muted-foreground: var(--atr-ink-2);',
+    '  --ui-sidebar-foreground: var(--atr-ink-1);',
+    '  --ui-sidebar-accent-foreground: var(--atr-ink-0);',
+    '  --ui-sidebar-muted-foreground: var(--atr-ink-2);',
+    '  --accent-foreground: var(--atr-ink-1);',
+    '  --ui-accent-foreground: var(--atr-ink-1);',
     '}',
     ] : []),
   ], chrome ? [
-    // Active clicked elements: swap text to crisp light slate grey (var(--zf-ink-1)) so it never turns dark
+    // Active clicked elements: swap text to crisp light slate grey (var(--atr-ink-1)) so it never turns dark
     ":is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [class~='peer/menu-button'], button, [role='button'], [data-slot='pane-tab'], a, input, select):active,",
     ":is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [class~='peer/menu-button'], button, [role='button'], [data-slot='pane-tab']):active * {",
-    '  color: var(--zf-ink-1) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '}',
     ":is(button, [role='button'], [data-slot*='button'], [data-slot='pane-tab'], a):active svg {",
-    '  color: var(--zf-ink-1) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '  stroke: currentColor !important;',
     '}',
     // The sidebar, as a stack of floating panels. The column itself goes
@@ -1599,9 +1599,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='sidebar-content'] > [data-sessions-mode],",
     "[data-slot='sidebar-content'] > div:has(input),",
     "[data-slot='sidebar-content'] > div:last-child {",
-    '  background: var(--zf-side-card);',
+    '  background: var(--atr-side-card);',
     '  border: none;',
-    '  border-radius: var(--zf-radius);',
+    '  border-radius: var(--atr-radius);',
     '  overflow: hidden;',
     '}',
     // Every pane paints a surface, and they nest: the zone container
@@ -1635,7 +1635,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // Retain the input box's floating shape with rounded corners matching the other panels (0.45rem)
     ":is([data-slot='composer-surface'], [class~='group/composer-surface'], .composer-fallback-surface) {",
-    '  border-radius: var(--zf-radius) !important;',
+    '  border-radius: var(--atr-radius) !important;',
     '  overflow: hidden !important;',
     '}',
     // The root's own fade layer spans the 5px grab margin and darkens toward
@@ -1646,16 +1646,16 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Status stack card: the composer's fill, corner radius and hairline edge,
     // with the bottom left open into the composer (the fillets close it).
     "[data-slot='composer-status-stack'] > div[class*='rounded-t-'] {",
-    '  background: var(--zf-glass) !important;',
-    '  border-color: var(--zf-edge) !important;',
+    '  background: var(--atr-glass) !important;',
+    '  border-color: var(--atr-edge) !important;',
     '  border-bottom-color: transparent !important;',
-    '  border-top-left-radius: var(--zf-radius) !important;',
-    '  border-top-right-radius: var(--zf-radius) !important;',
+    '  border-top-left-radius: var(--atr-radius) !important;',
+    '  border-top-right-radius: var(--atr-radius) !important;',
     '  box-shadow: none !important;',
     // inset by the composer's corner radius (plus the root's 5px grab margin),
     // so the stack sits inside the composer's rounded shoulders and the
     // fillets have room to flare out into them
-    "  margin-inline: calc(5px + var(--zf-radius)) !important;",
+    "  margin-inline: calc(5px + var(--atr-radius)) !important;",
     '}',
     // Outer dock and root wrappers remain transparent so no box leaks outside
     "[data-slot='composer-dock'],",
@@ -1685,21 +1685,21 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // User message bubbles: styled to match the frosted panels and composer cards
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message']) :is(.composer-human-message, [class*='composer-human-message']),",
     ":is(.composer-human-message, [class*='composer-human-message'], .composer-human-message-container) {",
-    '  background: var(--zf-glass) !important;',
-    '  background-color: var(--zf-glass) !important;',
+    '  background: var(--atr-glass) !important;',
+    '  background-color: var(--atr-glass) !important;',
     '  border: none !important;',
     '  outline: none !important;',
     '  box-shadow: none !important;',
-    '  border-radius: var(--zf-radius) !important;',
-    '  color: var(--zf-ink-0) !important;',
+    '  border-radius: var(--atr-radius) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
     ":is(.composer-human-message, [class*='composer-human-message']):hover {",
-    '  background: var(--zf-glass-hover) !important;',
+    '  background: var(--atr-glass-hover) !important;',
     '  border: none !important;',
     '  outline: none !important;',
     '}',
     ":is(.composer-human-message, [class*='composer-human-message']) :is(p, span, div, button, code) {",
-    '  color: var(--zf-ink-0) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
     // User message hover cluster: remove the background box around time and actions, position bottom-right
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message'], .composer-human-message, [class*='composer-human-message']) [class*='group-hover/user-message'] {",
@@ -1730,7 +1730,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message'], .composer-human-message, [class*='composer-human-message']) [class*='group-hover/user-message'] :is(time, span, div),",
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message'], .composer-human-message, [class*='composer-human-message']) time,",
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message']) :is([data-slot='timeline-timestamp'], [class*='timeline-timestamp']) time {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '}',
     // Brighter, whiter text across transcript, chat bubbles, and sidebar
     ":is([data-slot='aui_thread-content'], [data-chat-surface], [data-slot='thread']) {",
@@ -1738,34 +1738,34 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  background: transparent !important;',
     '}',
     ":is([data-slot='aui_thread-content'], [data-slot='thread']) :is(p, li, span, h1, h2, h3, h4) {",
-    '  color: var(--zf-ink-0);',
+    '  color: var(--atr-ink-0);',
     '}',
     // Panel items: visible, legible grey hierarchy on dark card backgrounds
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) {",
-    '  color: var(--zf-ink-1);',
+    '  color: var(--atr-ink-1);',
     '}',
     // Primary items: session titles, navigation buttons, menu actions
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button']) {",
-    '  color: var(--zf-ink-1) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '}',
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button']) :is(span:not([class*='text-xs']):not([class*='tabular-nums']), p, div, label) {",
     '  color: inherit;',
     '}',
     // Override Tailwind muted and sidebar foreground classes in panels
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) [class*='text-sidebar-foreground'] {",
-    '  color: var(--zf-ink-1) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '}',
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) [class*='text-muted'] {",
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '}',
     // Active session item remains crisp bright white
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button'])[data-active='true'],",
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button'])[data-active='true'] * {",
-    '  color: var(--zf-ink-0) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
     // Panel SVGs and icons: visible medium-light grey
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is(svg, [data-slot*='icon']) {",
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '  stroke: currentColor;',
     '}',
     // Disentangle date and 3-dot hamburger/kebab menu so they never collide
@@ -1807,7 +1807,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // Timestamps, dates, snippets, and secondary metadata in visible grey
     "[data-sessions-mode] :is(time, [class*='text-xs'], [class*='tabular-nums'], [class*='date'], [class*='time'], [class*='snippet'], [class*='preview'], [class*='desc']) {",
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '  flex-shrink: 0 !important;',
     '  margin-left: auto !important;',
     '  white-space: nowrap !important;',
@@ -1815,7 +1815,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // 3-dot kebab icon: clear, visible medium-grey by default, bright white on hover
     "[data-sessions-mode] [data-row-actions] button svg,",
     "[data-sessions-mode] [data-slot='sidebar-menu-action'] svg {",
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '  stroke: currentColor !important;',
     '}',
     "[data-sessions-mode] [data-row-actions] button:hover svg,",
@@ -1906,32 +1906,32 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // Section headers: PINNED, SESSIONS, YESTERDAY, MATRIX
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-group-label'], [class*='group-label'], [class*='sidebar-group-label'], h2, h3) {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '  font-weight: 500;',
     '}',
     // Search input text and placeholder
     "[data-slot='sidebar-content'] input {",
-    '  color: var(--zf-ink-1) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '}',
     "[data-slot='sidebar-content'] input::placeholder {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '  opacity: 1 !important;',
     '}',
     // Keyboard shortcut badges
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content']) kbd {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '  border-color: rgba(148, 163, 184, 0.28) !important;',
     '  background: rgba(255, 255, 255, 0.05) !important;',
     '}',
     // Switch tabs: inactive tab in grey, active in white
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'] {`,
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '}',
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab']:hover {`,
     `  color: ${solidInk} !important;`,
     '}',
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'][data-active='true'] {`,
-    '  color: var(--zf-ink-0) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
     // Hover state on panel items
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button']):hover {",
@@ -1946,13 +1946,13 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // Profile rail at the bottom
     "[data-slot='profile-rail'] :is(span, p, div, label) {",
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '}',
     "[data-slot='profile-rail'] :is(svg, [data-slot*='icon']) {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '}',
     "[data-slot='user-message'] {",
-    '  background: var(--zf-glass) !important;',
+    '  background: var(--atr-glass) !important;',
     `  color: ${solidInk} !important;`,
     '}',
     // The zone headers (the tab bar and the SESSIONS | BOTS strip) stay BARE:
@@ -1966,7 +1966,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Setting the tokens beats fighting each state's own rule.
     '[data-panel-header],',
     "[class~='group/pane-header'],",
-    '[data-zf-strip] {',
+    '[data-atr-strip] {',
     '  background: transparent;',
     '  border: none;',
     // The active tab paints nothing of its own: the pill on the track IS the
@@ -2017,8 +2017,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  border-radius: 999px;',
     // Recessed: a well, not a card, so the pill on top reads as the raised
     // piece instead of a card on a card.
-    '  background: var(--zf-well);',
-    '  box-shadow: inset 0 0 0 1px var(--zf-edge);',
+    '  background: var(--atr-well);',
+    '  box-shadow: inset 0 0 0 1px var(--atr-edge);',
     '  overflow: hidden;',
     '}',
     `${SWITCH_HOOK} > [role='tablist']::after {`,
@@ -2031,7 +2031,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // left uncovered at either end.
     '  width: 50%;',
     '  border-radius: 999px;',
-    '  background: var(--zf-glass-hover);',
+    '  background: var(--atr-glass-hover);',
     '  box-shadow: none;',
     '  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);',
     '  pointer-events: none;',
@@ -2129,7 +2129,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // keeping composer-bounds and thread full-width so the quick-jump timeline is never compressed,
     // and make the input bar short and centered to match the spacious layout.
     // When messages exist, constrain thread content to a comfortable reading column.
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-content']:not([data-zf-intro]) {",
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content']:not([data-atr-intro]) {",
     '  --composer-width: min(46rem, calc(100% - 7rem));',
     '  max-width: min(46rem, calc(100% - 7rem)) !important;',
     '  margin-left: auto !important;',
@@ -2142,7 +2142,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  box-sizing: border-box !important;',
     '}',
     // When thread has messages, also constrain message groups
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-content'][data-zf-msgs] {",
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-msgs] {",
     '  --composer-width: min(46rem, calc(100% - 7rem));',
     '  max-width: min(46rem, calc(100% - 7rem)) !important;',
     '  margin-left: auto !important;',
@@ -2157,8 +2157,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // In spacious margins mode, when chat is empty (intro / wordmark shown),
     // thread content and intro remain full-width (100%), so the HERMES AGENT
     // display lettering spans the full canvas, exactly as in non-spacious mode.
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-content'][data-zf-intro],",
-    "[data-slot='aui_thread-content'][data-zf-intro] {",
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-intro],",
+    "[data-slot='aui_thread-content'][data-atr-intro] {",
     '  --composer-width: 100% !important;',
     '  max-width: 100% !important;',
     '  width: 100% !important;',
@@ -2166,8 +2166,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  padding-right: 1.5rem !important;',
     '  box-sizing: border-box !important;',
     '}',
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-content'][data-zf-intro] > *,",
-    "[data-slot='aui_thread-content'][data-zf-intro] > * {",
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-intro] > *,",
+    "[data-slot='aui_thread-content'][data-atr-intro] > * {",
     '  width: 100% !important;',
     '  max-width: 100% !important;',
     '}',
@@ -2195,22 +2195,22 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  line-height: 1.45 !important;',
     '}',
     // measured fit (fitColumn): exact left edge and width of the composer surface
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-content'][data-atrium-col-fit] {",
-    '  margin-left: var(--zf-col-left) !important;',
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-col-fit] {",
+    '  margin-left: var(--atr-col-left) !important;',
     '  margin-right: 0 !important;',
-    '  width: var(--zf-col-w) !important;',
-    '  max-width: var(--zf-col-w) !important;',
-    '  --composer-width: var(--zf-col-w);',
+    '  width: var(--atr-col-w) !important;',
+    '  max-width: var(--atr-col-w) !important;',
+    '  --composer-width: var(--atr-col-w);',
     '}',
-    "html[data-atrium-margins='spacious'] [data-slot='composer-bounds'],",
-    "html[data-atrium-margins='spacious'] [data-slot='thread'],",
-    "html[data-atrium-margins='spacious'] [data-slot='aui_thread-viewport'] {",
+    "html[data-atr-margins='spacious'] [data-slot='composer-bounds'],",
+    "html[data-atr-margins='spacious'] [data-slot='thread'],",
+    "html[data-atr-margins='spacious'] [data-slot='aui_thread-viewport'] {",
     '  width: 100% !important;',
     '  max-width: 100% !important;',
     '}',
     // Make the input dock also short and centered when spacious margins are on
-    "html[data-atrium-margins='spacious'] [data-slot='composer-dock']:not([data-popped-out]),",
-    "html[data-atrium-margins='spacious'] [data-slot='composer-root']:not([data-popped-out]):not([data-slot='composer-dock'] *) {",
+    "html[data-atr-margins='spacious'] [data-slot='composer-dock']:not([data-popped-out]),",
+    "html[data-atr-margins='spacious'] [data-slot='composer-root']:not([data-popped-out]):not([data-slot='composer-dock'] *) {",
     // the surface is the dock minus its 5px grab margin each side, so it is
     // exactly the chat column's min(46rem, 100% - 7rem)
     '  width: calc(min(46rem, calc(100% - 7rem)) + 10px) !important;',
@@ -2223,7 +2223,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  translate: none !important;',
     '}',
     // Ensure prompt quick-jump timeline stays parked at the right edge, completely uncompressed
-    "html[data-atrium-margins='spacious'] [data-slot='thread-timeline'] {",
+    "html[data-atr-margins='spacious'] [data-slot='thread-timeline'] {",
     '  position: absolute !important;',
     '  right: 0.5rem !important;',
     '  z-index: 40 !important;',
@@ -2233,7 +2233,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // look, so it must survive the background being off. Search for "THE WORK FOLD".
   ] : [], chrome ? [
     // Night is a TONE of the same material now: the tint itself turns neutral
-    // as the light goes (see atriumMaterial), so there is no separate opaque
+    // as the light goes (see atrMaterial), so there is no separate opaque
     // palette to switch on. What still needs saying over a dark ground
     // is that the composer's inner layers must not paint the app's own grey
     // behind the glass, and that its text stays on the ink ramp.
@@ -2243,7 +2243,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
           "[data-slot='sidebar-content'] > [data-slot='sidebar-group'],",
           "[data-slot='sidebar-content'] > div:has(input),",
           "[data-slot='sidebar-content'] > div:last-child { opacity: 1 !important; }",
-          "[data-slot='composer-root'] { --composer-fill: var(--zf-glass) !important; }",
+          "[data-slot='composer-root'] { --composer-fill: var(--atr-glass) !important; }",
           "[data-slot='composer-dock'],",
           "[data-slot='composer-root'],",
           "[class~='group/composer'] {",
@@ -2251,43 +2251,43 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
           '  background-color: transparent !important;',
           '}',
           ":is([data-slot='composer-surface'], [class~='group/composer-surface'], .composer-fallback-surface) {",
-          '  --composer-fill: var(--zf-glass) !important;',
-          '  background-color: var(--zf-glass) !important;',
-          '  background: var(--zf-glass) !important;',
-          '  border-radius: var(--zf-radius) !important;',
+          '  --composer-fill: var(--atr-glass) !important;',
+          '  background-color: var(--atr-glass) !important;',
+          '  background: var(--atr-glass) !important;',
+          '  border-radius: var(--atr-radius) !important;',
           '  overflow: hidden !important;',
           '  opacity: 1 !important;',
           '}',
           ":is([data-slot='composer-surface'], [class~='group/composer-surface']) > div:first-child,",
           ":is([data-slot='composer-surface'], [class~='group/composer-surface']) [class*='composerInputBacking'] {",
-          '  background-color: var(--zf-glass) !important;',
-          '  background: var(--zf-glass) !important;',
-          '  border-radius: var(--zf-radius) !important;',
+          '  background-color: var(--atr-glass) !important;',
+          '  background: var(--atr-glass) !important;',
+          '  border-radius: var(--atr-radius) !important;',
           '  opacity: 1 !important;',
           '}',
-          "[data-slot='composer-status-stack'] > div[class*='rounded-t-'] { background: var(--zf-glass) !important; }",
+          "[data-slot='composer-status-stack'] > div[class*='rounded-t-'] { background: var(--atr-glass) !important; }",
           "form[data-slot='composer'] :is(textarea, input),",
           "[data-slot='composer-root'] :is(textarea, input, [contenteditable='true']) {",
-          '  color: var(--zf-ink-0) !important;',
+          '  color: var(--atr-ink-0) !important;',
           '}',
           "form[data-slot='composer'] :is(textarea, input)::placeholder,",
           "[data-slot='composer-root'] :is(textarea, input, [contenteditable='true'])::placeholder,",
           "[data-slot='composer-root'] [data-placeholder]::before {",
-          '  color: var(--zf-ink-3) !important;',
+          '  color: var(--atr-ink-3) !important;',
           '}',
           "form[data-slot='composer'] svg,",
           "[data-slot='composer-root'] svg {",
-          '  color: var(--zf-ink-2) !important;',
+          '  color: var(--atr-ink-2) !important;',
           '}',
           ":is([data-slot='aui_user-message-root'], [data-slot='user-message']) :is(.composer-human-message, [class*='composer-human-message']),",
           ":is(.composer-human-message, [class*='composer-human-message'], .composer-human-message-container) {",
-          '  background: var(--zf-glass-hover) !important;',
-          '  background-color: var(--zf-glass-hover) !important;',
-          '  border-radius: var(--zf-radius) !important;',
+          '  background: var(--atr-glass-hover) !important;',
+          '  background-color: var(--atr-glass-hover) !important;',
+          '  border-radius: var(--atr-radius) !important;',
           '  border: none !important;',
           '}',
           ":is(.composer-human-message, [class*='composer-human-message']):hover {",
-          '  background: var(--zf-glass-hover) !important;',
+          '  background: var(--atr-glass-hover) !important;',
           '}',
           ":is([data-slot='aui_user-message-root'], [data-slot='user-message']) [class*='group-hover/user-message'] {",
           '  background: transparent !important;',
@@ -2301,11 +2301,11 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // It now gets the sidebar-card ground, its command
     // and output step up to ink-1, and the transcript line sits in a well.
     // Closed rows keep the open picture; over a bright one they get a soft shadow.
-    "[data-slot='tool-block'][data-tool-open] { background: var(--zf-side-card) !important; border: 0 !important; border-radius: var(--zf-radius) !important; box-shadow: var(--zf-lift) !important; }",
-    "[data-slot='tool-block'][data-tool-open] :is(pre, code) { color: var(--zf-ink-1) !important; }",
-    "[data-slot='tool-block'][data-tool-open] div:has(> code) { background: var(--zf-well) !important; border-color: var(--zf-edge) !important; }",
-    "[data-slot='tool-block'][data-tool-open] [class*='tracking-[0.08em]'] { color: var(--zf-ink-2) !important; }",
-    ...(isNight ? [] : ["[data-slot='tool-block']:not([data-tool-open]), .atrium-work-summary { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
+    "[data-slot='tool-block'][data-tool-open] { background: var(--atr-side-card) !important; border: 0 !important; border-radius: var(--atr-radius) !important; box-shadow: var(--atr-lift) !important; }",
+    "[data-slot='tool-block'][data-tool-open] :is(pre, code) { color: var(--atr-ink-1) !important; }",
+    "[data-slot='tool-block'][data-tool-open] div:has(> code) { background: var(--atr-well) !important; border-color: var(--atr-edge) !important; }",
+    "[data-slot='tool-block'][data-tool-open] [class*='tracking-[0.08em]'] { color: var(--atr-ink-2) !important; }",
+    ...(isNight ? [] : ["[data-slot='tool-block']:not([data-tool-open]), .atr-work-summary { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
   ] : [], chrome ? [
     // ── Atrium material ─────────────────────────────────────────────────────
     // One glass for every surface, tinted by the look itself: the skin's ground
@@ -2315,39 +2315,39 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // behind them is a still image, so re-blurring it is pure GPU cost. Only
     // small, transient surfaces (menus, popovers, tooltips) frost live.
     ':root {',
-    `  --zf-tint: ${cssRgb(zf.tint)};`,
-    `  --zf-tint-hi: ${cssRgb(zf.tintHi)};`,
-    `  --zf-glass: color-mix(in srgb, var(--zf-tint) ${glassPct(84 + 12 * NIGHT)}, transparent);`,
-    `  --zf-glass-hover: color-mix(in srgb, var(--zf-tint-hi) ${glassPct(88 + 8 * NIGHT)}, transparent);`,
-    `  --zf-glass-strong: color-mix(in srgb, var(--zf-tint) ${glassPct(94 + 4 * NIGHT)}, transparent);`,
-    `  --zf-glass-sunk: color-mix(in srgb, var(--zf-tint) ${glassPct(50 + 30 * NIGHT)}, transparent);`,
-    `  --zf-well: rgba(0, 0, 0, ${(0.16 + 0.08 * NIGHT).toFixed(3)});`,
+    `  --atr-tint: ${cssRgb(zf.tint)};`,
+    `  --atr-tint-hi: ${cssRgb(zf.tintHi)};`,
+    `  --atr-glass: color-mix(in srgb, var(--atr-tint) ${glassPct(84 + 12 * NIGHT)}, transparent);`,
+    `  --atr-glass-hover: color-mix(in srgb, var(--atr-tint-hi) ${glassPct(88 + 8 * NIGHT)}, transparent);`,
+    `  --atr-glass-strong: color-mix(in srgb, var(--atr-tint) ${glassPct(94 + 4 * NIGHT)}, transparent);`,
+    `  --atr-glass-sunk: color-mix(in srgb, var(--atr-tint) ${glassPct(50 + 30 * NIGHT)}, transparent);`,
+    `  --atr-well: rgba(0, 0, 0, ${(0.16 + 0.08 * NIGHT).toFixed(3)});`,
     // Prompt/command wells need more than a black wash over an already dark
     // sheet: an opaque mix of the hour's tint and black gives a real step.
-    '  --zf-well-prompt: color-mix(in srgb, var(--zf-tint) 50%, #000);',
-    '  --zf-edge: rgba(255, 255, 255, 0.07);',
+    '  --atr-well-prompt: color-mix(in srgb, var(--atr-tint) 50%, #000);',
+    '  --atr-edge: rgba(255, 255, 255, 0.07);',
     // every card in the sessions column paints this one fill
     // Every card, the composer and the sidebar are the same tier now; the
-    // night grey is carried by `--zf-tint` itself, so a material can never be
+    // night grey is carried by `--atr-tint` itself, so a material can never be
     // opaque on one surface and translucent on the next after dark.
-    '  --zf-side-card: var(--zf-glass);',
-    '  --zf-side-card-hi: var(--zf-glass-hover);',
-    '  --zf-edge-strong: rgba(255, 255, 255, 0.11);',
-    '  --zf-hover: rgba(255, 255, 255, 0.065);',
-    '  --zf-lift: inset 0 0 0 1px var(--zf-edge), inset 0 1px 0 rgba(255, 255, 255, 0.045);',
-    '  --zf-lift-high: inset 0 0 0 1px var(--zf-edge-strong), inset 0 1px 0 rgba(255, 255, 255, 0.06);',
+    '  --atr-side-card: var(--atr-glass);',
+    '  --atr-side-card-hi: var(--atr-glass-hover);',
+    '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
+    '  --atr-hover: rgba(255, 255, 255, 0.065);',
+    '  --atr-lift: inset 0 0 0 1px var(--atr-edge), inset 0 1px 0 rgba(255, 255, 255, 0.045);',
+    '  --atr-lift-high: inset 0 0 0 1px var(--atr-edge-strong), inset 0 1px 0 rgba(255, 255, 255, 0.06);',
     // One shadow for anything that floats above the app: dialogs, menus,
     // popovers, the drawer, the dock and the floating sidebar. It used to be
     // five different recipes (14px/36px, 24px/60px, 30px/80px, ...).
-    '  --zf-lift-float: 0 0 0 1px var(--zf-edge-strong), 0 16px 40px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.18);',
-    '  --zf-frost: blur(1.25rem) saturate(1.35);',
-    // Radii live in polishCss's token block (`--zf-r-1..4`), which is always
+    '  --atr-lift-float: 0 0 0 1px var(--atr-edge-strong), 0 16px 40px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.18);',
+    '  --atr-frost: blur(1.25rem) saturate(1.35);',
+    // Radii live in polishCss's token block (`--atr-r-1..4`), which is always
     // emitted after this one; keeping a second copy here only invited drift.
-    `  --zf-ink-0: ${cssRgb(zf.ink[0])};`,
-    `  --zf-ink-1: ${cssRgb(zf.ink[1])};`,
-    `  --zf-ink-2: ${cssRgb(zf.ink[2])};`,
-    `  --zf-ink-3: ${cssRgb(zf.ink[3])};`,
-    `  --zf-accent: ${SKIN.accent};`,
+    `  --atr-ink-0: ${cssRgb(zf.ink[0])};`,
+    `  --atr-ink-1: ${cssRgb(zf.ink[1])};`,
+    `  --atr-ink-2: ${cssRgb(zf.ink[2])};`,
+    `  --atr-ink-3: ${cssRgb(zf.ink[3])};`,
+    `  --atr-accent: ${SKIN.accent};`,
     '}',
     // Outside the :root block, on purpose: these are rules, not custom
     // properties, and a stray `{` inside a declaration block makes the parser
@@ -2377,37 +2377,37 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='sidebar-content'] > [data-slot='sidebar-group'] [data-slot='sidebar-menu'] { gap: 1px !important; }",
     "[data-slot='sidebar-content'] [data-slot='sidebar-group'] [data-slot='sidebar-menu-button'],",
     "[data-slot='sidebar-content'] [data-sessions-mode] [data-slot='sidebar-menu-button'] {",
-    '  border-radius: var(--zf-r-2, 8px) !important;',
+    '  border-radius: var(--atr-r-2, 8px) !important;',
     '}',
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button']):hover {",
-    '  background-color: var(--zf-hover) !important;',
+    '  background-color: var(--atr-hover) !important;',
     '}',
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button'])[data-active='true'] {",
-    '  background-color: color-mix(in srgb, var(--zf-accent) 14%, transparent) !important;',
+    '  background-color: color-mix(in srgb, var(--atr-accent) 14%, transparent) !important;',
     '}',
     // The top nav rows (New session, Capabilities, Messaging, …) mark their
     // active page with a class, not data-active, so they kept the app's grey
     // fill. They take the same time-of-day accent as the session rows, and
     // their icons pick it up on hover and when active.
-    "[data-slot='sidebar-menu-button'][data-zf-nav][class*='bg-(--ui-control-active-background)'] {",
-    '  background-color: color-mix(in srgb, var(--zf-accent) 14%, transparent) !important;',
-    '  border-color: color-mix(in srgb, var(--zf-accent) 22%, transparent) !important;',
-    '  color: var(--zf-ink-0) !important;',
+    "[data-slot='sidebar-menu-button'][data-atr-nav][class*='bg-(--ui-control-active-background)'] {",
+    '  background-color: color-mix(in srgb, var(--atr-accent) 14%, transparent) !important;',
+    '  border-color: color-mix(in srgb, var(--atr-accent) 22%, transparent) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
-    "[data-slot='sidebar-menu-button'][data-zf-nav] > svg,",
-    "[data-slot='sidebar-menu-button'][data-zf-nav] > i {",
+    "[data-slot='sidebar-menu-button'][data-atr-nav] > svg,",
+    "[data-slot='sidebar-menu-button'][data-atr-nav] > i {",
     '  transition: color 120ms ease;',
     '}',
-    "[data-slot='sidebar-menu-button'][data-zf-nav]:is(:hover, [class*='bg-(--ui-control-active-background)']) > :is(svg, i, [class*='codicon']) {",
-    '  color: var(--zf-ink-0) !important;',
+    "[data-slot='sidebar-menu-button'][data-atr-nav]:is(:hover, [class*='bg-(--ui-control-active-background)']) > :is(svg, i, [class*='codicon']) {",
+    '  color: var(--atr-ink-0) !important;',
     '}',
     ":is([data-slot='composer-surface'], [class~='group/composer-surface'], .composer-fallback-surface) {",
-    '  background: var(--zf-glass) !important;',
-    '  box-shadow: var(--zf-lift) !important;',
+    '  background: var(--atr-glass) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '  transition: box-shadow 160ms ease;',
     '}',
     ":is([data-slot='composer-surface'], [class~='group/composer-surface'], .composer-fallback-surface):focus-within {",
-    '  box-shadow: var(--zf-lift) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '}',
     // No focus ring on the input bar: the caret is enough.
     "[data-slot='composer-root'] :is(textarea, input, [contenteditable='true']):is(:focus, :focus-visible) {",
@@ -2416,7 +2416,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     ":is([data-slot='aui_user-message-root'], [data-slot='user-message']) :is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container),",
     ":is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container) {",
-    '  box-shadow: var(--zf-lift) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '}',
     `${SWITCH_HOOK} > [role='tablist'],`,
     `${SWITCH_HOOK} > [role='tablist']::after {`,
@@ -2427,17 +2427,17 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // sections painted with the chat token, which glass mode clears; with the
     // body cleared for the picture they had no ground at all. They get the glass.
     "section[class*='bg-(--ui-chat-surface-background)']:not([data-chat-surface]) {",
-    '  background: var(--zf-glass) !important;',
-    '  color: var(--zf-ink-1);',
+    '  background: var(--atr-glass) !important;',
+    '  color: var(--atr-ink-1);',
     '}',
     // …and float like every other card: inset from the window, rounded, edged.
     "section[class*='bg-(--ui-chat-surface-background)']:not([data-chat-surface]):not(section *) {",
-    '  margin: var(--zf-page-gap, 0.5rem) !important;',
-    '  height: calc(100% - 2 * var(--zf-page-gap, 0.5rem)) !important;',
-    '  max-height: calc(100% - 2 * var(--zf-page-gap, 0.5rem));',
-    '  border-radius: var(--zf-radius-lg) !important;',
+    '  margin: var(--atr-page-gap, 0.5rem) !important;',
+    '  height: calc(100% - 2 * var(--atr-page-gap, 0.5rem)) !important;',
+    '  max-height: calc(100% - 2 * var(--atr-page-gap, 0.5rem));',
+    '  border-radius: var(--atr-radius-lg) !important;',
     '  overflow: hidden !important;',
-    '  box-shadow: var(--zf-lift) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '  box-sizing: border-box !important;',
     '}',
     "section[class*='bg-(--ui-chat-surface-background)']:not([data-chat-surface]) :is(footer, section)[class*='bg-(--ui-chat-surface-background)'] {",
@@ -2452,21 +2452,21 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     '[data-overlay-surface] [data-glass-raised] {',
     '  --ui-chat-surface-background: transparent;',
-    '  --ui-sidebar-surface-background: var(--zf-well);',
-    '  background: var(--zf-glass-strong) !important;',
+    '  --ui-sidebar-surface-background: var(--atr-well);',
+    '  background: var(--atr-glass-strong) !important;',
     '  border-color: transparent !important;',
-    '  border-radius: var(--zf-radius-lg) !important;',
-    '  box-shadow: var(--zf-lift-float) !important;',
-    '  color: var(--zf-ink-1);',
+    '  border-radius: var(--atr-radius-lg) !important;',
+    '  box-shadow: var(--atr-lift-float) !important;',
+    '  color: var(--atr-ink-1);',
     '}',
     '[data-overlay-surface] [data-glass-raised] aside {',
-    '  background: var(--zf-well) !important;',
-    '  box-shadow: inset -1px 0 0 var(--zf-edge);',
+    '  background: var(--atr-well) !important;',
+    '  box-shadow: inset -1px 0 0 var(--atr-edge);',
     '}',
     // The right sidebar (files, review, terminal host) matches the left column.
     "aside[class*='bg-(--ui-sidebar-surface-background)'][class*='pt-(--titlebar-height)'] {",
-    '  background: var(--zf-glass) !important;',
-    '  border-color: var(--zf-edge) !important;',
+    '  background: var(--atr-glass) !important;',
+    '  border-color: var(--atr-edge) !important;',
     '  box-shadow: none !important;',
     '}',
     // Persistent frost off. Hermes ships backdrop-blur on the composer surface
@@ -2481,19 +2481,19 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Menus, popovers, selects, tooltips, dialogs and the command palette:
     // small and short-lived, so these are the ones that frost live.
     ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='hover-card-content'], [data-slot='menubar-content']) {",
-    '  background: var(--zf-glass-strong) !important;',
+    '  background: var(--atr-glass-strong) !important;',
     '  border-color: transparent !important;',
-    '  border-radius: var(--zf-radius) !important;',
-    '  box-shadow: var(--zf-lift-float) !important;',
-    '  backdrop-filter: var(--zf-frost);',
-    '  -webkit-backdrop-filter: var(--zf-frost);',
-    '  color: var(--zf-ink-1);',
+    '  border-radius: var(--atr-radius) !important;',
+    '  box-shadow: var(--atr-lift-float) !important;',
+    '  backdrop-filter: var(--atr-frost);',
+    '  -webkit-backdrop-filter: var(--atr-frost);',
+    '  color: var(--atr-ink-1);',
     '}',
     ":is([data-slot='dropdown-menu-content'], [data-slot='context-menu-content'], [data-slot='select-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-sub-content']) :is([role='menuitem'], [role='option'], [role='menuitemcheckbox'], [role='menuitemradio']):is(:hover, [data-highlighted], :focus-visible),",
     // cmdk pickers (model, station, command palette) mark their row with data-selected, not focus
     ":is([data-slot='popover-content'], [data-slot='dialog-content'], [data-slot='command']) :is([cmdk-item], [data-slot='command-item'])[data-selected='true'] {",
-    '  background: var(--zf-hover) !important;',
-    '  color: var(--zf-ink-0) !important;',
+    '  background: var(--atr-hover) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '}',
     // ── One menu kit ──
     // Hermes already routes every floating list through one class set; these
@@ -2502,31 +2502,31 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // edge colour, one icon size, accent only on the check.
     `${MENU_SURFACES} { padding: 0.25rem !important; }`,
     `${MENU_SURFACES} ${MENU_ROWS} {`,
-    '  border-radius: var(--zf-r-2, 8px) !important;',
-    '  color: var(--zf-ink-1);',
+    '  border-radius: var(--atr-r-2, 8px) !important;',
+    '  color: var(--atr-ink-1);',
     '  gap: 0.5rem;',
     '}',
-    `${MENU_SURFACES} ${MENU_ROWS} svg:not([class*='text-destructive']):not([class*='text-red']) { color: var(--zf-ink-2); }`,
-    `${MENU_SURFACES} ${MENU_ROWS}:is(:hover, [data-highlighted], [data-selected='true'], :focus-visible) svg:not([class*='text-destructive']):not([class*='text-red']) { color: var(--zf-ink-0); }`,
-    `${MENU_SURFACES} :is([data-slot$='-label'], [cmdk-group-heading]) { color: var(--zf-ink-3) !important; }`,
-    `${MENU_SURFACES} :is([data-slot$='-separator'], [role='separator'], [cmdk-separator]) { background: var(--zf-edge) !important; }`,
-    `${MENU_SURFACES} :is([data-slot$='-shortcut'], kbd, [data-slot='kbd']) { color: var(--zf-ink-3) !important; background: transparent !important; border-color: var(--zf-edge) !important; }`,
-    `${MENU_SURFACES} :is([data-slot$='-item-indicator'], [data-state='checked'] > span:first-child) svg { color: var(--zf-ink-0) !important; }`,
-    `${MENU_SURFACES} [data-slot='command-input-wrapper'] { border-color: var(--zf-edge) !important; }`,
-    `${MENU_SURFACES} [data-slot='command-input'] { background: transparent !important; color: var(--zf-ink-0); }`,
-    "[data-slot='tooltip-content'] { border-radius: var(--zf-r-2, 8px) !important; }",
+    `${MENU_SURFACES} ${MENU_ROWS} svg:not([class*='text-destructive']):not([class*='text-red']) { color: var(--atr-ink-2); }`,
+    `${MENU_SURFACES} ${MENU_ROWS}:is(:hover, [data-highlighted], [data-selected='true'], :focus-visible) svg:not([class*='text-destructive']):not([class*='text-red']) { color: var(--atr-ink-0); }`,
+    `${MENU_SURFACES} :is([data-slot$='-label'], [cmdk-group-heading]) { color: var(--atr-ink-3) !important; }`,
+    `${MENU_SURFACES} :is([data-slot$='-separator'], [role='separator'], [cmdk-separator]) { background: var(--atr-edge) !important; }`,
+    `${MENU_SURFACES} :is([data-slot$='-shortcut'], kbd, [data-slot='kbd']) { color: var(--atr-ink-3) !important; background: transparent !important; border-color: var(--atr-edge) !important; }`,
+    `${MENU_SURFACES} :is([data-slot$='-item-indicator'], [data-state='checked'] > span:first-child) svg { color: var(--atr-ink-0) !important; }`,
+    `${MENU_SURFACES} [data-slot='command-input-wrapper'] { border-color: var(--atr-edge) !important; }`,
+    `${MENU_SURFACES} [data-slot='command-input'] { background: transparent !important; color: var(--atr-ink-0); }`,
+    "[data-slot='tooltip-content'] { border-radius: var(--atr-r-2, 8px) !important; }",
     ":is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content']) {",
-    '  background: var(--zf-glass-strong) !important;',
+    '  background: var(--atr-glass-strong) !important;',
     '  border-color: transparent !important;',
-    '  box-shadow: var(--zf-lift-float) !important;',
+    '  box-shadow: var(--atr-lift-float) !important;',
     // Large sheets do not frost live: this was the one remaining big-surface
     // backdrop blur, and a still picture gains nothing from re-blurring it.
     '  backdrop-filter: none;',
     '  -webkit-backdrop-filter: none;',
-    '  color: var(--zf-ink-1);',
+    '  color: var(--atr-ink-1);',
     '}',
-    "[data-slot='sheet-content'] { border-radius: var(--zf-radius-lg) !important; }",
-    ":is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) { border-radius: var(--zf-radius-lg) !important; }",
+    "[data-slot='sheet-content'] { border-radius: var(--atr-radius-lg) !important; }",
+    ":is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) { border-radius: var(--atr-radius-lg) !important; }",
     // ── The command prompt: the sheet, its well, its actions ──────────────
     // A command is content INSIDE the dialog, not a second dialog. The host's
     // LogView was a hairline box with no fill at the sheet's own edge, and its
@@ -2550,10 +2550,10 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  margin: 0.25rem 0 0.5rem !important;',
     '  padding: 0.5rem 0.75rem !important;',
     '  min-height: 2.25rem !important;',
-    '  background: var(--zf-well-prompt) !important;',
-    '  border: 1px solid var(--zf-edge) !important;',
-    '  border-radius: var(--zf-r-2, 8px) !important;',
-    '  color: var(--zf-ink-1) !important;',
+    '  background: var(--atr-well-prompt) !important;',
+    '  border: 1px solid var(--atr-edge) !important;',
+    '  border-radius: var(--atr-r-2, 8px) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '  font-size: 0.75rem !important;',
     '  line-height: 1.55 !important;',
     '  overflow-wrap: anywhere;',
@@ -2564,50 +2564,50 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // fill, one hairline, one radius. Focus owns the ring; the base state does
     // not paint a second inset shadow.
     "html body [data-slot='dialog-content'][class] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea)[class] {",
-    '  background: var(--zf-well-prompt) !important;',
-    '  border-radius: var(--zf-r-2, 8px) !important;',
+    '  background: var(--atr-well-prompt) !important;',
+    '  border-radius: var(--atr-r-2, 8px) !important;',
     '  min-height: 2.25rem;',
     '  padding: 0.5rem 0.75rem !important;',
-    '  color: var(--zf-ink-0) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '  font-size: 0.8125rem !important;',
-    '  caret-color: var(--zf-ink-0);',
+    '  caret-color: var(--atr-ink-0);',
     '}',
     // Border and shadow live in the two state rules, so the focused state can
     // never lose its ring to the base declaration (both are the same selector
     // plus one pseudo-class).
     "html body [data-slot='dialog-content'][class] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea)[class]:not(:focus-visible) {",
-    '  border: 1px solid var(--zf-edge) !important;',
+    '  border: 1px solid var(--atr-edge) !important;',
     '  box-shadow: none !important;',
     '}',
     "html body [data-slot='dialog-content'][class] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea)[class]:focus-visible {",
-    '  border: 1px solid color-mix(in srgb, var(--zf-accent) 60%, transparent) !important;',
-    '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zf-accent) 16%, transparent) !important;',
+    '  border: 1px solid color-mix(in srgb, var(--atr-accent) 60%, transparent) !important;',
+    '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--atr-accent) 16%, transparent) !important;',
     '  outline: none !important;',
     '}',
     "html body [data-slot='dialog-content'][class] :is(input, textarea)[aria-invalid='true']:not(:focus-visible) {",
     '  border-color: var(--dt-destructive, #cf2d56) !important;',
     '}',
     "html body [data-slot='dialog-content'] :is(input, textarea)::placeholder {",
-    '  color: var(--zf-ink-3) !important;',
+    '  color: var(--atr-ink-3) !important;',
     '  opacity: 1;',
     '}',
     // Chromium paints autofill with its own yellow/blue slab over the well.
     "html body [data-slot='dialog-content'] input:-webkit-autofill,",
     "html body [data-slot='dialog-content'] input:-webkit-autofill:hover,",
     "html body [data-slot='dialog-content'] input:-webkit-autofill:focus {",
-    '  -webkit-box-shadow: 0 0 0 1000px var(--zf-well-prompt) inset !important;',
-    '  -webkit-text-fill-color: var(--zf-ink-0) !important;',
-    '  caret-color: var(--zf-ink-0);',
+    '  -webkit-box-shadow: 0 0 0 1000px var(--atr-well-prompt) inset !important;',
+    '  -webkit-text-fill-color: var(--atr-ink-0) !important;',
+    '  caret-color: var(--atr-ink-0);',
     '}',
     // The always-allow confirmation shows the command in a plain <pre> rather
     // than a LogView; it belongs to the same well family.
     "html body [data-slot='dialog-content'][class] pre[class] {",
     '  margin: 0.25rem 0 0.5rem !important;',
     '  padding: 0.5rem 0.75rem !important;',
-    '  background: var(--zf-well-prompt) !important;',
-    '  border: 1px solid var(--zf-edge) !important;',
-    '  border-radius: var(--zf-r-2, 8px) !important;',
-    '  color: var(--zf-ink-1) !important;',
+    '  background: var(--atr-well-prompt) !important;',
+    '  border: 1px solid var(--atr-edge) !important;',
+    '  border-radius: var(--atr-r-2, 8px) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '  font-size: 0.75rem !important;',
     '  line-height: 1.55 !important;',
     '  overflow-wrap: anywhere;',
@@ -2617,13 +2617,13 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "html body [data-slot='dialog-content'][class] [data-slot='dialog-footer'] {",
     '  margin-top: 0.1rem;',
     '  padding-top: 0.75rem;',
-    '  border-top: 1px solid var(--zf-edge);',
-    '  border-top-color: var(--zf-edge) !important;',
+    '  border-top: 1px solid var(--atr-edge);',
+    '  border-top-color: var(--atr-edge) !important;',
     '  gap: 0.5rem;',
     '}',
     "[data-slot='dialog-footer'] [data-slot='button'] {",
     '  min-height: 2rem;',
-    '  border-radius: var(--zf-r-control) !important;',
+    '  border-radius: var(--atr-r-control) !important;',
     '}',
     // ── Command approval (the transcript card) ────────────────────────────
     // The host paints this card with the chat-surface token, so it was the one
@@ -2631,25 +2631,25 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // frame around header + code + actions, one well for the command, and the
     // actions on their own band.
     "html body :is([data-slot='card-stack-surface'], [data-slot='card-stack-edge'])[class] {",
-    '  background: var(--zf-side-card) !important;',
+    '  background: var(--atr-side-card) !important;',
     '  border: 0 !important;',
-    '  border-radius: var(--zf-radius) !important;',
-    '  box-shadow: var(--zf-lift) !important;',
+    '  border-radius: var(--atr-radius) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '}',
     "[data-slot='tool-approval-card'] {",
     '  padding: 0.75rem 0.75rem 0.5rem;',
     '}',
     "[data-slot='tool-approval-card'] > div:first-child {",
     '  padding: 0 0 0.5rem !important;',
-    '  color: var(--zf-ink-2) !important;',
+    '  color: var(--atr-ink-2) !important;',
     '}',
     "[data-slot='tool-approval-card'] > pre {",
     '  margin: 0 0 0.5rem !important;',
     '  padding: 0.75rem !important;',
-    '  background: var(--zf-well-prompt) !important;',
-    '  border: 1px solid var(--zf-edge-strong) !important;',
-    '  border-radius: var(--zf-r-1, 4px) !important;',
-    '  color: var(--zf-ink-1) !important;',
+    '  background: var(--atr-well-prompt) !important;',
+    '  border: 1px solid var(--atr-edge-strong) !important;',
+    '  border-radius: var(--atr-r-1, 4px) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '  font-size: 0.75rem !important;',
     '  line-height: 1.55 !important;',
     '  overflow-wrap: anywhere;',
@@ -2657,46 +2657,46 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     "[data-slot='tool-approval-actions'] {",
     '  padding: 0.5rem 0 0 !important;',
-    '  border-top: 1px solid var(--zf-edge);',
+    '  border-top: 1px solid var(--atr-edge);',
     '  gap: 0.35rem !important;',
     '}',
     "[data-slot='tool-approval-actions'] [data-slot='button'] {",
     '  min-height: 1.75rem;',
-    '  border-radius: var(--zf-r-control) !important;',
+    '  border-radius: var(--atr-r-control) !important;',
     '}',
     "[data-slot='tool-approval-actions'] [data-variant='secondary'] {",
-    '  background: var(--zf-hover) !important;',
-    '  color: var(--zf-ink-1) !important;',
+    '  background: var(--atr-hover) !important;',
+    '  color: var(--atr-ink-1) !important;',
     '}',
     "[data-slot='tool-approval-actions'] [data-variant='secondary']:hover {",
-    '  background: color-mix(in srgb, var(--zf-ink-0) 10%, transparent) !important;',
+    '  background: color-mix(in srgb, var(--atr-ink-0) 10%, transparent) !important;',
     '}',
     ":is([data-slot='dialog-content'], [data-slot='popover-content']) [data-slot='command'] { background: transparent !important; }",
     "[data-slot='tooltip-content'] {",
-    '  background: var(--zf-glass-strong) !important;',
-    '  color: var(--zf-ink-0) !important;',
+    '  background: var(--atr-glass-strong) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '  border: none !important;',
-    '  box-shadow: var(--zf-lift) !important;',
-    '  backdrop-filter: var(--zf-frost);',
-    '  -webkit-backdrop-filter: var(--zf-frost);',
+    '  box-shadow: var(--atr-lift) !important;',
+    '  backdrop-filter: var(--atr-frost);',
+    '  -webkit-backdrop-filter: var(--atr-frost);',
     '}',
-    "[data-slot='tooltip-content'] svg[class*='fill-'] { fill: var(--zf-glass-strong) !important; }",
+    "[data-slot='tooltip-content'] svg[class*='fill-'] { fill: var(--atr-glass-strong) !important; }",
     // Inline widgets in the transcript (approvals, clarify prompts, code and
     // diff cards) sit on the picture too, so they wear the same card.
     ":is([data-slot='aui_thread-content'], [data-slot='thread']) :is([data-slot='clarify-inline'], [data-slot='code-card'], [data-slot='file-diff-panel'], [class*='bg-(--ui-widget-surface-background)'], [class*='bg-(--ui-chat-surface-background)']) {",
-    '  background: var(--zf-glass) !important;',
+    '  background: var(--atr-glass) !important;',
     '  border-color: transparent !important;',
-    '  border-radius: var(--zf-radius) !important;',
-    '  box-shadow: var(--zf-lift) !important;',
+    '  border-radius: var(--atr-radius) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
     '}',
     // Form controls inside any Atrium surface: a recessed well, accent focus.
     ":is([data-overlay-surface], section[class*='bg-(--ui-chat-surface-background)'], [data-slot='dialog-content']) :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, [data-slot='select-trigger'], [data-slot='searchable-select-trigger']) {",
-    '  background: var(--zf-well) !important;',
-    '  border-color: var(--zf-edge) !important;',
+    '  background: var(--atr-well) !important;',
+    '  border-color: var(--atr-edge) !important;',
     '}',
     ":is([data-overlay-surface], section[class*='bg-(--ui-chat-surface-background)'], [data-slot='dialog-content']) :is(input, textarea, [data-slot='select-trigger']):focus-visible {",
-    '  border-color: color-mix(in srgb, var(--zf-accent) 55%, transparent) !important;',
-    '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zf-accent) 14%, transparent) !important;',
+    '  border-color: color-mix(in srgb, var(--atr-accent) 55%, transparent) !important;',
+    '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--atr-accent) 14%, transparent) !important;',
     '  outline: none !important;',
     '}',
     ...groupedFieldCss(),
@@ -2709,17 +2709,17 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   ] : []].map(lines => lines.join('\n'))
   if (split) return sections
   const header = glass
-    ? `/* Atrium · glass. Tint ${GLASS.ground} at ${Number((1 - GLASS.tint).toFixed(4))} over the native window material. */`
+    ? `/* Hermes Atrium · glass. Tint ${GLASS.ground} at ${Number((1 - GLASS.tint).toFixed(4))} over the native window material. */`
     : LOOK_MODE === 'custom'
-      ? `/* Atrium · custom. Your own picture and colours, from atrium-theme.json. */`
-      : `/* Atrium · gruvbox. ${PAINTING_FILE}, full ${4096}×${2428}, cover-fitted. */`
+      ? `/* Hermes Atrium · custom. Your own picture and colours, from hermes-atrium-theme.json. */`
+      : `/* Hermes Atrium · gruvbox. ${PAINTING_FILE}, full ${4096}×${2428}, cover-fitted. */`
   return [header, ...sections.filter(Boolean)].join('\n')
 }
 
 // ══ §5 APP MOTION (fold + interface animation, independent of the look) ════
 
 // Interface motion is not part of the painted sheet: it must survive both the
-// Background switch and Atrium styling being off, so it lives in its own
+// Background switch and Hermes Atrium styling being off, so it lives in its own
 // always-on <style> (like the snippet sheet), never in sheetCss — that
 // sheet is rewritten whenever a look changes (which would restart keyframes)
 // and is removed when nothing of Atrium is on screen.
@@ -2735,27 +2735,27 @@ const MOTION_CSS = [
   // The pacing is deliberately unhurried: at 90ms an exit read as a hard cut,
   // so the floor is ~140ms everywhere and nothing exceeds 280ms.
   ':root {',
-  '  --zf-t-1: 140ms;',
-  '  --zf-t-2: 200ms;',
-  '  --zf-t-3: 280ms;',
+  '  --atr-t-1: 140ms;',
+  '  --atr-t-2: 200ms;',
+  '  --atr-t-3: 280ms;',
   // A calmer deceleration than a fast-start curve: eases reach their settle
   // without the initial snap that read as jarring on hovers and exits.
-  '  --zf-ease: cubic-bezier(0.33, 1, 0.68, 1);',
-  '  --zf-ease-out: cubic-bezier(0.16, 1, 0.3, 1);',
+  '  --atr-ease: cubic-bezier(0.33, 1, 0.68, 1);',
+  '  --atr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);',
   '}',
-  // The Motion switch (Settings > Atrium) and the OS setting both zero the
+  // The Motion switch (Settings > Hermes Atrium) and the OS setting both zero the
   // tokens; @starting-style and allow-discrete still apply instantly, so
   // nothing is left half-faded.
-  "html[data-atrium-motion='off'] {",
-  '  --zf-t-1: 1ms;',
-  '  --zf-t-2: 1ms;',
-  '  --zf-t-3: 1ms;',
+  "html[data-atr-motion='off'] {",
+  '  --atr-t-1: 1ms;',
+  '  --atr-t-2: 1ms;',
+  '  --atr-t-3: 1ms;',
   '}',
   '@media (prefers-reduced-motion: reduce) {',
   '  :root {',
-  '    --zf-t-1: 1ms;',
-  '    --zf-t-2: 1ms;',
-  '    --zf-t-3: 1ms;',
+  '    --atr-t-1: 1ms;',
+  '    --atr-t-2: 1ms;',
+  '    --atr-t-3: 1ms;',
   '  }',
   '}',
   // ── THE WORK FOLD (opening and closing the reasoning chain) ─────────────
@@ -2771,55 +2771,55 @@ const MOTION_CSS = [
   // (t-3, the open). On close the shape only collapses when the fade ends,
   // so the settle that keeps the transcript still is deferred to that moment
   // (see pinWhileFolding in §9).
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] [data-conversation-scaffold],",
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] [data-conversation-scaffold],",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
   // Prose said between tool calls folds with them; only the reply that
   // follows the last work block is exempt (marked by markInterimProse).
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] .aui-md[data-atrium-work-interim='true'],",
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] > *:not(.atrium-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']) {",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md[data-atr-work-interim='true'],",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']) {",
   '  display: none !important;',
   '  opacity: 0;',
   // the fading work must not take a click meant for what is below it
   '  pointer-events: none;',
-  '  transition-duration: var(--zf-t-1);',
+  '  transition-duration: var(--atr-t-1);',
   '}',
   "[data-slot='aui_assistant-message-content'] [data-conversation-scaffold],",
   "[data-slot='aui_assistant-message-content'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
-  "[data-slot='aui_assistant-message-content'] > *:not(.atrium-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
-  ".aui-md[data-atrium-work-interim='true'] {",
-  '  transition: opacity var(--zf-t-3) var(--zf-ease), display var(--zf-t-3) allow-discrete;',
+  "[data-slot='aui_assistant-message-content'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
+  ".aui-md[data-atr-work-interim='true'] {",
+  '  transition: opacity var(--atr-t-3) var(--atr-ease), display var(--atr-t-3) allow-discrete;',
   '}',
   // Transitions never start from display:none on their own, so the reveal
   // needs its from-state declared. It only ever fires when a fold opens.
   '@starting-style {',
   "  [data-slot='aui_assistant-message-content'] [data-conversation-scaffold],",
   "  [data-slot='aui_assistant-message-content'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
-  "  [data-slot='aui_assistant-message-content'] > *:not(.atrium-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
-  "  .aui-md[data-atrium-work-interim='true'] {",
+  "  [data-slot='aui_assistant-message-content'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
+  "  .aui-md[data-atr-work-interim='true'] {",
   '    opacity: 0;',
   '  }',
   '}',
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] {",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] {",
   '  row-gap: 0.25rem !important;',
   '  gap: 0.25rem !important;',
   '}',
   // Tight natural margin between work summary and model response text
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] > .aui-md,",
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] .aui-md {",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > .aui-md,",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md {",
   '  margin-top: 0.25rem !important;',
   '  padding-top: 0 !important;',
   '}',
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] > .aui-md > *:first-child,",
-  "html[data-atrium-collapse-work='on'] [data-atrium-work-collapsed='true'] .aui-md > *:first-child {",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > .aui-md > *:first-child,",
+  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md > *:first-child {",
   '  margin-top: 0 !important;',
   '  padding-top: 0 !important;',
   '}',
-  ".atrium-work-summary[data-live] .atrium-work-summary-label {",
+  ".atr-work-summary[data-live] .atr-work-summary-label {",
   // no pulse animation: it would re-composite the glass window every frame;
   // the once-a-second count is the sign of life
-  '  color: var(--zf-ink-1, currentColor);',
+  '  color: var(--atr-ink-1, currentColor);',
   '}',
-  '.atrium-work-summary {',
+  '.atr-work-summary {',
   '  display: inline-flex;',
   '  align-items: center;',
   '  gap: 0.25rem;',
@@ -2831,10 +2831,10 @@ const MOTION_CSS = [
   '  font-family: inherit;',
   '  font-size: var(--conversation-tool-font-size, 0.75rem);',
   '  line-height: var(--conversation-line-height, 1.4);',
-  '  color: var(--conversation-scaffold-text, var(--ui-text-tertiary, var(--zf-ink-3)));',
+  '  color: var(--conversation-scaffold-text, var(--ui-text-tertiary, var(--atr-ink-3)));',
   '  cursor: pointer;',
   '  user-select: none;',
-  '  transition: color var(--zf-t-2) var(--zf-ease);',
+  '  transition: color var(--atr-t-2) var(--atr-ease);',
   '  vertical-align: middle;',
   // A <button> centres its own text (user-agent default), so a label that
   // wrapped to a second line centred that line under the first and the row
@@ -2842,10 +2842,10 @@ const MOTION_CSS = [
   // declaration on it puts every line flush left.
   '  text-align: left;',
   '}',
-  '.atrium-work-summary:hover {',
-  '  color: var(--ui-text-primary, var(--zf-ink-0));',
+  '.atr-work-summary:hover {',
+  '  color: var(--ui-text-primary, var(--atr-ink-0));',
   '}',
-  '.atrium-work-icon-stack {',
+  '.atr-work-icon-stack {',
   '  display: inline-flex;',
   '  align-items: center;',
   '  flex-direction: row;',
@@ -2853,7 +2853,7 @@ const MOTION_CSS = [
   '  margin-right: 0.35rem;',
   '  vertical-align: middle;',
   '}',
-  '.atrium-work-icon-item {',
+  '.atr-work-icon-item {',
   '  display: inline-flex;',
   '  align-items: center;',
   '  justify-content: center;',
@@ -2871,36 +2871,36 @@ const MOTION_CSS = [
   '  box-shadow: none !important;',
   '  filter: none !important;',
   '}',
-  '.atrium-work-icon-item svg {',
+  '.atr-work-icon-item svg {',
   '  display: block;',
   '  width: 14px;',
   '  height: 14px;',
   '  fill: #ffffff !important;',
   '  color: #ffffff !important;',
   '}',
-  '.atrium-work-summary-caret {',
+  '.atr-work-summary-caret {',
   '  display: inline-block;',
   '  margin-left: 0.2rem;',
   '  font-size: 0.75rem;',
   '  opacity: 0.5;',
-  '  transition: transform var(--zf-t-2) var(--zf-ease), opacity var(--zf-t-2) var(--zf-ease);',
+  '  transition: transform var(--atr-t-2) var(--atr-ease), opacity var(--atr-t-2) var(--atr-ease);',
   '}',
-  '.atrium-work-summary:hover .atrium-work-summary-caret {',
+  '.atr-work-summary:hover .atr-work-summary-caret {',
   '  opacity: 0.9;',
   '}',
-  ".atrium-work-summary[data-expanded='true'] .atrium-work-summary-caret {",
+  ".atr-work-summary[data-expanded='true'] .atr-work-summary-caret {",
   '  transform: rotate(90deg);',
   '}',
-  ".atrium-work-summary[data-expanded='true'] {",
+  ".atr-work-summary[data-expanded='true'] {",
   '  margin-bottom: 0.25rem !important;',
   '}',
-  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atrium-work-summary {',
+  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atr-work-summary {',
   '  color: var(--conversation-scaffold-text, var(--ui-text-tertiary, #64748b));',
   '}',
-  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atrium-work-summary:hover {',
+  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atr-work-summary:hover {',
   '  color: var(--ui-text-primary, #0f172a);',
   '}',
-  "html:not([data-atrium-collapse-work='on']) .atrium-work-summary {",
+  "html:not([data-atr-collapse-work='on']) .atr-work-summary {",
   '  display: none !important;',
   '}',
   // ── [motion:switch] ─────────────────────────────────────────────────────
@@ -2910,7 +2910,7 @@ const MOTION_CSS = [
   // the attribute lifting is the single fade-in. Only the attribute is read;
   // core owns toggling it.
   "[data-chat-surface] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
-  '  transition: opacity var(--zf-t-2) var(--zf-ease-out);',
+  '  transition: opacity var(--atr-t-2) var(--atr-ease-out);',
   '}',
   "[data-chat-surface][data-session-switching] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
   '  opacity: 0;',
@@ -2919,7 +2919,7 @@ const MOTION_CSS = [
   // The plugin's own settle curtain, held after core's marker lifts until the
   // transcript stops changing (the backfill commits, highlighting and font
   // swaps all land after core's two quiet frames). Same paint-only hide.
-  "[data-chat-surface][data-atrium-settling] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
+  "[data-chat-surface][data-atr-settling] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
   '  opacity: 0;',
   '  transition: none;',
   '}',
@@ -2938,18 +2938,18 @@ const MOTION_CSS = [
   // cascade order between the two does not matter. No keyframes are redefined
   // here. The JS may set a negative animation-delay to resume the exit at the
   // phase it had reached when the real node vanished.
-  '.zf-ghost { position: fixed !important; margin: 0 !important; pointer-events: none !important; z-index: 2147483000 !important; }',
-  ":is(.zf-ghost[data-slot='dropdown-menu-content'], .zf-ghost[data-slot='dropdown-menu-sub-content'], .zf-ghost[data-slot='context-menu-content'], .zf-ghost[data-slot='context-menu-sub-content'], .zf-ghost[data-slot='popover-content'], .zf-ghost[data-slot='select-content'], .zf-ghost[data-slot='menubar-content']) {",
-  '  animation: zf-pop-out var(--zf-t-1) var(--zf-ease) both;',
+  '.atr-ghost { position: fixed !important; margin: 0 !important; pointer-events: none !important; z-index: 2147483000 !important; }',
+  ":is(.atr-ghost[data-slot='dropdown-menu-content'], .atr-ghost[data-slot='dropdown-menu-sub-content'], .atr-ghost[data-slot='context-menu-content'], .atr-ghost[data-slot='context-menu-sub-content'], .atr-ghost[data-slot='popover-content'], .atr-ghost[data-slot='select-content'], .atr-ghost[data-slot='menubar-content']) {",
+  '  animation: atr-pop-out var(--atr-t-1) var(--atr-ease) both;',
   '}',
-  ":is(.zf-ghost[data-slot='dialog-content'], .zf-ghost[data-slot='alert-dialog-content'], .zf-ghost[data-slot='sheet-content']) {",
-  '  animation: zf-dlg-out var(--zf-t-1) var(--zf-ease) both;',
+  ":is(.atr-ghost[data-slot='dialog-content'], .atr-ghost[data-slot='alert-dialog-content'], .atr-ghost[data-slot='sheet-content']) {",
+  '  animation: atr-dlg-out var(--atr-t-1) var(--atr-ease) both;',
   '}',
-  ":is(.zf-ghost[data-slot='tooltip-content'], .zf-ghost[data-slot='hover-card-content']) {",
-  '  animation: zf-tip-out var(--zf-t-1) var(--zf-ease) both;',
+  ":is(.atr-ghost[data-slot='tooltip-content'], .atr-ghost[data-slot='hover-card-content']) {",
+  '  animation: atr-tip-out var(--atr-t-1) var(--atr-ease) both;',
   '}',
-  ".zf-ghost[data-slot$='-overlay'] {",
-  '  animation: zf-ovl-out var(--zf-t-1) var(--zf-ease) both;',
+  ".atr-ghost[data-slot$='-overlay'] {",
+  '  animation: atr-ovl-out var(--atr-t-1) var(--atr-ease) both;',
   '}',
   // ── [motion:menus] ──────────────────────────────────────────────────────
   // Mechanism: Radix Presence holds closing content mounted until its exit
@@ -2965,70 +2965,70 @@ const MOTION_CSS = [
   // The direction comes from data-side: a surface anchored below its trigger
   // starts 6px above and settles down onto it, and so on around the ring.
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content']) {",
-  '  --zf-pop-dx: 0px;',
-  '  --zf-pop-dy: 0px;',
+  '  --atr-pop-dx: 0px;',
+  '  --atr-pop-dy: 0px;',
   '  transform-origin: center;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-side='bottom'] {",
-  '  --zf-pop-dy: -6px;',
+  '  --atr-pop-dy: -6px;',
   '  transform-origin: top;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-side='top'] {",
-  '  --zf-pop-dy: 6px;',
+  '  --atr-pop-dy: 6px;',
   '  transform-origin: bottom;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-side='left'] {",
-  '  --zf-pop-dx: 6px;',
+  '  --atr-pop-dx: 6px;',
   '  transform-origin: right;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-side='right'] {",
-  '  --zf-pop-dx: -6px;',
+  '  --atr-pop-dx: -6px;',
   '  transform-origin: left;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-state='open'] {",
-  '  animation: zf-pop-in var(--zf-t-2) var(--zf-ease-out) both;',
+  '  animation: atr-pop-in var(--atr-t-2) var(--atr-ease-out) both;',
   '}',
   ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'])[data-state='closed'] {",
-  '  animation: zf-pop-out var(--zf-t-1) var(--zf-ease) both;',
+  '  animation: atr-pop-out var(--atr-t-1) var(--atr-ease) both;',
   '  pointer-events: none;',
   '}',
   // Submenus open on hover, so their entrance stays out of the pointer's way;
   // at t-1 their exit matches their entrance rather than beating it.
   ":is([data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-sub-content'])[data-state='open'] {",
-  '  animation-duration: var(--zf-t-1);',
+  '  animation-duration: var(--atr-t-1);',
   '}',
-  '@keyframes zf-pop-in {',
+  '@keyframes atr-pop-in {',
   '  from {',
   '    opacity: 0;',
-  '    transform: translate(var(--zf-pop-dx), var(--zf-pop-dy)) scale(0.97);',
+  '    transform: translate(var(--atr-pop-dx), var(--atr-pop-dy)) scale(0.97);',
   '  }',
   '}',
-  '@keyframes zf-pop-out {',
+  '@keyframes atr-pop-out {',
   '  to {',
   '    opacity: 0;',
-  '    transform: translate(var(--zf-pop-dx), var(--zf-pop-dy)) scale(0.97);',
+  '    transform: translate(var(--atr-pop-dx), var(--atr-pop-dy)) scale(0.97);',
   '  }',
   '}',
   // Rows: hover and highlight are a paint swap, never a move.
   ":is([role='menuitem'], [role='option'], [role='menuitemcheckbox'], [role='menuitemradio'], [cmdk-item], [data-slot='command-item']) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   // Dialogs, alert dialogs and sheets: a beat slower than a menu, a whisker
   // under full size, and the same path out at exit speed.
   ":is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])[data-state='open'] {",
-  '  animation: zf-dlg-in var(--zf-t-3) var(--zf-ease-out) both;',
+  '  animation: atr-dlg-in var(--atr-t-3) var(--atr-ease-out) both;',
   '}',
   ":is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])[data-state='closed'] {",
-  '  animation: zf-dlg-out var(--zf-t-1) var(--zf-ease) both;',
+  '  animation: atr-dlg-out var(--atr-t-1) var(--atr-ease) both;',
   '  pointer-events: none;',
   '}',
-  '@keyframes zf-dlg-in {',
+  '@keyframes atr-dlg-in {',
   '  from {',
   '    opacity: 0;',
   '    transform: scale(0.985);',
   '  }',
   '}',
-  '@keyframes zf-dlg-out {',
+  '@keyframes atr-dlg-out {',
   '  to {',
   '    opacity: 0;',
   '    transform: scale(0.985);',
@@ -3036,36 +3036,36 @@ const MOTION_CSS = [
   '}',
   // Scrims fade only; harmless on installs where a slot is never emitted.
   ":is([data-slot='dialog-overlay'], [data-slot='alert-dialog-overlay'], [data-slot='sheet-overlay'])[data-state='open'] {",
-  '  animation: zf-ovl-in var(--zf-t-2) var(--zf-ease-out) both;',
+  '  animation: atr-ovl-in var(--atr-t-2) var(--atr-ease-out) both;',
   '}',
   ":is([data-slot='dialog-overlay'], [data-slot='alert-dialog-overlay'], [data-slot='sheet-overlay'])[data-state='closed'] {",
-  '  animation: zf-ovl-out var(--zf-t-1) var(--zf-ease) both;',
+  '  animation: atr-ovl-out var(--atr-t-1) var(--atr-ease) both;',
   '  pointer-events: none;',
   '}',
-  '@keyframes zf-ovl-in {',
+  '@keyframes atr-ovl-in {',
   '  from {',
   '    opacity: 0;',
   '  }',
   '}',
-  '@keyframes zf-ovl-out {',
+  '@keyframes atr-ovl-out {',
   '  to {',
   '    opacity: 0;',
   '  }',
   '}',
   // Tooltips and hover cards follow the pointer, so they only dissolve.
   ":is([data-slot='tooltip-content'], [data-slot='hover-card-content'])[data-state='open'] {",
-  '  animation: zf-tip-in var(--zf-t-1) var(--zf-ease-out) both;',
+  '  animation: atr-tip-in var(--atr-t-1) var(--atr-ease-out) both;',
   '}',
   ":is([data-slot='tooltip-content'], [data-slot='hover-card-content'])[data-state='closed'] {",
-  '  animation: zf-tip-out var(--zf-t-1) var(--zf-ease) both;',
+  '  animation: atr-tip-out var(--atr-t-1) var(--atr-ease) both;',
   '  pointer-events: none;',
   '}',
-  '@keyframes zf-tip-in {',
+  '@keyframes atr-tip-in {',
   '  from {',
   '    opacity: 0;',
   '  }',
   '}',
-  '@keyframes zf-tip-out {',
+  '@keyframes atr-tip-out {',
   '  to {',
   '    opacity: 0;',
   '  }',
@@ -3073,11 +3073,11 @@ const MOTION_CSS = [
   // Select triggers wear the tint of the menu they opened; !important sits on
   // the two colour properties only, to beat app styles without touching motion.
   ":is([data-slot='select-trigger'], [data-slot='searchable-select-trigger']) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), border-color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), border-color var(--atr-t-2) var(--atr-ease);',
   '}',
   ":is([data-slot='select-trigger'], [data-slot='searchable-select-trigger']):is([data-state='open'], [aria-expanded='true']) {",
-  "  background-color: color-mix(in srgb, var(--zf-accent, var(--ui-accent, #9dc4e8)) 14%, transparent) !important;",
-  "  border-color: color-mix(in srgb, var(--zf-accent, var(--ui-accent, #9dc4e8)) 30%, transparent) !important;",
+  "  background-color: color-mix(in srgb, var(--atr-accent, var(--ui-accent, #9dc4e8)) 14%, transparent) !important;",
+  "  border-color: color-mix(in srgb, var(--atr-accent, var(--ui-accent, #9dc4e8)) 30%, transparent) !important;",
   '}',
   // ── [motion:history] ────────────────────────────────────────────────────
   // History panel rows, search and switch (owner: motion-history agent).
@@ -3085,14 +3085,14 @@ const MOTION_CSS = [
   // swap breathe. No entrance fades on rows: the list is virtualized, so an
   // entry animation would replay on every scroll re-render.
   ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button']) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   // While a scroll is in flight, rows slide under a stationary pointer and
   // every newly hovered row would restart a main-thread colour transition
   // mid-gesture. The attribute is set by the capture-phase scroll listener and
   // clears 150ms after the last event, so hover still animates at rest. The
   // rule's own specificity beats the transition declarations above it.
-  "html[data-zf-scrolling] :is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button'], [data-row-actions] button svg) {",
+  "html[data-atr-scrolling] :is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button'], [data-row-actions] button svg) {",
   '  transition: none;',
   '}',
   // Press: a slightly stronger accent wash while the pointer is down. The
@@ -3100,28 +3100,28 @@ const MOTION_CSS = [
   // are equally important and can land after this sheet once the look sheet is
   // re-created (toggle the background off and on), so order alone must not decide.
   "html :is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-action'], [data-slot='sidebar-menu-sub-button'], button, a, [role='button']):active {",
-  '  background-color: color-mix(in srgb, var(--zf-accent, #9dc4e8) 18%, transparent) !important;',
+  '  background-color: color-mix(in srgb, var(--atr-accent, #9dc4e8) 18%, transparent) !important;',
   '}',
   // Row icons and the kebab/mini-actions.
   ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-row-actions] button, [data-slot='sidebar-menu-action'], [data-row-actions] button svg, [data-slot='sidebar-menu-action'] svg) {",
-  '  transition: color var(--zf-t-2) var(--zf-ease), background-color var(--zf-t-2) var(--zf-ease);',
+  '  transition: color var(--atr-t-2) var(--atr-ease), background-color var(--atr-t-2) var(--atr-ease);',
   '}',
   // Search: the app's focus ring is already stripped, so the accent halo is
   // the focus indicator.
   "[data-slot='sidebar-content'] input {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), box-shadow var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), box-shadow var(--atr-t-2) var(--atr-ease);',
   '}',
   "[data-slot='sidebar-content'] input:focus-visible {",
-  '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zf-accent, #9dc4e8) 14%, transparent) !important;',
+  '  box-shadow: 0 0 0 3px color-mix(in srgb, var(--atr-accent, #9dc4e8) 14%, transparent) !important;',
   '}',
   // SESSIONS | BOTS labels: colour only; the sliding pill is not touched.
   `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'] {`,
-  '  transition: color var(--zf-t-2) var(--zf-ease);',
+  '  transition: color var(--atr-t-2) var(--atr-ease);',
   '}',
   // ── [motion:composer] ───────────────────────────────────────────────────
   // Composer, status bar and status dock (owner: motion-composer agent).
   ":is([data-slot='composer-root'], [data-slot='composer-surface'], form[data-slot='composer']) :is(button, [role='button']) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease), transform var(--zf-t-1) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease), transform var(--atr-t-1) var(--atr-ease);',
   '}',
   ":is([data-slot='composer-root'], [data-slot='composer-surface'], form[data-slot='composer']) :is(button, [role='button']):not([aria-haspopup]):not([data-slot='select-trigger']):not([data-slot='searchable-select-trigger']):active {",
   '  transform: scale(0.96);',
@@ -3129,14 +3129,14 @@ const MOTION_CSS = [
   ":is([data-slot='composer-root'], [data-slot='composer-status-stack'], [data-slot='statusbar']) :is([data-slot='select-trigger'], [data-slot='searchable-select-trigger'], button[aria-haspopup], [role='button'][aria-haspopup]) {",
   // border-color included: this rule outranks the menus block's trigger rule,
   // so a shorter list here would snap the open-state border instead of fading.
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), border-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), border-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   ":is([data-slot='composer-root'], [data-slot='composer-status-stack'], [data-slot='statusbar']) :is([data-slot='select-trigger'], [data-slot='searchable-select-trigger'], button[aria-haspopup], [role='button'][aria-haspopup]):is([data-state='open'], [aria-expanded='true']) {",
-  '  background-color: color-mix(in srgb, var(--zf-accent, var(--ui-accent, #9dc4e8)) 14%, transparent) !important;',
-  '  color: var(--zf-ink-0, var(--ui-text-primary)) !important;',
+  '  background-color: color-mix(in srgb, var(--atr-accent, var(--ui-accent, #9dc4e8)) 14%, transparent) !important;',
+  '  color: var(--atr-ink-0, var(--ui-text-primary)) !important;',
   '}',
   ":is([data-slot='statusbar'], [data-slot='composer-status-stack']) :is(button, [role='button'], a) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   // The Simple-mode dock tab is styled by DOCK_CSS, which is written after
   // this sheet: its transitions are tokenized there instead of duplicated
@@ -3150,29 +3150,29 @@ const MOTION_CSS = [
   // (the selector below follows the proven user-message convention and is
   // inert when that class is not emitted).
   "[data-slot='tool-block'] {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), border-color var(--zf-t-2) var(--zf-ease), box-shadow var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), border-color var(--atr-t-2) var(--atr-ease), box-shadow var(--atr-t-2) var(--atr-ease);',
   '}',
   "[data-slot='tool-block'] :is(button, [role='button'], summary) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   "[data-slot='aui_thinking-disclosure'] {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), border-color var(--zf-t-2) var(--zf-ease), box-shadow var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), border-color var(--atr-t-2) var(--atr-ease), box-shadow var(--atr-t-2) var(--atr-ease);',
   '}',
   "[data-slot='aui_thinking-disclosure'] :is(button, [role='button'], summary) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease);',
   '}',
   ":is([data-slot='aui_assistant-message-root'], [data-slot='assistant-message']) :is(button, [role='button'], a) {",
-  '  transition: background-color var(--zf-t-2) var(--zf-ease), color var(--zf-t-2) var(--zf-ease), opacity var(--zf-t-2) var(--zf-ease);',
+  '  transition: background-color var(--atr-t-2) var(--atr-ease), color var(--atr-t-2) var(--atr-ease), opacity var(--atr-t-2) var(--atr-ease);',
   '}',
   ":is([data-slot='aui_assistant-message-root'], [data-slot='assistant-message']) :is([class*='group-hover/assistant-message'], [class*='group-hover/message']) {",
-  '  transition: opacity var(--zf-t-2) var(--zf-ease);',
+  '  transition: opacity var(--atr-t-2) var(--atr-ease);',
   '}',
 ].join('\n')
 
 const ensureMotionStyle = () => {
-  if (typeof document === 'undefined' || document.getElementById('atrium-motion-style')) return
+  if (typeof document === 'undefined' || document.getElementById('atr-motion-style')) return
   const el = document.createElement('style')
-  el.id = 'atrium-motion-style'
+  el.id = 'atr-motion-style'
   el.textContent = MOTION_CSS
   document.head.appendChild(el)
 }
@@ -3225,7 +3225,7 @@ const ensurePreviewMeasureShim = () => {
 
 // The sheet is one of two looks and never changes on its own: paint it when a
 // switch moves, when the skin changes, or when the picture finishes loading.
-const SHEET_IDS = ['atrium-chrome-base', 'atrium-chrome-details']
+const SHEET_IDS = ['atr-chrome-base', 'atr-chrome-details']
 
 const paintSheet = (date, gl = false, opts = {}) => {
   if (typeof document === 'undefined') return
@@ -3252,18 +3252,19 @@ const clearSheet = () => {
 }
 
 // One stable host entry; the look itself lives in Atrium settings.
-const THEME_NAME = 'atrium'
+const THEME_NAME = 'hermes-atrium'
 const APPEARANCE_LOOKS = [
   { id: 'gruvbox', label: 'Gruvbox', description: 'Painting or desktop tint', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' },
   { id: 'custom', label: 'Custom', description: 'Your picture & colours', preview: 'var(--ui-widget-surface-background)' }
 ]
-// Every theme name Atrium owns; anything else is the user's own pick.
-// `zephyr-sky` is the name this plugin published before it was renamed: an
-// install that upgrades keeps it in the app's appearance store until the next
-// pick, so it has to keep counting as ours or Atrium would park itself on the
-// first launch after the rename.
-const LEGACY_THEME = 'zephyr-sky'
-const isOurTheme = name => name === THEME_NAME || name === GROUND_THEME || name === LEGACY_THEME
+// Every theme name Hermes Atrium owns; anything else is the user's own pick.
+// The legacy names are the ones this plugin published before it was renamed
+// (`zephyr-sky` pre-Atrium, `atrium` in the first Atrium build). An install
+// that upgrades keeps whichever it had in the app's appearance store until the
+// next pick, so they must keep counting as ours or the plugin would park itself
+// on the first launch after a rename.
+const LEGACY_THEMES = ['zephyr-sky', 'atrium']
+const isOurTheme = name => name === THEME_NAME || name === GROUND_THEME || LEGACY_THEMES.includes(name)
 
 // ── Snippet card ───────────────────────────────────────────────────────────
 // `::snippet{title="…" value="…" note="…" tone="accent"}`
@@ -3287,231 +3288,231 @@ const TONES = { accent: 'accent', plain: 'plain' }
 // pin lit. Accent shows only in the label colour. Classes plus one tiny
 // always-on stylesheet (SNIPPET_CSS), because hover cannot be inline.
 const SNIPPET_CSS = [
-  '.zf-snip { position: relative; display: flex; flex-direction: column; gap: 0.2rem; max-width: 34rem; margin: 0.5rem 0;',
-  '  padding: 0.75rem; border-radius: var(--zf-radius, 12px); box-sizing: border-box;',
-  '  background: var(--zf-side-card, var(--ui-widget-surface-background)); color: var(--zf-ink-1, var(--ui-text-secondary)); }',
-  '.zf-snip-head { display: flex; align-items: center; gap: 0.5rem; min-height: 1rem; }',
-  '.zf-snip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
-  '  font-size: 0.64rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  ".zf-snip[data-tone='accent'] .zf-snip-title { color: var(--zf-ink-0); }",
-  '.zf-snip-acts { margin-left: auto; display: flex; gap: 0.1rem; opacity: 0; transition: opacity 140ms ease; }',
-  '.zf-snip:is(:hover, :focus-within) .zf-snip-acts, .zf-snip-acts:has([data-on]) { opacity: 1; }',
-  '.zf-snip-act { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; border-radius: var(--zf-r-1, 4px);',
-  '  background: transparent; color: var(--zf-ink-3, var(--ui-text-tertiary)); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }',
-  '.zf-snip-act:hover, .zf-snip-act:focus-visible { background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); outline: none; }',
-  '.zf-snip-act[data-on] { color: var(--zf-accent, var(--ui-accent)); }',
-  '.zf-snip-act .zf-snip-done { display: none; }',
-  '.zf-snip-act[data-done] .zf-snip-idle { display: none; }',
-  '.zf-snip-act[data-done] .zf-snip-done { display: inline-flex; color: var(--zf-ink-1); }',
-  '.zf-snip-value { font-size: 0.95rem; line-height: 1.45; color: var(--zf-ink-0, var(--ui-text-primary)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }',
-  '.zf-snip-note { font-size: 0.8125rem; line-height: 1.55; color: var(--zf-ink-2, var(--ui-text-secondary)); }',
-  '.zf-snip-source { font-size: 0.6875rem; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
+  '.atr-snip { position: relative; display: flex; flex-direction: column; gap: 0.2rem; max-width: 34rem; margin: 0.5rem 0;',
+  '  padding: 0.75rem; border-radius: var(--atr-radius, 12px); box-sizing: border-box;',
+  '  background: var(--atr-side-card, var(--ui-widget-surface-background)); color: var(--atr-ink-1, var(--ui-text-secondary)); }',
+  '.atr-snip-head { display: flex; align-items: center; gap: 0.5rem; min-height: 1rem; }',
+  '.atr-snip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
+  '  font-size: 0.64rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  ".atr-snip[data-tone='accent'] .atr-snip-title { color: var(--atr-ink-0); }",
+  '.atr-snip-acts { margin-left: auto; display: flex; gap: 0.1rem; opacity: 0; transition: opacity 140ms ease; }',
+  '.atr-snip:is(:hover, :focus-within) .atr-snip-acts, .atr-snip-acts:has([data-on]) { opacity: 1; }',
+  '.atr-snip-act { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; border-radius: var(--atr-r-1, 4px);',
+  '  background: transparent; color: var(--atr-ink-3, var(--ui-text-tertiary)); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }',
+  '.atr-snip-act:hover, .atr-snip-act:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
+  '.atr-snip-act[data-on] { color: var(--atr-accent, var(--ui-accent)); }',
+  '.atr-snip-act .atr-snip-done { display: none; }',
+  '.atr-snip-act[data-done] .atr-snip-idle { display: none; }',
+  '.atr-snip-act[data-done] .atr-snip-done { display: inline-flex; color: var(--atr-ink-1); }',
+  '.atr-snip-value { font-size: 0.95rem; line-height: 1.45; color: var(--atr-ink-0, var(--ui-text-primary)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }',
+  '.atr-snip-note { font-size: 0.8125rem; line-height: 1.55; color: var(--atr-ink-2, var(--ui-text-secondary)); }',
+  '.atr-snip-source { font-size: 0.6875rem; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
   // no title: the actions ride the value line instead of an empty head
-  '.zf-snip:not(:has(.zf-snip-title)) .zf-snip-head { position: absolute; top: 0.45rem; right: 0.5rem; }',
-  '.zf-snip:not(:has(.zf-snip-title)) { padding-right: 3.4rem; }',
-  '.zf-snip { cursor: pointer; user-select: none; touch-action: none; transition: background-color 120ms ease; }',
-  '.zf-snip:hover { background: var(--zf-side-card-hi, var(--zf-side-card, var(--ui-widget-surface-background))); }',
+  '.atr-snip:not(:has(.atr-snip-title)) .atr-snip-head { position: absolute; top: 0.45rem; right: 0.5rem; }',
+  '.atr-snip:not(:has(.atr-snip-title)) { padding-right: 3.4rem; }',
+  '.atr-snip { cursor: pointer; user-select: none; touch-action: none; transition: background-color 120ms ease; }',
+  '.atr-snip:hover { background: var(--atr-side-card-hi, var(--atr-side-card, var(--ui-widget-surface-background))); }',
   // ── Shelf, sidebar Pins, preview, drag (all plugin-owned nodes in <body>) ──
-  '.zf-shelf { position: fixed; z-index: 30; left: var(--zf-sh-x); top: var(--zf-sh-y); width: var(--zf-sh-w); height: var(--zf-sh-h);',
-  '  display: flex; justify-content: center; align-items: stretch; gap: 0.5rem; box-sizing: border-box; border-radius: var(--zf-radius, 12px);',
+  '.atr-shelf { position: fixed; z-index: 30; left: var(--atr-sh-x); top: var(--atr-sh-y); width: var(--atr-sh-w); height: var(--atr-sh-h);',
+  '  display: flex; justify-content: center; align-items: stretch; gap: 0.5rem; box-sizing: border-box; border-radius: var(--atr-radius, 12px);',
   '  transition: background-color 140ms ease, opacity 160ms ease; }',
-  '.zf-shelf[hidden] { display: none; }',
+  '.atr-shelf[hidden] { display: none; }',
   // drop zones while dragging: dashed outlines, no fill
-  ":root[data-zf-dragging] .zf-shelf { outline: 1px dashed color-mix(in srgb, var(--zf-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: 0.3rem; }",
-  ".zf-shelf[data-empty] { align-items: center; }",
-  ":root[data-zf-dragging] .zf-shelf[data-drop='over'] { outline-color: color-mix(in srgb, var(--zf-accent, #9cf) 80%, transparent); }",
-  ".zf-shelf[data-drop='over'] .zf-shelf-hint, .zf-shelf[data-preview] .zf-shelf-hint { display: none; }",
-  '.zf-shelf-hint { font-size: var(--zf-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--zf-ink-3, var(--ui-text-tertiary)); pointer-events: none; }',
-  '.zf-tile { position: relative; flex: 0 1 11.5rem; min-width: 6.5rem; display: flex; flex-direction: column; justify-content: center; gap: 0.2rem;',
+  ":root[data-atr-dragging] .atr-shelf { outline: 1px dashed color-mix(in srgb, var(--atr-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: 0.3rem; }",
+  ".atr-shelf[data-empty] { align-items: center; }",
+  ":root[data-atr-dragging] .atr-shelf[data-drop='over'] { outline-color: color-mix(in srgb, var(--atr-accent, #9cf) 80%, transparent); }",
+  ".atr-shelf[data-drop='over'] .atr-shelf-hint, .atr-shelf[data-preview] .atr-shelf-hint { display: none; }",
+  '.atr-shelf-hint { font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); pointer-events: none; }',
+  '.atr-tile { position: relative; flex: 0 1 11.5rem; min-width: 6.5rem; display: flex; flex-direction: column; justify-content: center; gap: 0.2rem;',
   // fully clear at rest: the face floats on the painting; a light
   // glass fill comes up only on hover, so the tile still reads as grabbable
-  '  --zf-tile-bg: transparent;',
-  '  --zf-tile-bg-hi: color-mix(in srgb, color-mix(in srgb, var(--zf-side-card, rgb(20,22,28)) 76%, #fff) 64%, transparent);',
-  '  padding: 0.45rem 0.85rem; box-sizing: border-box; border-radius: var(--zf-radius, 12px); background: var(--zf-tile-bg);',
+  '  --atr-tile-bg: transparent;',
+  '  --atr-tile-bg-hi: color-mix(in srgb, color-mix(in srgb, var(--atr-side-card, rgb(20,22,28)) 76%, #fff) 64%, transparent);',
+  '  padding: 0.45rem 0.85rem; box-sizing: border-box; border-radius: var(--atr-radius, 12px); background: var(--atr-tile-bg);',
   '  cursor: pointer; user-select: none; touch-action: none; text-align: left; outline: none; transition: background-color 120ms ease, opacity 140ms ease; }',
-  '.zf-tile:hover, .zf-tile:focus-visible { background: var(--zf-tile-bg-hi); }',
-  '.zf-tile:focus-visible { box-shadow: inset 0 0 0 1px var(--zf-accent, rgba(255,255,255,.3)); }',
-  '.zf-tile[data-stale] { opacity: 0.6; }',
-  '.zf-tile-label { font-size: var(--zf-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--zf-ink-3, var(--ui-text-tertiary));',
+  '.atr-tile:hover, .atr-tile:focus-visible { background: var(--atr-tile-bg-hi); }',
+  '.atr-tile:focus-visible { box-shadow: inset 0 0 0 1px var(--atr-accent, rgba(255,255,255,.3)); }',
+  '.atr-tile[data-stale] { opacity: 0.6; }',
+  '.atr-tile-label { font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary));',
   '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  ".zf-tile[data-kind='status'] .zf-tile-label { color: var(--zf-sd-lab-color, var(--zf-ink-3, var(--ui-text-tertiary))); }",
-  '.zf-tile-value { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-size: 0.9rem; color: var(--zf-ink-0, var(--ui-text-primary)); font-variant-numeric: tabular-nums; }',
-  '.zf-tile-value .truncate { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+  ".atr-tile[data-kind='status'] .atr-tile-label { color: var(--atr-sd-lab-color, var(--atr-ink-3, var(--ui-text-tertiary))); }",
+  '.atr-tile-value { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-size: 0.9rem; color: var(--atr-ink-0, var(--ui-text-primary)); font-variant-numeric: tabular-nums; }',
+  '.atr-tile-value .truncate { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
   // a status tile centres its content: the shelf pins sit in
   // fixed-width tiles, so a short reading ("Backend ready") used to hang off
   // the left edge with all the slack on the right. The clone is only as wide
   // as its own content and shrinks to the tile, so centring both boxes moves
   // the row to the middle without letting it overflow either edge.
-  ".zf-tile[data-kind='status'] .zf-tile-value { justify-content: center; }",
-  ".zf-tile[data-kind='status'] .zf-tile-face { justify-content: center; text-align: center; }",
+  ".atr-tile[data-kind='status'] .atr-tile-value { justify-content: center; }",
+  ".atr-tile[data-kind='status'] .atr-tile-face { justify-content: center; text-align: center; }",
   // a snippet tile wraps its value (up to 3 lines) and the shelf grows to fit
-  '.zf-tile-text { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }',
-  '.zf-tile-value svg { width: 0.85rem; height: 0.85rem; flex: none; color: var(--zf-ink-2, var(--ui-text-secondary)); }',
+  '.atr-tile-text { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }',
+  '.atr-tile-value svg { width: 0.85rem; height: 0.85rem; flex: none; color: var(--atr-ink-2, var(--ui-text-secondary)); }',
   // a status tile wears its row's own face: one line, centred, no label
-  '.zf-tile-face { display: flex !important; align-items: center; min-width: 0; max-width: 100%; height: auto !important; padding: 0 !important; margin: 0 !important;',
+  '.atr-tile-face { display: flex !important; align-items: center; min-width: 0; max-width: 100%; height: auto !important; padding: 0 !important; margin: 0 !important;',
   '  background: none !important; border: 0 !important; box-shadow: none !important; overflow: hidden; white-space: nowrap; font-size: 0.9rem; cursor: pointer; }',
   // the row's own buttons inside a tile light up like they do in the bar
-  '.zf-tile-face button:hover, .zf-tile-face [role=button]:hover { color: var(--zf-ink-0, var(--ui-text-primary)); background: color-mix(in srgb, var(--zf-ink-0, var(--ui-text-primary)) 10%, transparent); border-radius: 0.3rem; }',
-  ".zf-tile-face button { cursor: pointer; }",
+  '.atr-tile-face button:hover, .atr-tile-face [role=button]:hover { color: var(--atr-ink-0, var(--ui-text-primary)); background: color-mix(in srgb, var(--atr-ink-0, var(--ui-text-primary)) 10%, transparent); border-radius: 0.3rem; }',
+  ".atr-tile-face button { cursor: pointer; }",
   // resize grip: the tile's right edge
-  '.zf-tile-grip { position: absolute; top: 18%; bottom: 18%; right: 0; width: 0.55rem; cursor: ew-resize; touch-action: none; }',
-  ".zf-tile-grip::after { content: ''; position: absolute; top: 25%; bottom: 25%; right: 0.2rem; width: 2px; border-radius: 1px; background: var(--zf-ink-3, var(--ui-text-tertiary)); opacity: 0; transition: opacity 120ms ease; }",
-  '.zf-tile:hover .zf-tile-grip::after, .zf-tile[data-resizing] .zf-tile-grip::after { opacity: 0.7; }',
-  ':root[data-zf-dragging] .zf-tile-grip { display: none; }',
-  ':root[data-zf-resizing], :root[data-zf-resizing] * { cursor: ew-resize !important; user-select: none !important; }',
-  '.zf-tile-face > * { flex-shrink: 1; min-width: 0; }',
-  '.zf-tile-face > svg { flex: none; }',
+  '.atr-tile-grip { position: absolute; top: 18%; bottom: 18%; right: 0; width: 0.55rem; cursor: ew-resize; touch-action: none; }',
+  ".atr-tile-grip::after { content: ''; position: absolute; top: 25%; bottom: 25%; right: 0.2rem; width: 2px; border-radius: 1px; background: var(--atr-ink-3, var(--ui-text-tertiary)); opacity: 0; transition: opacity 120ms ease; }",
+  '.atr-tile:hover .atr-tile-grip::after, .atr-tile[data-resizing] .atr-tile-grip::after { opacity: 0.7; }',
+  ':root[data-atr-dragging] .atr-tile-grip { display: none; }',
+  ':root[data-atr-resizing], :root[data-atr-resizing] * { cursor: ew-resize !important; user-select: none !important; }',
+  '.atr-tile-face > * { flex-shrink: 1; min-width: 0; }',
+  '.atr-tile-face > svg { flex: none; }',
   // the thing being dragged, previewed where it would land
-  ".zf-tile[data-phantom] { opacity: 0.75; pointer-events: none; background: color-mix(in srgb, var(--zf-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)) 70%, transparent);",
-  "  outline: 1px dashed color-mix(in srgb, var(--zf-accent, #9cf) 70%, transparent); outline-offset: -1px; }",
-  ".zf-tile[data-lifted] { opacity: 0.3; }",
-  ":root[data-zf-dragging] .zf-tile, :root[data-zf-dragging] .zf-snip { cursor: grabbing; }",
+  ".atr-tile[data-phantom] { opacity: 0.75; pointer-events: none; background: color-mix(in srgb, var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)) 70%, transparent);",
+  "  outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 70%, transparent); outline-offset: -1px; }",
+  ".atr-tile[data-lifted] { opacity: 0.3; }",
+  ":root[data-atr-dragging] .atr-tile, :root[data-atr-dragging] .atr-snip { cursor: grabbing; }",
   // the snippet library: its own sidebar card, same material and faces as STATUS
-  '#atrium-snips { position: fixed; z-index: 40; left: var(--zf-lib-x); top: var(--zf-lib-y); width: var(--zf-lib-w); height: var(--zf-lib-h);',
-  '  display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--zf-radius, 12px);',
-  '  background: var(--zf-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); color: var(--zf-ink-1, var(--ui-text-primary)); user-select: none;',
-  '  transition: height var(--zf-sd-dur, 280ms) var(--zf-sd-ease, cubic-bezier(.32,.72,0,1)), top var(--zf-sd-dur, 280ms) var(--zf-sd-ease, cubic-bezier(.32,.72,0,1)); }',
-  '#atrium-snips[hidden] { display: none; }',
-  "#atrium-snips[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--zf-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
-  ":root[data-zf-dragging='snip'] #atrium-snips:not([data-drop]), :root[data-zf-dragging='tile'] #atrium-snips:not([data-drop]) { outline: 1px dashed color-mix(in srgb, var(--zf-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: -1px; }",
-  '#atrium-snips .zf-lib-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: var(--zf-lib-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; cursor: pointer; outline: none;',
-  '  font-size: var(--zf-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;',
-  '  color: var(--zf-sd-lab-color, var(--theme-primary, var(--zf-ink-2, var(--ui-text-secondary)))); transition: color 150ms ease; }',
-  '#atrium-snips .zf-lib-head:hover, #atrium-snips .zf-lib-head:focus-visible { color: var(--zf-ink-0, var(--ui-text-primary)); }',
-  '#atrium-snips .zf-lib-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-  '#atrium-snips .zf-lib-count { color: var(--zf-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
-  '#atrium-snips .zf-lib-chev { margin-left: auto; transition: transform var(--zf-sd-dur, 280ms) var(--zf-sd-ease, ease); transform: rotate(-90deg); }',
-  '#atrium-snips[data-open] .zf-lib-chev { transform: none; }',
-  '#atrium-snips .zf-lib-rows { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.1rem; padding: 0 4px 0.35rem; overflow: hidden auto; scrollbar-width: none;',
+  '#atr-snips { position: fixed; z-index: 40; left: var(--atr-lib-x); top: var(--atr-lib-y); width: var(--atr-lib-w); height: var(--atr-lib-h);',
+  '  display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--atr-radius, 12px);',
+  '  background: var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); color: var(--atr-ink-1, var(--ui-text-primary)); user-select: none;',
+  '  transition: height var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)), top var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)); }',
+  '#atr-snips[hidden] { display: none; }',
+  "#atr-snips[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
+  ":root[data-atr-dragging='snip'] #atr-snips:not([data-drop]), :root[data-atr-dragging='tile'] #atr-snips:not([data-drop]) { outline: 1px dashed color-mix(in srgb, var(--atr-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: -1px; }",
+  '#atr-snips .atr-lib-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: var(--atr-lib-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; cursor: pointer; outline: none;',
+  '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;',
+  '  color: var(--atr-sd-lab-color, var(--theme-primary, var(--atr-ink-2, var(--ui-text-secondary)))); transition: color 150ms ease; }',
+  '#atr-snips .atr-lib-head:hover, #atr-snips .atr-lib-head:focus-visible { color: var(--atr-ink-0, var(--ui-text-primary)); }',
+  '#atr-snips .atr-lib-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
+  '#atr-snips .atr-lib-count { color: var(--atr-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
+  '#atr-snips .atr-lib-chev { margin-left: auto; transition: transform var(--atr-sd-dur, 280ms) var(--atr-sd-ease, ease); transform: rotate(-90deg); }',
+  '#atr-snips[data-open] .atr-lib-chev { transform: none; }',
+  '#atr-snips .atr-lib-rows { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.1rem; padding: 0 4px 0.35rem; overflow: hidden auto; scrollbar-width: none;',
   '  opacity: 0; transition: opacity 180ms ease; }',
-  '#atrium-snips[data-open] .zf-lib-rows { opacity: 1; transition: opacity 200ms ease 60ms; }',
-  '#atrium-snips .zf-lib-row { flex: none; display: flex; align-items: center; gap: 0.5rem; min-height: var(--zf-sd-rowh, 1.75rem); padding: 0 0.5rem; box-sizing: border-box;',
-  '  border-radius: var(--zf-r-2, 8px); font-size: var(--zf-sd-font, 0.8125rem); color: var(--zf-ink-1, var(--ui-text-primary));',
+  '#atr-snips[data-open] .atr-lib-rows { opacity: 1; transition: opacity 200ms ease 60ms; }',
+  '#atr-snips .atr-lib-row { flex: none; display: flex; align-items: center; gap: 0.5rem; min-height: var(--atr-sd-rowh, 1.75rem); padding: 0 0.5rem; box-sizing: border-box;',
+  '  border-radius: var(--atr-r-2, 8px); font-size: var(--atr-sd-font, 0.8125rem); color: var(--atr-ink-1, var(--ui-text-primary));',
   '  cursor: pointer; touch-action: none; outline: none; white-space: nowrap; overflow: hidden; transition: background-color 120ms ease, opacity 120ms ease; }',
-  '#atrium-snips .zf-lib-row:hover, #atrium-snips .zf-lib-row:focus-visible { background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); }',
-  '#atrium-snips .zf-lib-row[data-phantom] { opacity: 0.7; outline: 1px dashed color-mix(in srgb, var(--zf-accent, #9cf) 65%, transparent); outline-offset: -1px; }',
-  '#atrium-snips .zf-lib-title { flex: none; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-snips .zf-lib-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
-  '#atrium-snips .zf-lib-hint { flex: none; display: flex; align-items: center; min-height: var(--zf-sd-rowh, 1.75rem); padding: 0 0.5rem; font-size: var(--zf-sd-font, 0.8125rem); color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  "[data-atrium-lib-room] { margin-top: calc(var(--zf-sd-room, 0px) + var(--zf-lib-room, 0px)) !important; transition: margin-top var(--zf-sd-dur, 280ms) var(--zf-sd-ease, cubic-bezier(.32,.72,0,1)); }",
+  '#atr-snips .atr-lib-row:hover, #atr-snips .atr-lib-row:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); }',
+  '#atr-snips .atr-lib-row[data-phantom] { opacity: 0.7; outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 65%, transparent); outline-offset: -1px; }',
+  '#atr-snips .atr-lib-title { flex: none; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-snips .atr-lib-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
+  '#atr-snips .atr-lib-hint { flex: none; display: flex; align-items: center; min-height: var(--atr-sd-rowh, 1.75rem); padding: 0 0.5rem; font-size: var(--atr-sd-font, 0.8125rem); color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  "[data-atr-lib-room] { margin-top: calc(var(--atr-sd-room, 0px) + var(--atr-lib-room, 0px)) !important; transition: margin-top var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)); }",
   // the library drawer: slides off the sidebar edge, no scrim, chat stays live
-  '#atrium-snip-drawer { position: fixed; z-index: 45; left: var(--zf-dw-x, 0.75rem); top: var(--zf-dw-y, 3.5rem); width: min(24rem, calc(100vw - var(--zf-dw-x, 0.75rem) - 1rem));',
-  '  max-height: var(--zf-dw-maxh, 70vh); display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--zf-radius, 12px);',
-  '  background: var(--zf-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); box-shadow: var(--zf-lift-float, 0 16px 40px rgba(0,0,0,.34));',
-  '  color: var(--zf-ink-1, var(--ui-text-primary)); animation: zf-dw-in 240ms cubic-bezier(.32,.72,0,1); outline: none; }',
-  '#atrium-snip-drawer[data-leaving] { animation: zf-dw-out 160ms ease forwards; pointer-events: none; }',
-  '@keyframes zf-dw-in { from { opacity: 0; transform: translateX(-0.75rem); } }',
-  '@keyframes zf-dw-out { to { opacity: 0; transform: translateX(-0.5rem); } }',
-  '#atrium-snip-drawer .zf-dw-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: 2rem; padding: 0 0.35rem 0 0.8rem;',
-  '  font-size: var(--zf-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--zf-sd-lab-color, var(--zf-ink-2, var(--ui-text-secondary))); }',
-  '#atrium-snip-drawer .zf-dw-count { color: var(--zf-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
-  '#atrium-snip-drawer .zf-dw-keys { margin-left: auto; letter-spacing: 0.04em; text-transform: none; font-weight: 400; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-snip-drawer .zf-dw-icon { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; cursor: pointer; flex: none;',
-  '  border-radius: var(--zf-r-2, 8px); background: transparent; color: var(--zf-ink-3, var(--ui-text-tertiary)); transition: background-color 120ms ease, color 120ms ease; }',
-  '#atrium-snip-drawer .zf-dw-icon:hover, #atrium-snip-drawer .zf-dw-icon:focus-visible { background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); outline: none; }',
-  '#atrium-snip-drawer .zf-dw-icon[data-on] { color: var(--zf-accent, #9cf); }',
-  '#atrium-snip-drawer .zf-dw-icon svg { width: 0.85rem; height: 0.85rem; }',
-  '#atrium-snip-drawer .zf-dw-list { flex: 1; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-width: none; padding: 0 0.35rem 0.4rem;',
+  '#atr-snip-drawer { position: fixed; z-index: 45; left: var(--atr-dw-x, 0.75rem); top: var(--atr-dw-y, 3.5rem); width: min(24rem, calc(100vw - var(--atr-dw-x, 0.75rem) - 1rem));',
+  '  max-height: var(--atr-dw-maxh, 70vh); display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--atr-radius, 12px);',
+  '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); box-shadow: var(--atr-lift-float, 0 16px 40px rgba(0,0,0,.34));',
+  '  color: var(--atr-ink-1, var(--ui-text-primary)); animation: atr-dw-in 240ms cubic-bezier(.32,.72,0,1); outline: none; }',
+  '#atr-snip-drawer[data-leaving] { animation: atr-dw-out 160ms ease forwards; pointer-events: none; }',
+  '@keyframes atr-dw-in { from { opacity: 0; transform: translateX(-0.75rem); } }',
+  '@keyframes atr-dw-out { to { opacity: 0; transform: translateX(-0.5rem); } }',
+  '#atr-snip-drawer .atr-dw-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: 2rem; padding: 0 0.35rem 0 0.8rem;',
+  '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-sd-lab-color, var(--atr-ink-2, var(--ui-text-secondary))); }',
+  '#atr-snip-drawer .atr-dw-count { color: var(--atr-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
+  '#atr-snip-drawer .atr-dw-keys { margin-left: auto; letter-spacing: 0.04em; text-transform: none; font-weight: 400; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-snip-drawer .atr-dw-icon { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; cursor: pointer; flex: none;',
+  '  border-radius: var(--atr-r-2, 8px); background: transparent; color: var(--atr-ink-3, var(--ui-text-tertiary)); transition: background-color 120ms ease, color 120ms ease; }',
+  '#atr-snip-drawer .atr-dw-icon:hover, #atr-snip-drawer .atr-dw-icon:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
+  '#atr-snip-drawer .atr-dw-icon[data-on] { color: var(--atr-accent, #9cf); }',
+  '#atr-snip-drawer .atr-dw-icon svg { width: 0.85rem; height: 0.85rem; }',
+  '#atr-snip-drawer .atr-dw-list { flex: 1; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-width: none; padding: 0 0.35rem 0.4rem;',
   '  display: flex; flex-direction: column; gap: 0.1rem; -webkit-mask: linear-gradient(transparent, #000 0.5rem, #000 calc(100% - 0.75rem), transparent); mask: linear-gradient(transparent, #000 0.5rem, #000 calc(100% - 0.75rem), transparent); }',
-  '#atrium-snip-drawer .zf-dw-item { flex: none; border-radius: var(--zf-r-2, 8px); cursor: pointer; transition: background-color 200ms ease, opacity 200ms ease; opacity: 0.62; }',
-  '#atrium-snip-drawer .zf-dw-item:hover { opacity: 0.9; }',
-  '#atrium-snip-drawer .zf-dw-item[data-focus] { opacity: 1; cursor: default; background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); }',
-  '#atrium-snip-drawer .zf-dw-line { display: flex; align-items: baseline; gap: 0.5rem; min-height: 1.9rem; padding: 0.45rem 0.55rem 0; box-sizing: border-box; white-space: nowrap; overflow: hidden; }',
-  '#atrium-snip-drawer .zf-dw-item:not([data-focus]) .zf-dw-line { padding-bottom: 0.45rem; align-items: center; }',
-  '#atrium-snip-drawer .zf-dw-title { flex: none; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-snip-drawer .zf-dw-short { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 0.8125rem; color: var(--zf-ink-1, var(--ui-text-primary)); transition: opacity 160ms ease; }',
-  '#atrium-snip-drawer .zf-dw-item[data-focus] .zf-dw-short { opacity: 0; }',
-  '#atrium-snip-drawer .zf-dw-loose { font-size: 0.6rem; letter-spacing: 0.06em; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-snip-drawer .zf-dw-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms cubic-bezier(.32,.72,0,1); }',
-  '#atrium-snip-drawer .zf-dw-item[data-focus] .zf-dw-more { grid-template-rows: 1fr; }',
-  '#atrium-snip-drawer .zf-dw-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 0.3rem; padding: 0 0.55rem; }',
-  '#atrium-snip-drawer .zf-dw-item[data-focus] .zf-dw-inner { padding-bottom: 0.5rem; }',
-  '#atrium-snip-drawer .zf-dw-full { font-size: 1rem; line-height: 1.45; color: var(--zf-ink-0, var(--ui-text-primary)); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text;',
+  '#atr-snip-drawer .atr-dw-item { flex: none; border-radius: var(--atr-r-2, 8px); cursor: pointer; transition: background-color 200ms ease, opacity 200ms ease; opacity: 0.62; }',
+  '#atr-snip-drawer .atr-dw-item:hover { opacity: 0.9; }',
+  '#atr-snip-drawer .atr-dw-item[data-focus] { opacity: 1; cursor: default; background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); }',
+  '#atr-snip-drawer .atr-dw-line { display: flex; align-items: baseline; gap: 0.5rem; min-height: 1.9rem; padding: 0.45rem 0.55rem 0; box-sizing: border-box; white-space: nowrap; overflow: hidden; }',
+  '#atr-snip-drawer .atr-dw-item:not([data-focus]) .atr-dw-line { padding-bottom: 0.45rem; align-items: center; }',
+  '#atr-snip-drawer .atr-dw-title { flex: none; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-snip-drawer .atr-dw-short { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 0.8125rem; color: var(--atr-ink-1, var(--ui-text-primary)); transition: opacity 160ms ease; }',
+  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-short { opacity: 0; }',
+  '#atr-snip-drawer .atr-dw-loose { font-size: 0.6rem; letter-spacing: 0.06em; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-snip-drawer .atr-dw-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms cubic-bezier(.32,.72,0,1); }',
+  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-more { grid-template-rows: 1fr; }',
+  '#atr-snip-drawer .atr-dw-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 0.3rem; padding: 0 0.55rem; }',
+  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-inner { padding-bottom: 0.5rem; }',
+  '#atr-snip-drawer .atr-dw-full { font-size: 1rem; line-height: 1.45; color: var(--atr-ink-0, var(--ui-text-primary)); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text;',
   '  max-height: 12rem; overflow: auto; scrollbar-width: thin; font-variant-numeric: tabular-nums; }',
-  '#atrium-snip-drawer .zf-dw-note { font-size: 0.8rem; line-height: 1.45; color: var(--zf-ink-2, var(--ui-text-secondary)); white-space: pre-wrap; user-select: text; }',
-  '#atrium-snip-drawer .zf-dw-source { font-size: 0.6875rem; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-snip-drawer .zf-dw-foot { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }',
-  '#atrium-snip-drawer .zf-dw-btn { height: 1.6rem; padding: 0 0.65rem; border: 0; cursor: pointer; font: inherit; font-size: 0.75rem;',
-  '  border-radius: var(--zf-r-2, 8px); background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--zf-ink-1, var(--ui-text-primary)); transition: background-color 120ms ease, color 120ms ease; }',
-  '#atrium-snip-drawer .zf-dw-btn:hover, #atrium-snip-drawer .zf-dw-btn:focus-visible { background: var(--zf-edge-strong, rgba(255,255,255,.11)); color: var(--zf-ink-0, var(--ui-text-primary)); outline: none; }',
-  '#atrium-snip-drawer .zf-dw-primary { background: color-mix(in srgb, var(--zf-accent, #9cf) 22%, transparent); color: var(--zf-ink-0, var(--ui-text-primary)); }',
-  '#atrium-snip-drawer .zf-dw-primary:hover, #atrium-snip-drawer .zf-dw-primary:focus-visible { background: color-mix(in srgb, var(--zf-accent, #9cf) 32%, transparent); }',
-  '#atrium-snip-drawer .zf-dw-btn:disabled { opacity: 0.6; cursor: default; }',
-  '#atrium-snips .zf-lib-row[data-current] { background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); }',
-  '@media (prefers-reduced-motion: reduce) { #atrium-snip-drawer, #atrium-snip-drawer[data-leaving] { animation: none; } #atrium-snip-drawer .zf-dw-more { transition: none; } }',
+  '#atr-snip-drawer .atr-dw-note { font-size: 0.8rem; line-height: 1.45; color: var(--atr-ink-2, var(--ui-text-secondary)); white-space: pre-wrap; user-select: text; }',
+  '#atr-snip-drawer .atr-dw-source { font-size: 0.6875rem; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-snip-drawer .atr-dw-foot { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }',
+  '#atr-snip-drawer .atr-dw-btn { height: 1.6rem; padding: 0 0.65rem; border: 0; cursor: pointer; font: inherit; font-size: 0.75rem;',
+  '  border-radius: var(--atr-r-2, 8px); background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-1, var(--ui-text-primary)); transition: background-color 120ms ease, color 120ms ease; }',
+  '#atr-snip-drawer .atr-dw-btn:hover, #atr-snip-drawer .atr-dw-btn:focus-visible { background: var(--atr-edge-strong, rgba(255,255,255,.11)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
+  '#atr-snip-drawer .atr-dw-primary { background: color-mix(in srgb, var(--atr-accent, #9cf) 22%, transparent); color: var(--atr-ink-0, var(--ui-text-primary)); }',
+  '#atr-snip-drawer .atr-dw-primary:hover, #atr-snip-drawer .atr-dw-primary:focus-visible { background: color-mix(in srgb, var(--atr-accent, #9cf) 32%, transparent); }',
+  '#atr-snip-drawer .atr-dw-btn:disabled { opacity: 0.6; cursor: default; }',
+  '#atr-snips .atr-lib-row[data-current] { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); }',
+  '@media (prefers-reduced-motion: reduce) { #atr-snip-drawer, #atr-snip-drawer[data-leaving] { animation: none; } #atr-snip-drawer .atr-dw-more { transition: none; } }',
   // the drag ghost, for every source (the dock's own copy covers status rows)
-  '#atrium-statusdock-ghost { position: fixed; z-index: 2147483000; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 0.45rem;',
-  '  padding: 0.3rem 0.65rem; border-radius: var(--zf-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 16rem; overflow: hidden;',
-  '  background: var(--zf-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35); }',
-  '#atrium-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-  '#atrium-statusdock-ghost .zf-ghost-title { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--zf-ink-3, var(--ui-text-tertiary)); }',
-  '#atrium-statusdock-ghost > span:last-child { overflow: hidden; text-overflow: ellipsis; }',
+  '#atr-statusdock-ghost { position: fixed; z-index: 2147483000; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 0.45rem;',
+  '  padding: 0.3rem 0.65rem; border-radius: var(--atr-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 16rem; overflow: hidden;',
+  '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35); }',
+  '#atr-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
+  '#atr-statusdock-ghost .atr-ghost-title { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
+  '#atr-statusdock-ghost > span:last-child { overflow: hidden; text-overflow: ellipsis; }',
   // over a drop zone the chip melts into the preview that grew out of it
-  '#atrium-statusdock-ghost { transition: opacity 140ms ease, scale 160ms cubic-bezier(.32,.72,0,1); }',
-  '#atrium-statusdock-ghost[data-docked] { opacity: 0; scale: 0.85; }',
-  '@media (prefers-reduced-motion: reduce) { #atrium-statusdock-ghost { transition: none; } }'
+  '#atr-statusdock-ghost { transition: opacity 140ms ease, scale 160ms cubic-bezier(.32,.72,0,1); }',
+  '#atr-statusdock-ghost[data-docked] { opacity: 0; scale: 0.85; }',
+  '@media (prefers-reduced-motion: reduce) { #atr-statusdock-ghost { transition: none; } }'
 ].join('\n')
 
 // The new-tab shelf is plugin UI, not scenery. It keeps its own always-on
 // sheet so it survives Atrium being away (another theme, or a switch off): the fill
-// is the plugin's own sidebar-card material (`--zf-side-card`, the same glass
+// is the plugin's own sidebar-card material (`--atr-side-card`, the same glass
 // the snippet and tool cards wear) and the host's widget surface when no Atrium
 // look is active. Shape, edge and shadow follow the rest of the plugin: one
-// `--zf-edge` hairline, `--zf-radius-lg`, no white wash over the fill. No live
+// `--atr-edge` hairline, `--atr-radius-lg`, no white wash over the fill. No live
 // backdrop-filter: like every other large Atrium surface, the card sits on a
 // material, not on a blurred copy of the picture.
 const HOME_CSS = [
-  '#zf-home {',
-  '  --zf-home-ink-0: var(--zf-ink-0, var(--ui-text-primary, inherit));',
-  '  --zf-home-ink-2: var(--zf-ink-2, var(--ui-text-secondary, inherit));',
-  '  --zf-home-ink-3: var(--zf-ink-3, var(--ui-text-tertiary, inherit));',
-  '  --zf-home-hi: var(--zf-hi, 255, 255, 255);',
+  '#atr-home {',
+  '  --atr-home-ink-0: var(--atr-ink-0, var(--ui-text-primary, inherit));',
+  '  --atr-home-ink-2: var(--atr-ink-2, var(--ui-text-secondary, inherit));',
+  '  --atr-home-ink-3: var(--atr-ink-3, var(--ui-text-tertiary, inherit));',
+  '  --atr-home-hi: var(--atr-hi, 255, 255, 255);',
   // The cards cast a 24-32px shadow. A plain hidden clip turns that into a hard
   // edge at the shelf's right and bottom; clip, but 48px past the box, so the
   // shadow can finish. Placement leaves 88px below the shelf for it.
   '  position: fixed; z-index: 2; display: none; flex-direction: column; gap: 18px; pointer-events: none; overflow: clip; overflow-clip-margin: 48px;',
   '}',
-  "#zf-home[data-on='1'] { display: flex; animation: zf-home-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }",
-  '@keyframes zf-home-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
-  '#zf-home h3 { margin: 0 0 14px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--zf-home-ink-0); opacity: 0.92; text-shadow: 0 1px 2px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.55); }',
+  "#atr-home[data-on='1'] { display: flex; animation: atr-home-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }",
+  '@keyframes atr-home-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
+  '#atr-home h3 { margin: 0 0 14px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-home-ink-0); opacity: 0.92; text-shadow: 0 1px 2px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.55); }',
   // Over the picture the label needs the shadow. In a light host
   // theme it sits on a flat page, where the same black halo reads as dirt.
-  'html:not(.dark) #zf-home h3 { text-shadow: none; }',
-  '#zf-home .zf-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }',
-  '@media (max-width: 640px) { #zf-home .zf-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }',
-  '#zf-home .zf-card { position: relative; pointer-events: auto; min-width: 0; }',
-  '#zf-home .zf-card-open { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; padding: 16px 38px 16px 16px; border-radius: var(--zf-radius, var(--zf-r-card, 12px)); cursor: pointer; transition: background-color 140ms ease, box-shadow 140ms ease; }',
+  'html:not(.dark) #atr-home h3 { text-shadow: none; }',
+  '#atr-home .atr-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }',
+  '@media (max-width: 640px) { #atr-home .atr-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }',
+  '#atr-home .atr-card { position: relative; pointer-events: auto; min-width: 0; }',
+  '#atr-home .atr-card-open { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; padding: 16px 38px 16px 16px; border-radius: var(--atr-radius, var(--atr-r-card, 12px)); cursor: pointer; transition: background-color 140ms ease, box-shadow 140ms ease; }',
   // Matte: the plugin's own card material worn the way the sidebar, snippet and
   // tool cards wear it. One flat fill, no ring, no drop shadow, no white wash -
   // nothing that picks up the backdrop behind it, so it cannot read as reflective.
-  "#zf-home[data-cards='matte'] .zf-card-open { background: var(--zf-m-solid, rgb(17, 18, 24)); }",
-  "#zf-home[data-cards='matte'] .zf-card-open:hover { background: color-mix(in srgb, var(--zf-m-solid, rgb(17, 18, 24)) 90%, #fff); }",
+  "#atr-home[data-cards='matte'] .atr-card-open { background: var(--atr-m-solid, rgb(17, 18, 24)); }",
+  "#atr-home[data-cards='matte'] .atr-card-open:hover { background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, #fff); }",
   // Glass: the sidebar-card glass, edged and lifted off the page.
-  "#zf-home[data-cards='glass'] .zf-card-open { background: var(--zf-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55))); box-shadow: 0 0 0 1px var(--zf-edge, rgba(255, 255, 255, 0.07)), 0 10px 26px rgba(0, 0, 0, 0.24); }",
-  "#zf-home[data-cards='glass'] .zf-card-open:hover { background: var(--zf-side-card-hi, var(--zf-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55)))); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zf-hi, 255, 255, 255) 16%, transparent), 0 14px 32px rgba(0, 0, 0, 0.3); }",
-  '#zf-home .zf-card-open:focus-visible { box-shadow: 0 0 0 2px rgba(var(--zf-home-hi), 0.7); }',
-  '#zf-home .zf-card-title { font-size: 15.5px; font-weight: 600; letter-spacing: 0.005em; color: var(--zf-home-ink-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '#zf-home .zf-card-why { font-size: 12.5px; color: var(--zf-home-ink-2); opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '#zf-home .zf-card-x { all: unset; position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 15px; line-height: 1; cursor: pointer; color: var(--zf-home-ink-3); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }',
-  '#zf-home .zf-card:hover .zf-card-x, #zf-home .zf-card:focus-within .zf-card-x { opacity: 0.7; }',
-  '#zf-home .zf-card-x:hover { opacity: 1; background: rgba(var(--zf-home-hi), 0.14); }',
-    '@media (prefers-reduced-motion: reduce) { #zf-home[data-on="1"] { animation: none; } #zf-home .zf-card-open { transition: none; } }'
+  "#atr-home[data-cards='glass'] .atr-card-open { background: var(--atr-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55))); box-shadow: 0 0 0 1px var(--atr-edge, rgba(255, 255, 255, 0.07)), 0 10px 26px rgba(0, 0, 0, 0.24); }",
+  "#atr-home[data-cards='glass'] .atr-card-open:hover { background: var(--atr-side-card-hi, var(--atr-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55)))); box-shadow: 0 0 0 1px color-mix(in srgb, var(--atr-hi, 255, 255, 255) 16%, transparent), 0 14px 32px rgba(0, 0, 0, 0.3); }",
+  '#atr-home .atr-card-open:focus-visible { box-shadow: 0 0 0 2px rgba(var(--atr-home-hi), 0.7); }',
+  '#atr-home .atr-card-title { font-size: 15.5px; font-weight: 600; letter-spacing: 0.005em; color: var(--atr-home-ink-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+  '#atr-home .atr-card-why { font-size: 12.5px; color: var(--atr-home-ink-2); opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+  '#atr-home .atr-card-x { all: unset; position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 15px; line-height: 1; cursor: pointer; color: var(--atr-home-ink-3); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }',
+  '#atr-home .atr-card:hover .atr-card-x, #atr-home .atr-card:focus-within .atr-card-x { opacity: 0.7; }',
+  '#atr-home .atr-card-x:hover { opacity: 1; background: rgba(var(--atr-home-hi), 0.14); }',
+    '@media (prefers-reduced-motion: reduce) { #atr-home[data-on="1"] { animation: none; } #atr-home .atr-card-open { transition: none; } }'
 ].join('\n')
 
 const ensureHomeStyle = () => {
   if (typeof document === 'undefined') return
   // a hot-reloaded plugin finds its old sheet still in place; refresh it
-  const old = document.getElementById('atrium-home-style')
+  const old = document.getElementById('atr-home-style')
   if (old) { if (old.textContent !== HOME_CSS) old.textContent = HOME_CSS; return }
   const el = document.createElement('style')
-  el.id = 'atrium-home-style'
+  el.id = 'atr-home-style'
   el.textContent = HOME_CSS
   document.head.appendChild(el)
 }
 const ensureSnippetStyle = () => {
-  if (typeof document === 'undefined' || document.getElementById('atrium-snippet-style')) return
+  if (typeof document === 'undefined' || document.getElementById('atr-snippet-style')) return
   const el = document.createElement('style')
-  el.id = 'atrium-snippet-style'
+  el.id = 'atr-snippet-style'
   el.textContent = SNIPPET_CSS
   document.head.appendChild(el)
 }
@@ -3533,7 +3534,7 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
   const act = (label, svg, run, extra) =>
     jsx('button', Object.assign({
       'aria-label': label,
-      className: 'zf-snip-act',
+      className: 'atr-snip-act',
       onClick: run,
       title: label,
       type: 'button',
@@ -3549,7 +3550,7 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
   }
 
   return jsxs('div', {
-    className: 'zf-snip',
+    className: 'atr-snip',
     'data-tone': accent ? 'accent' : 'plain',
     // a click opens the preview, a drag carries it to the Pins or the Shelf
     onPointerDown: event => {
@@ -3557,24 +3558,24 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
       onGrab?.(event, { id, title, value, note, source, body })
     },
     title: 'Click to preview, drag to Snippets or the Shelf',
-    'data-zf-snippet': id,
+    'data-atr-snippet': id,
     children: [
       jsxs('div', {
-        className: 'zf-snip-head',
+        className: 'atr-snip-head',
         children: [
-          title ? jsx('div', { className: 'zf-snip-title', children: title }) : null,
+          title ? jsx('div', { className: 'atr-snip-title', children: title }) : null,
           jsxs('div', {
-            className: 'zf-snip-acts',
+            className: 'atr-snip-acts',
             children: [
               jsx('button', {
                 'aria-label': 'Copy',
-                className: 'zf-snip-act',
+                className: 'atr-snip-act',
                 onClick: copy,
                 title: 'Copy',
                 type: 'button',
                 children: [
-                  jsx('span', { className: 'zf-snip-idle', children: jsx(Codicon, { name: 'copy', size: '0.85rem' }) }),
-                  jsx('span', { className: 'zf-snip-done', children: jsx(Codicon, { name: 'check', size: '0.85rem' }) })
+                  jsx('span', { className: 'atr-snip-idle', children: jsx(Codicon, { name: 'copy', size: '0.85rem' }) }),
+                  jsx('span', { className: 'atr-snip-done', children: jsx(Codicon, { name: 'check', size: '0.85rem' }) })
                 ]
               }),
               act(pinned ? 'Unpin' : 'Pin to Snippets', pinned ? SNIP_PIN_SOLID : SNIP_PIN,
@@ -3583,9 +3584,9 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
           })
         ]
       }),
-      value ? jsx('div', { className: 'zf-snip-value', children: value }) : null,
-      note ? jsx('div', { className: 'zf-snip-note', children: note }) : null,
-      source ? jsx('div', { className: 'zf-snip-source', children: source }) : null
+      value ? jsx('div', { className: 'atr-snip-value', children: value }) : null,
+      note ? jsx('div', { className: 'atr-snip-note', children: note }) : null,
+      source ? jsx('div', { className: 'atr-snip-source', children: source }) : null
     ]
   })
 }
@@ -3599,7 +3600,7 @@ function PhaseChip({ appearance, onSelect }) {
   const selected = useValue(appearance)
   const choices = [['gruvbox', 'Gruvbox'], ['custom', 'Custom'], ['hermes', 'Hermes appearance']]
   return jsxs(Select, { value: selected, onValueChange: onSelect, children: [
-    jsx(SelectTrigger, { 'aria-label': 'Atrium appearance', className: 'h-7 w-auto text-xs', children: jsx(SelectValue, {}) }),
+    jsx(SelectTrigger, { 'aria-label': 'Hermes Hermes Atrium appearance', className: 'h-7 w-auto text-xs', children: jsx(SelectValue, {}) }),
     jsx(SelectContent, { children: choices.map(([id, label]) => jsx(SelectItem, { value: id, children: label }, id)) })
   ] })
 }
@@ -3860,8 +3861,8 @@ function isTransparentHermesWindow(search = typeof location !== 'undefined' ? lo
 }
 
 export default {
-  id: 'atrium',
-  name: 'Atrium',
+  id: 'hermes-atrium',
+  name: 'Hermes Atrium',
   description: 'A painting or your own picture behind Hermes, tinted glass over it, reply panels, snippet cards and calmer chat.',
 
   register(ctx) {
@@ -3876,9 +3877,9 @@ export default {
     // the rail glyph (see "The Atrium mark")
     let iconStyle = null
     if (typeof document !== 'undefined' && document.head) {
-      document.getElementById('atrium-icon-style')?.remove()
+      document.getElementById('atr-icon-style')?.remove()
       iconStyle = document.createElement('style')
-      iconStyle.id = 'atrium-icon-style'
+      iconStyle.id = 'atr-icon-style'
       iconStyle.textContent = ATRIUM_ICON_CSS
       document.head.appendChild(iconStyle)
     }
@@ -3886,7 +3887,7 @@ export default {
     // Our own leftovers from an instance that died before registering its
     // disposer: a stale canvas or starfield is a full-screen layer at z-index
     // -1, so it would sit on top of the sheet.
-    for (const staleId of ['atrium-gl-sky', 'atrium-gl-sky-style', 'atrium-aurora-stars', 'zephyr-sky-style', 'zephyr-chrome-base', 'zephyr-chrome-details', ...SHEET_IDS]) {
+    for (const staleId of ['atr-gl-sky', 'atr-gl-sky-style', 'atr-aurora-stars', 'zephyr-sky-style', 'zephyr-chrome-base', 'zephyr-chrome-details', ...SHEET_IDS]) {
       let stale = document.getElementById(staleId)
       while (stale) {
         if (stale.parentNode) stale.parentNode.removeChild(stale)
@@ -3907,9 +3908,9 @@ export default {
       // tabs" means. Pane tabs are [data-slot='pane-tab'] and are excluded.
       // Session tabs, not the pane tabs: the rows in the tree that each hold one
       // session (workspace + session-tile:<id>). Pane tabs are [data-slot='pane-tab']
-      // and the sidebar's copies sit inside [data-zf-arc-col]; both are excluded.
+      // and the sidebar's copies sit inside [data-atr-arc-col]; both are excluded.
       const sessionTabs = () => Array.from(document.querySelectorAll("[role='tab'][data-tree-tab]"))
-        .filter(tab => tab.dataset.slot !== 'pane-tab' && !tab.closest('[data-zf-arc-col]') && tab.getClientRects().length > 0)
+        .filter(tab => tab.dataset.slot !== 'pane-tab' && !tab.closest('[data-atr-arc-col]') && tab.getClientRects().length > 0)
       // With a split there is one strip per pane: use the strip above the thing you are working in.
       const stripOf = tabs => {
         const strips = new Map()
@@ -3950,8 +3951,8 @@ export default {
         return true
       }
       for (const [id, dir, label, combo] of [
-        ['atrium.tabPrev', -1, 'Previous session tab', 'mod+alt+left'],
-        ['atrium.tabNext', 1, 'Next session tab', 'mod+alt+right']
+        ['hermes-atrium.tabPrev', -1, 'Previous session tab', 'mod+alt+left'],
+        ['hermes-atrium.tabNext', 1, 'Next session tab', 'mod+alt+right']
       ]) {
         ctx.register({
           id,
@@ -3983,7 +3984,7 @@ export default {
         // letter per line, is what that used to look like. Now the label goes away
         // entirely and the tab becomes a small bar: dim when it is not the pane you
         // are in, ink-bright when it is. Nothing to wrap, nothing to clip.
-        "[data-slot='pane-tab'][data-zf-rail='true'] {",
+        "[data-slot='pane-tab'][data-atr-rail='true'] {",
         '  justify-content: center !important;',
         '  align-items: center !important;',
         '  padding: 0 !important;',
@@ -3994,22 +3995,22 @@ export default {
         '  box-shadow: none !important;',
         '  background: transparent !important;',
         '}',
-        "[data-slot='pane-tab'][data-zf-rail='true'] > * {",
+        "[data-slot='pane-tab'][data-atr-rail='true'] > * {",
         '  display: none !important;',
         '}',
-        "[data-slot='pane-tab'][data-zf-rail='true']::before {",
+        "[data-slot='pane-tab'][data-atr-rail='true']::before {",
         "  content: ''; width: 3px; height: 16px; border-radius: 999px;",
-        '  background: var(--zf-ink-3, rgba(255, 255, 255, 0.32));',
+        '  background: var(--atr-ink-3, rgba(255, 255, 255, 0.32));',
         '  transition: background-color 120ms ease, height 120ms ease;',
         '}',
-        "[data-slot='pane-tab'][data-zf-rail='true']:is([aria-selected='true'], [data-active='true'])::before {",
+        "[data-slot='pane-tab'][data-atr-rail='true']:is([aria-selected='true'], [data-active='true'])::before {",
         '  height: 22px;',
-        '  background: var(--zf-ink-0, #fbf1c7);',
+        '  background: var(--atr-ink-0, #fbf1c7);',
         '}'
       ]
-      document.getElementById('atrium-pane-rail')?.remove()
+      document.getElementById('atr-pane-rail')?.remove()
       const railStyle = document.createElement('style')
-      railStyle.id = 'atrium-pane-rail'
+      railStyle.id = 'atr-pane-rail'
       railStyle.textContent = PANE_RAIL_CSS.join('\n')
       document.head.appendChild(railStyle)
       const seenTabs = new WeakSet()
@@ -4017,18 +4018,18 @@ export default {
         for (const entry of entries) {
           const tab = entry.target
           const rail = entry.contentRect.width < 56 ? 'true' : 'false'
-          if (tab.dataset.zfRail !== rail) {
-            tab.dataset.zfRail = rail
+          if (tab.dataset.atrRail !== rail) {
+            tab.dataset.atrRail = rail
             // collapsed, the label is gone, so the hover title has to carry it
             if (rail === 'true') {
               const label = (tab.textContent || '').trim()
-              if (label && !tab.dataset.zfTitle) {
-                tab.dataset.zfTitle = label
+              if (label && !tab.dataset.atrTitle) {
+                tab.dataset.atrTitle = label
                 tab.setAttribute('title', label)
               }
-            } else if (tab.dataset.zfTitle) {
+            } else if (tab.dataset.atrTitle) {
               tab.removeAttribute('title')
-              delete tab.dataset.zfTitle
+              delete tab.dataset.atrTitle
             }
           }
         }
@@ -4066,8 +4067,8 @@ export default {
     const pins = atom((() => { const v = stored(STORE_KEYS.pins); return Array.isArray(v) ? v.filter(p => p && typeof p.id === 'string') : [] })())
     const auto = atom(stored(STORE_KEYS.auto) !== false)
     // Picking another theme in Appearance must really switch to it:
-    // while one is selected, Atrium draws no painting and asks for no theme. Picking
-    // a Atrium theme, the status chip or a look wakes it again. Remembered across restarts.
+    // while one is selected, Hermes Atrium draws no painting and asks for no theme. Picking
+    // a Hermes Atrium theme, the status chip or a look wakes it again. Remembered across restarts.
     let away = false
     if (typeof document !== 'undefined') {
       const now = document.documentElement.dataset.hermesTheme || ''
@@ -4092,13 +4093,13 @@ export default {
     const replyGround = atom(stored(STORE_KEYS.replyGround) !== false)
     // 'gruvbox' = the built-in skin at its shipped defaults; 'custom'
     // = the same skin driven by your own picture and knobs
-    // (atrium-theme.json). The two differ only in which values the sheet reads.
+    // (hermes-atrium-theme.json). The two differ only in which values the sheet reads.
     const LOOKS = ['gruvbox', 'custom']
     const lookStore = stored(STORE_KEYS.look)
     const look = atom(LOOKS.includes(lookStore) ? lookStore : 'gruvbox')
     setLookMode(look.get())
     // The panel's own dials (solid / max / tone / edge / pad), live in
-    // Settings -> Atrium -> Chat & motion. `panel` (the module-level copy every
+    // Settings -> Hermes Atrium -> Chat & motion. `panel` (the module-level copy every
     // pure helper reads) is kept in step below, so no function re-reads the atom.
     const panelSettings = atom((() => {
       const raw = stored(STORE_KEYS.panel)
@@ -4148,9 +4149,9 @@ export default {
       if (typeof document === 'undefined' || !document.documentElement) return
       if (!document.documentElement.dataset) document.documentElement.dataset = {}
       if (on) {
-        document.documentElement.dataset.atriumMargins = 'spacious'
+        document.documentElement.dataset.atrMargins = 'spacious'
       } else {
-        delete document.documentElement.dataset.atriumMargins
+        delete document.documentElement.dataset.atrMargins
       }
     }
     // The Motion switch: every duration in the always-on sheet (§5b) reads a
@@ -4158,8 +4159,8 @@ export default {
     const applyMotion = on => {
       if (typeof document === 'undefined' || !document.documentElement) return
       if (!document.documentElement.dataset) document.documentElement.dataset = {}
-      if (on) delete document.documentElement.dataset.atriumMotion
-      else document.documentElement.dataset.atriumMotion = 'off'
+      if (on) delete document.documentElement.dataset.atrMotion
+      else document.documentElement.dataset.atrMotion = 'off'
     }
     // ── Wordmark keeps its size in spacious mode ─────────────────────────────
     // The HERMES AGENT wordmark sizes itself from its container (container
@@ -4173,8 +4174,8 @@ export default {
     const unpinWordmark = () => {
       if (typeof document === 'undefined') return
       wordmarkKey = ''
-      document.querySelectorAll?.('[data-atrium-wordmark-pinned]').forEach(el => {
-        el.removeAttribute('data-atrium-wordmark-pinned')
+      document.querySelectorAll?.('[data-atr-wordmark-pinned]').forEach(el => {
+        el.removeAttribute('data-atr-wordmark-pinned')
         for (const p of ['width', 'max-width', 'min-width', 'height', 'font-size', 'letter-spacing', 'margin-inline', 'flex-shrink']) el.style.removeProperty(p)
       })
     }
@@ -4196,22 +4197,22 @@ export default {
       const root = document.documentElement
       // Re-measure only when the window size changes or a new wordmark mounts.
       const key = `${window.innerWidth}x${window.innerHeight}`
-      if (wordmarkKey === key && mark.hasAttribute('data-atrium-wordmark-pinned')) return
+      if (wordmarkKey === key && mark.hasAttribute('data-atr-wordmark-pinned')) return
 
       const targets = [mark, ...mark.querySelectorAll('svg, img')]
       unpinWordmark()
-      delete root.dataset.atriumMargins
+      delete root.dataset.atrMargins
       const sizes = targets.map(el => {
         const rect = el.getBoundingClientRect()
         const cs = getComputedStyle(el)
         return { width: rect.width, height: rect.height, fontSize: cs.fontSize, letterSpacing: cs.letterSpacing }
       })
-      root.dataset.atriumMargins = 'spacious'
+      root.dataset.atrMargins = 'spacious'
 
       targets.forEach((el, i) => {
         const m = sizes[i]
         if (!m.width) return
-        el.setAttribute('data-atrium-wordmark-pinned', 'true')
+        el.setAttribute('data-atr-wordmark-pinned', 'true')
         el.style.setProperty('width', `${m.width}px`, 'important')
         el.style.setProperty('min-width', `${m.width}px`, 'important')
         el.style.setProperty('max-width', 'none', 'important')
@@ -4239,10 +4240,10 @@ export default {
     let colKey = ''
     const unfitColumn = () => {
       colKey = ''
-      document.querySelectorAll?.('[data-atrium-col-fit]').forEach(el => {
-        el.removeAttribute('data-atrium-col-fit')
-        el.style.removeProperty('--zf-col-left')
-        el.style.removeProperty('--zf-col-w')
+      document.querySelectorAll?.('[data-atr-col-fit]').forEach(el => {
+        el.removeAttribute('data-atr-col-fit')
+        el.style.removeProperty('--atr-col-left')
+        el.style.removeProperty('--atr-col-w')
       })
     }
     const fitColumn = () => {
@@ -4273,11 +4274,11 @@ export default {
       const width = Math.round(c.width * 2) / 2
       if (left < 0 || left + width > viewport.clientWidth + 1) { if (colKey) unfitColumn(); return }
       const key = `${left}|${width}`
-      if (key === colKey && content.hasAttribute('data-atrium-col-fit')) return
-      if (colKey && !content.hasAttribute('data-atrium-col-fit')) unfitColumn()
-      content.setAttribute('data-atrium-col-fit', 'true')
-      content.style.setProperty('--zf-col-left', `${left}px`)
-      content.style.setProperty('--zf-col-w', `${width}px`)
+      if (key === colKey && content.hasAttribute('data-atr-col-fit')) return
+      if (colKey && !content.hasAttribute('data-atr-col-fit')) unfitColumn()
+      content.setAttribute('data-atr-col-fit', 'true')
+      content.style.setProperty('--atr-col-left', `${left}px`)
+      content.style.setProperty('--atr-col-w', `${width}px`)
       colKey = key
     }
 
@@ -4291,11 +4292,11 @@ export default {
     // once, then lift the real bar (live items, menus, polls and all) out of
     // the flow into a collapsible glass panel on the left edge. In Advanced
     // the bar is left exactly where Hermes puts it.
-    const DOCK_ATTR = 'data-atrium-dock'
-    const DOCK_OPEN_ATTR = 'data-atrium-dock-open'
-    const DOCK_SIDE_ATTR = 'data-atrium-dock-side'
-    const DOCK_ROOM_ATTR = 'data-atrium-dock-room'
-    const DOCK_POP_ATTR = 'data-atrium-dock-pop'
+    const DOCK_ATTR = 'data-atr-dock'
+    const DOCK_OPEN_ATTR = 'data-atr-dock-open'
+    const DOCK_SIDE_ATTR = 'data-atr-dock-side'
+    const DOCK_ROOM_ATTR = 'data-atr-dock-room'
+    const DOCK_POP_ATTR = 'data-atr-dock-pop'
     const SIDE_MIN_SESSIONS = 6
     const MODE_KEY = 'hermes.desktop.interfaceMode.v1'
     const IS_MAC = typeof navigator !== 'undefined' &&
@@ -4314,15 +4315,15 @@ export default {
       '  width: 15rem; height: auto !important; max-height: min(34rem, 72vh);',
       '  flex-direction: column !important; justify-content: flex-start !important; align-items: stretch !important; gap: 0.35rem !important;',
       '  padding: 0.45rem !important; overflow: hidden auto;',
-      '  background: var(--zf-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)) !important;',
-      '  border-radius: var(--zf-radius-lg, 16px);',
-      '  box-shadow: var(--zf-lift-float, 0 16px 40px rgba(0,0,0,.34));',
+      '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)) !important;',
+      '  border-radius: var(--atr-radius-lg, 16px);',
+      '  box-shadow: var(--atr-lift-float, 0 16px 40px rgba(0,0,0,.34));',
       '  transform: translate(calc(-100% - 1rem), -50%); opacity: 0; visibility: hidden; pointer-events: none;',
-      '  transition: transform var(--zf-t-3, 220ms) var(--zf-ease, ease), opacity var(--zf-t-2, 180ms) var(--zf-ease, ease), visibility 0s linear var(--zf-t-3, 220ms);',
+      '  transition: transform var(--atr-t-3, 220ms) var(--atr-ease, ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s linear var(--atr-t-3, 220ms);',
       '}',
       `footer[data-slot='statusbar'][${DOCK_ATTR}][${DOCK_OPEN_ATTR}] {`,
       '  transform: translate(0, -50%); opacity: 1; visibility: visible; pointer-events: auto;',
-      '  transition: transform var(--zf-t-3, 220ms) var(--zf-ease, ease), opacity var(--zf-t-2, 180ms) var(--zf-ease, ease), visibility 0s;',
+      '  transition: transform var(--atr-t-3, 220ms) var(--atr-ease, ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s;',
       '}',
       // the bar's two halves become two stacked lists of full-width rows
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div {`,
@@ -4330,99 +4331,99 @@ export default {
       '}',
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div:empty { display: none; }`,
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div + div:not(:empty) {`,
-      '  border-top: 1px solid var(--zf-edge, rgba(255,255,255,.07)); padding-top: 0.25rem; margin-top: 0.1rem;',
+      '  border-top: 1px solid var(--atr-edge, rgba(255,255,255,.07)); padding-top: 0.25rem; margin-top: 0.1rem;',
       '}',
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * {`,
-      '  height: auto !important; min-height: var(--zf-sd-rowh, 1.75rem); width: 100%; justify-content: flex-start !important; box-sizing: border-box;',
-      '  padding: 0 0.5rem !important; border-radius: var(--zf-r-2, 8px) !important;',
-      '  transition: background-color var(--zf-t-2, 140ms) var(--zf-ease, ease), color var(--zf-t-2, 140ms) var(--zf-ease, ease);',
+      '  height: auto !important; min-height: var(--atr-sd-rowh, 1.75rem); width: 100%; justify-content: flex-start !important; box-sizing: border-box;',
+      '  padding: 0 0.5rem !important; border-radius: var(--atr-r-2, 8px) !important;',
+      '  transition: background-color var(--atr-t-2, 140ms) var(--atr-ease, ease), color var(--atr-t-2, 140ms) var(--atr-ease, ease);',
       // same face as the session rows (read off them at layout time)
-      '  font-size: var(--zf-sd-font, 0.8125rem) !important; gap: 0.5rem !important; color: var(--zf-ink-1, var(--ui-text-primary)); background: transparent; border: 0;',
+      '  font-size: var(--atr-sd-font, 0.8125rem) !important; gap: 0.5rem !important; color: var(--atr-ink-1, var(--ui-text-primary)); background: transparent; border: 0;',
       '}',
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * svg { width: 0.875rem !important; height: 0.875rem !important; flex: none; color: var(--zf-ink-2, var(--ui-text-secondary)); }`,
+      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * svg { width: 0.875rem !important; height: 0.875rem !important; flex: none; color: var(--atr-ink-2, var(--ui-text-secondary)); }`,
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * .truncate { min-width: 0; }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > *:hover { background: var(--zf-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)) !important; color: var(--zf-ink-0, var(--ui-text-primary)); }`,
+      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > *:hover { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)) !important; color: var(--atr-ink-0, var(--ui-text-primary)); }`,
       `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * > * { height: auto !important; }`,
       `footer[data-slot='statusbar'][${DOCK_ATTR}] :is(.truncate) { white-space: nowrap; }`,
       // ── in the sessions sidebar: a card between the sessions and the rail ──
       // The card itself is our header button (it paints the glass and takes
       // the click); the real footer floats over its lower part when open.
       `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] {`,
-      '  left: var(--zf-sd-x) !important; top: var(--zf-sd-y) !important; width: var(--zf-sd-w) !important;',
-      '  max-height: var(--zf-sd-max) !important; transform: none !important;',
-      '  background: transparent !important; box-shadow: none !important; border-radius: 0 0 var(--zf-radius, 12px) var(--zf-radius, 12px);',
+      '  left: var(--atr-sd-x) !important; top: var(--atr-sd-y) !important; width: var(--atr-sd-w) !important;',
+      '  max-height: var(--atr-sd-max) !important; transform: none !important;',
+      '  background: transparent !important; box-shadow: none !important; border-radius: 0 0 var(--atr-radius, 12px) var(--atr-radius, 12px);',
       // the same 4px gutter as the sessions card's rows
       '  box-sizing: border-box !important; padding: 0 4px 0.35rem !important; z-index: 41;',
       '  overflow: hidden auto !important; scrollbar-width: none;',
       '  clip-path: inset(0 0 100% 0);',
       // translate: the floating sidebar's slide (see SIDEBAR_CSS), 0ms otherwise
-      '  transition: clip-path var(--zf-sd-dur) var(--zf-sd-ease), opacity var(--zf-t-2, 200ms) var(--zf-ease, ease) 40ms, visibility 0s linear var(--zf-sd-dur), translate var(--zf-arc-dur, 0ms) var(--zf-arc-ease, ease) !important;',
+      '  transition: clip-path var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 200ms) var(--atr-ease, ease) 40ms, visibility 0s linear var(--atr-sd-dur), translate var(--atr-arc-dur, 0ms) var(--atr-arc-ease, ease) !important;',
       '}',
       `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}]::-webkit-scrollbar { display: none; }`,
       // opening unrolls the rows from under the header, top to bottom
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}][${DOCK_OPEN_ATTR}] { transform: none !important; clip-path: inset(0 0 0 0); transition: clip-path var(--zf-sd-dur) var(--zf-sd-ease), opacity var(--zf-t-2, 180ms) var(--zf-ease, ease), visibility 0s, translate var(--zf-arc-dur, 0ms) var(--zf-arc-ease, ease) !important; }`,
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] > div > * { transition: transform var(--zf-sd-dur) var(--zf-sd-ease), opacity var(--zf-t-2, 200ms) var(--zf-ease, ease), background-color var(--zf-t-2, 120ms) var(--zf-ease, ease); }`,
+      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}][${DOCK_OPEN_ATTR}] { transform: none !important; clip-path: inset(0 0 0 0); transition: clip-path var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s, translate var(--atr-arc-dur, 0ms) var(--atr-arc-ease, ease) !important; }`,
+      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] > div > * { transition: transform var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 200ms) var(--atr-ease, ease), background-color var(--atr-t-2, 120ms) var(--atr-ease, ease); }`,
       `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}]:not([${DOCK_OPEN_ATTR}]) > div > * { transform: translateY(-0.4rem); opacity: 0; }`,
-      ':root { --zf-sd-dur: 280ms; --zf-sd-ease: cubic-bezier(.32,.72,0,1); }',
+      ':root { --atr-sd-dur: 280ms; --atr-sd-ease: cubic-bezier(.32,.72,0,1); }',
       // the Motion switch reaches the dock's own duration token too
-      "html[data-atrium-motion='off'] { --zf-sd-dur: 0ms; }",
-      `[${DOCK_ROOM_ATTR}] { margin-top: calc(var(--zf-sd-room, 0px) + var(--zf-lib-room, 0px)) !important; transition: margin-top var(--zf-sd-dur) var(--zf-sd-ease); }`,
-      '#atrium-statusdock-head {',
-      '  position: fixed; z-index: 40; left: var(--zf-sd-x); top: var(--zf-sd-y-head); width: var(--zf-sd-w); height: var(--zf-sd-h);',
+      "html[data-atr-motion='off'] { --atr-sd-dur: 0ms; }",
+      `[${DOCK_ROOM_ATTR}] { margin-top: calc(var(--atr-sd-room, 0px) + var(--atr-lib-room, 0px)) !important; transition: margin-top var(--atr-sd-dur) var(--atr-sd-ease); }`,
+      '#atr-statusdock-head {',
+      '  position: fixed; z-index: 40; left: var(--atr-sd-x); top: var(--atr-sd-y-head); width: var(--atr-sd-w); height: var(--atr-sd-h);',
       '  display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch;',
-      '  padding: 0; margin: 0; border: 0; text-align: left; cursor: pointer; color: var(--zf-ink-3, var(--ui-text-tertiary));',
-      '  font: inherit; background: var(--zf-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); border-radius: var(--zf-radius, 12px); overflow: hidden;',
-      '  transition: height var(--zf-sd-dur) var(--zf-sd-ease), color var(--zf-t-2, 150ms) var(--zf-ease, ease), box-shadow var(--zf-t-2, 150ms) var(--zf-ease, ease);',
+      '  padding: 0; margin: 0; border: 0; text-align: left; cursor: pointer; color: var(--atr-ink-3, var(--ui-text-tertiary));',
+      '  font: inherit; background: var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); border-radius: var(--atr-radius, 12px); overflow: hidden;',
+      '  transition: height var(--atr-sd-dur) var(--atr-sd-ease), color var(--atr-t-2, 150ms) var(--atr-ease, ease), box-shadow var(--atr-t-2, 150ms) var(--atr-ease, ease);',
       '  user-select: none;',
       '}',
-      '#atrium-statusdock-head[hidden] { display: none; }',
+      '#atr-statusdock-head[hidden] { display: none; }',
       // a status dragged over the title: the drop zone lights up
-      "#atrium-statusdock-head[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--zf-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
-      '#atrium-statusdock-head .zf-sd-label { flex: none; }',
-      "#atrium-statusdock-head[data-pinned] .zf-sd-label { display: none; }",
-      '#atrium-statusdock-head .zf-sd-pin {',
+      "#atr-statusdock-head[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
+      '#atr-statusdock-head .atr-sd-label { flex: none; }',
+      "#atr-statusdock-head[data-pinned] .atr-sd-label { display: none; }",
+      '#atr-statusdock-head .atr-sd-pin {',
       '  display: none; min-width: 0; flex: 0 1 auto; align-items: center; gap: 0.4rem; padding: 0; margin: 0;',
-      '  background: none; border: 0; color: var(--zf-ink-1, var(--ui-text-primary)); font-weight: 500;',
-      '  font-size: var(--zf-sd-font, 0.8125rem); letter-spacing: 0; text-transform: none; cursor: grab; white-space: nowrap; overflow: hidden;',
+      '  background: none; border: 0; color: var(--atr-ink-1, var(--ui-text-primary)); font-weight: 500;',
+      '  font-size: var(--atr-sd-font, 0.8125rem); letter-spacing: 0; text-transform: none; cursor: grab; white-space: nowrap; overflow: hidden;',
       '}',
-      "#atrium-statusdock-head[data-pinned] .zf-sd-pin { display: inline-flex; }",
-      '#atrium-statusdock-head .zf-sd-pin > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
-      '#atrium-statusdock-head .zf-sd-pin svg { width: 0.75rem; height: 0.75rem; }',
+      "#atr-statusdock-head[data-pinned] .atr-sd-pin { display: inline-flex; }",
+      '#atr-statusdock-head .atr-sd-pin > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
+      '#atr-statusdock-head .atr-sd-pin svg { width: 0.75rem; height: 0.75rem; }',
       // the pinned row in the list carries a small accent dot
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] [data-atrium-pinned]::after {`,
+      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] [data-atr-pinned]::after {`,
       "  content: ''; flex: none; width: 0.75rem; height: 0.75rem; margin-left: auto; background: currentColor; opacity: 0.6;",
       `  -webkit-mask: ${PIN_MASK_URL} center / contain no-repeat; mask: ${PIN_MASK_URL} center / contain no-repeat;`,
       '}',
       `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] > div > * { touch-action: none; }`,
-      '#atrium-statusdock-ghost {',
+      '#atr-statusdock-ghost {',
       '  position: fixed; z-index: 2147483000; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 0.4rem;',
-      '  padding: 0.3rem 0.65rem; border-radius: var(--zf-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 14rem; overflow: hidden;',
-      '  background: var(--zf-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--zf-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35);',
+      '  padding: 0.3rem 0.65rem; border-radius: var(--atr-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 14rem; overflow: hidden;',
+      '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35);',
       '}',
-      '#atrium-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-      '#atrium-statusdock-head .zf-sd-row {',
-      '  display: flex; flex: none; align-items: center; gap: 0.5rem; height: var(--zf-sd-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; min-width: 0;',
+      '#atr-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
+      '#atr-statusdock-head .atr-sd-row {',
+      '  display: flex; flex: none; align-items: center; gap: 0.5rem; height: var(--atr-sd-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; min-width: 0;',
       // the same face as the PINNED / SESSIONS labels, copied off them at layout
-      '  font-size: var(--zf-sd-lab-size, 0.64rem); font-weight: var(--zf-sd-lab-weight, 600); letter-spacing: var(--zf-sd-lab-track, 0.16em); text-transform: uppercase;',
-      '  color: var(--zf-sd-lab-color, var(--theme-primary, var(--zf-ink-2, var(--ui-text-secondary))));',
+      '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: var(--atr-sd-lab-weight, 600); letter-spacing: var(--atr-sd-lab-track, 0.16em); text-transform: uppercase;',
+      '  color: var(--atr-sd-lab-color, var(--theme-primary, var(--atr-ink-2, var(--ui-text-secondary))));',
       '}',
-      '#atrium-statusdock-head:hover .zf-sd-row, #atrium-statusdock-head:focus-visible .zf-sd-row { color: var(--zf-ink-0, var(--ui-text-primary)); }',
-      '#atrium-statusdock-head:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--zf-accent, rgba(255,255,255,.3)); }',
-      '#atrium-statusdock-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-      '#atrium-statusdock-head .zf-sd-pinico { display: none; }',
-      "#atrium-statusdock-head[data-pinned] .zf-sd-eq { display: none; }",
-      "#atrium-statusdock-head[data-pinned] .zf-sd-pinico { display: block; }",
-      '#atrium-statusdock-head .zf-sd-chev { margin-left: auto; width: 0.7rem; height: 0.7rem; transition: transform var(--zf-sd-dur, 280ms) var(--zf-sd-ease, ease); }',
-      "#atrium-statusdock-head[aria-expanded='true'] .zf-sd-chev { transform: rotate(180deg); }",
+      '#atr-statusdock-head:hover .atr-sd-row, #atr-statusdock-head:focus-visible .atr-sd-row { color: var(--atr-ink-0, var(--ui-text-primary)); }',
+      '#atr-statusdock-head:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--atr-accent, rgba(255,255,255,.3)); }',
+      '#atr-statusdock-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
+      '#atr-statusdock-head .atr-sd-pinico { display: none; }',
+      "#atr-statusdock-head[data-pinned] .atr-sd-eq { display: none; }",
+      "#atr-statusdock-head[data-pinned] .atr-sd-pinico { display: block; }",
+      '#atr-statusdock-head .atr-sd-chev { margin-left: auto; width: 0.7rem; height: 0.7rem; transition: transform var(--atr-sd-dur, 280ms) var(--atr-sd-ease, ease); }',
+      "#atr-statusdock-head[aria-expanded='true'] .atr-sd-chev { transform: rotate(180deg); }",
       // menus opened from the docked bar open beside it, not above it
       `[${DOCK_POP_ATTR}] {`,
-      '  transform: translate(var(--zf-pop-x, 0px), var(--zf-pop-y, 0px)) !important; left: 0 !important; top: 0 !important;',
+      '  transform: translate(var(--atr-pop-x, 0px), var(--atr-pop-y, 0px)) !important; left: 0 !important; top: 0 !important;',
       '  --radix-popper-available-height: calc(100vh - 1rem) !important;',
-      '  --radix-popper-transform-origin: var(--zf-pop-origin, left top) !important;',
+      '  --radix-popper-transform-origin: var(--atr-pop-origin, left top) !important;',
       '}',
       '@media (prefers-reduced-motion: reduce) {',
-      ':root { --zf-sd-dur: 0ms; }',
-      '  #atrium-statusdock-head, #atrium-statusdock-head .zf-sd-chev { transition: none !important; }',
+      ':root { --atr-sd-dur: 0ms; }',
+      '  #atr-statusdock-head, #atr-statusdock-head .atr-sd-chev { transition: none !important; }',
       `  footer[data-slot='statusbar'][${DOCK_ATTR}] { transition: none !important; }`,
       '}'
     ].join('\n')
@@ -4433,7 +4434,7 @@ export default {
     const ensureDockChrome = () => {
       if (!dock.style) {
         dock.style = document.createElement('style')
-        dock.style.id = 'atrium-statusdock-style'
+        dock.style.id = 'atr-statusdock-style'
         dock.style.textContent = DOCK_CSS
         document.head.appendChild(dock.style)
       }
@@ -4446,14 +4447,14 @@ export default {
       const wasSided = Boolean(dock.side || dock.room)
       document.querySelectorAll(`[${DOCK_SIDE_ATTR}]`).forEach(el => {
         el.removeAttribute(DOCK_SIDE_ATTR)
-        ;['--zf-sd-x', '--zf-sd-y', '--zf-sd-w', '--zf-sd-max'].forEach(v => el.style.removeProperty(v))
+        ;['--atr-sd-x', '--atr-sd-y', '--atr-sd-w', '--atr-sd-max'].forEach(v => el.style.removeProperty(v))
       })
-      document.querySelectorAll(`[${DOCK_ROOM_ATTR}]`).forEach(el => { el.removeAttribute(DOCK_ROOM_ATTR); el.style.removeProperty('--zf-sd-room') })
+      document.querySelectorAll(`[${DOCK_ROOM_ATTR}]`).forEach(el => { el.removeAttribute(DOCK_ROOM_ATTR); el.style.removeProperty('--atr-sd-room') })
       if (dock.head) dock.head.hidden = true
-      document.querySelectorAll('[data-atrium-pinned]').forEach(el => el.removeAttribute('data-atrium-pinned'))
-      document.querySelectorAll("footer[data-slot='statusbar'] [data-zf-full]").forEach(el => {
-        if (el.dataset.zfCrop && el.firstChild?.nodeValue === el.dataset.zfCrop) el.firstChild.nodeValue = el.dataset.zfFull
-        delete el.dataset.zfCrop; delete el.dataset.zfFull; el.removeAttribute('title')
+      document.querySelectorAll('[data-atr-pinned]').forEach(el => el.removeAttribute('data-atr-pinned'))
+      document.querySelectorAll("footer[data-slot='statusbar'] [data-atr-full]").forEach(el => {
+        if (el.dataset.atrCrop && el.firstChild?.nodeValue === el.dataset.atrCrop) el.firstChild.nodeValue = el.dataset.atrFull
+        delete el.dataset.atrCrop; delete el.dataset.atrFull; el.removeAttribute('title')
       })
       dock.side = null
       dock.room = null
@@ -4525,7 +4526,7 @@ export default {
     // piece that fits (a word, or a segment before · | / , : ; -) with an
     // ellipsis, never mid-word. Only the text node's value changes (React
     // owns the span and rewrites that value on its next update, which we
-    // notice and re-crop); the full text stays in data-zf-full and the title.
+    // notice and re-crop); the full text stays in data-atr-full and the title.
     let cropCanvas = null
     const textWidth = (text, el) => {
       cropCanvas = cropCanvas || document.createElement('canvas')
@@ -4561,7 +4562,7 @@ export default {
           rest += w - (c == null ? w : textWidth(c, s.el))
         }
         if (s.node.nodeValue !== out) s.node.nodeValue = out
-        if (out !== s.full) { s.el.dataset.zfCrop = out; s.el.title = s.full } else if (s.el.dataset.zfCrop) { delete s.el.dataset.zfCrop; s.el.removeAttribute('title') }
+        if (out !== s.full) { s.el.dataset.atrCrop = out; s.el.title = s.full } else if (s.el.dataset.atrCrop) { delete s.el.dataset.atrCrop; s.el.removeAttribute('title') }
       }
     }
     const croppable = root => [...root.querySelectorAll('.truncate')].filter(el =>
@@ -4569,8 +4570,8 @@ export default {
     const spanInfo = el => {
       const node = el.firstChild
       // a value that isn't ours is React's new text
-      if (el.dataset.zfFull == null || node.nodeValue !== (el.dataset.zfCrop || el.dataset.zfFull)) el.dataset.zfFull = node.nodeValue
-      return { el, node, full: el.dataset.zfFull }
+      if (el.dataset.atrFull == null || node.nodeValue !== (el.dataset.atrCrop || el.dataset.atrFull)) el.dataset.atrFull = node.nodeValue
+      return { el, node, full: el.dataset.atrFull }
     }
     const innerWidth = el => {
       const cs = getComputedStyle(el)
@@ -4592,7 +4593,7 @@ export default {
         const box = els[0].parentElement
         // only the simple shape: the label spans sit in the row (or its one child)
         if (box !== row && !(box.parentElement === row && row.children.length === 1)) continue
-        const pinW = row.hasAttribute('data-atrium-pinned') ? 12 + 8 : 0
+        const pinW = row.hasAttribute('data-atr-pinned') ? 12 + 8 : 0
         const spans = els.filter(e => e.parentElement === box).map(spanInfo)
         if (box === row) fitLine(row, spans, pinW)
         else fitLine(box, spans, pinW + (row.clientWidth - box.getBoundingClientRect().width > 0 ? 0 : 0))
@@ -4600,16 +4601,16 @@ export default {
     }
     const cropChip = () => {
       const head = dock.head
-      const chip = head?.querySelector('.zf-sd-pin')
+      const chip = head?.querySelector('.atr-sd-pin')
       if (!chip || !head.hasAttribute('data-pinned')) return
-      const row = head.querySelector('.zf-sd-row')
+      const row = head.querySelector('.atr-sd-row')
       const cs = getComputedStyle(row)
       const gap = parseFloat(cs.columnGap) || 0
       const fixed = [...row.children].filter(k => k !== chip && getComputedStyle(k).display !== 'none')
       const room = innerWidth(row) - fixed.reduce((a, k) => a + k.getBoundingClientRect().width, 0) - gap * fixed.length - 6
       chip.style.maxWidth = `${Math.max(0, Math.floor(room))}px`
       const els = croppable(chip).filter(e => e.parentElement === chip)
-      els.forEach(e => { if (e.dataset.zfFull != null) { e.firstChild.nodeValue = e.dataset.zfFull; delete e.dataset.zfCrop } })
+      els.forEach(e => { if (e.dataset.atrFull != null) { e.firstChild.nodeValue = e.dataset.atrFull; delete e.dataset.atrCrop } })
       const spans = els.map(spanInfo)
       const cg = parseFloat(getComputedStyle(chip).columnGap) || 0
       const others = [...chip.children].filter(k => !els.includes(k)).reduce((a, k) => a + k.getBoundingClientRect().width + cg, 0)
@@ -4631,12 +4632,12 @@ export default {
       let src = null
       for (const r of rows) {
         const hit = key && statusKey(r, rows) === key
-        r.toggleAttribute('data-atrium-pinned', Boolean(hit))
+        r.toggleAttribute('data-atr-pinned', Boolean(hit))
         if (hit) src = r
       }
       head.toggleAttribute('data-pinned', Boolean(src))
       try { cropRows(bar) } catch {}
-      const chip = head.querySelector('.zf-sd-pin')
+      const chip = head.querySelector('.atr-sd-pin')
       if (!src) { if (chip.firstChild) chip.textContent = ''; dock.pinSig = ''; return }
       const sig = src.innerHTML
       if (sig !== dock.pinSig) {
@@ -4650,7 +4651,7 @@ export default {
       const h = dock.head
       if (!h || h.hidden) return false
       const r = h.getBoundingClientRect()
-      const rowH = parseFloat(h.style.getPropertyValue('--zf-sd-head')) || 30
+      const rowH = parseFloat(h.style.getPropertyValue('--atr-sd-head')) || 30
       return x >= r.left && x <= r.right && y >= r.top - 6 && y <= r.top + rowH + 6
     }
     const inRect = (el, x, y, pad = 0) => {
@@ -4737,14 +4738,14 @@ export default {
     }
     const ghostFor = (src, el) => {
       const g = document.createElement('div')
-      g.id = 'atrium-statusdock-ghost'
+      g.id = 'atr-statusdock-ghost'
       const entry = src.entry || src.ref?.entry
       if (entry) {
-        const t = document.createElement('span'); t.className = 'zf-ghost-title'; t.textContent = entry.title || ''
+        const t = document.createElement('span'); t.className = 'atr-ghost-title'; t.textContent = entry.title || ''
         const v = document.createElement('span'); v.textContent = entry.value || entry.note || ''
         g.append(...(entry.title ? [t, v] : [v]))
       } else {
-        const from = el.querySelector?.('.zf-tile-value') || el
+        const from = el.querySelector?.('.atr-tile-value') || el
         g.replaceChildren(...[...from.childNodes].map(n => n.cloneNode(true)))
       }
       return g
@@ -4764,7 +4765,7 @@ export default {
       pinDrag.src = null
       pinDrag.moving = false
       if (was) {
-        document.documentElement.removeAttribute('data-zf-dragging')
+        document.documentElement.removeAttribute('data-atr-dragging')
         layoutShelf()
       }
     }
@@ -4775,7 +4776,7 @@ export default {
       if (!pinDrag.moving) {
         if (Math.hypot(e.clientX - pinDrag.x, e.clientY - pinDrag.y) < 6) return
         pinDrag.moving = true
-        document.documentElement.setAttribute('data-zf-dragging', src.type)
+        document.documentElement.setAttribute('data-atr-dragging', src.type)
         pinDrag.ghost = ghostFor(src, pinDrag.el)
         document.body.appendChild(pinDrag.ghost)
         if (src.type === 'tile') pinDrag.el.setAttribute('data-lifted', '')
@@ -4821,7 +4822,7 @@ export default {
       if (row && !bar) return
       if (row) startDrag(e, { type: 'status', key: statusKey(row, statusRows(bar)), text: rowText(row) }, row, true)
       else {
-        const chip = dock.head.querySelector('.zf-sd-pin')
+        const chip = dock.head.querySelector('.atr-sd-pin')
         startDrag(e, { type: 'chip', text: rowText(chip) }, chip, false)
       }
     }
@@ -4887,29 +4888,29 @@ export default {
         y = Math.round(lr ? lr.top : parts.r.top + 3.5 * rem)
       }
       y = Math.max(0.5 * rem, Math.min(y, innerHeight - 12 * rem))
-      el.style.setProperty('--zf-dw-x', `${x}px`)
-      el.style.setProperty('--zf-dw-y', `${y}px`)
-      el.style.setProperty('--zf-dw-maxh', `${Math.round(innerHeight - y - 0.75 * rem)}px`)
+      el.style.setProperty('--atr-dw-x', `${x}px`)
+      el.style.setProperty('--atr-dw-y', `${y}px`)
+      el.style.setProperty('--atr-dw-maxh', `${Math.round(innerHeight - y - 0.75 * rem)}px`)
     }
     const drawerItem = (entry, loose) => {
       const it = document.createElement('div')
-      it.className = 'zf-dw-item'
+      it.className = 'atr-dw-item'
       it.dataset.id = entry.id
-      it.innerHTML = '<div class="zf-dw-line"><span class="zf-dw-title"></span><span class="zf-dw-short"></span></div>'
-        + '<div class="zf-dw-more"><div class="zf-dw-inner"><div class="zf-dw-full"></div><div class="zf-dw-note"></div><div class="zf-dw-source"></div>'
-        + '<div class="zf-dw-foot"><button type="button" class="zf-dw-icon" data-act="pin"></button><span style="flex:1"></span>'
-        + '<button type="button" class="zf-dw-btn" data-act="copy" tabindex="-1">Copy</button>'
-        + '<button type="button" class="zf-dw-btn zf-dw-primary" data-act="attach" tabindex="-1">Attach to chat</button></div></div></div>'
+      it.innerHTML = '<div class="atr-dw-line"><span class="atr-dw-title"></span><span class="atr-dw-short"></span></div>'
+        + '<div class="atr-dw-more"><div class="atr-dw-inner"><div class="atr-dw-full"></div><div class="atr-dw-note"></div><div class="atr-dw-source"></div>'
+        + '<div class="atr-dw-foot"><button type="button" class="atr-dw-icon" data-act="pin"></button><span style="flex:1"></span>'
+        + '<button type="button" class="atr-dw-btn" data-act="copy" tabindex="-1">Copy</button>'
+        + '<button type="button" class="atr-dw-btn atr-dw-primary" data-act="attach" tabindex="-1">Attach to chat</button></div></div></div>'
       const q = c => it.querySelector(c)
       const fill = (c, t) => { const el = q(c); el.textContent = t || ''; el.hidden = !t }
-      fill('.zf-dw-title', entry.title || (entry.value ? '' : 'Snippet'))
-      fill('.zf-dw-short', entry.value || entry.note)
-      fill('.zf-dw-full', entry.value)
-      fill('.zf-dw-note', entry.note)
-      fill('.zf-dw-source', entry.source)
+      fill('.atr-dw-title', entry.title || (entry.value ? '' : 'Snippet'))
+      fill('.atr-dw-short', entry.value || entry.note)
+      fill('.atr-dw-full', entry.value)
+      fill('.atr-dw-note', entry.note)
+      fill('.atr-dw-source', entry.source)
       if (loose) {
-        const tag = document.createElement('span'); tag.className = 'zf-dw-loose'; tag.textContent = 'not in library'
-        q('.zf-dw-line').appendChild(tag)
+        const tag = document.createElement('span'); tag.className = 'atr-dw-loose'; tag.textContent = 'not in library'
+        q('.atr-dw-line').appendChild(tag)
       }
       const pin = q("[data-act='pin']")
       const on = !loose
@@ -4926,9 +4927,9 @@ export default {
       const keep = drawer.items[drawer.focus]?.id
       if (drawer.loose && isPinned(drawer.loose.id)) drawer.loose = null
       drawer.items = [...(drawer.loose ? [drawer.loose] : []), ...pins.get()]
-      const list = el.querySelector('.zf-dw-list')
+      const list = el.querySelector('.atr-dw-list')
       list.replaceChildren(...drawer.items.map((p, i) => drawerItem(p, i === 0 && !!drawer.loose)))
-      el.querySelector('.zf-dw-count').textContent = pins.get().length ? String(pins.get().length) : ''
+      el.querySelector('.atr-dw-count').textContent = pins.get().length ? String(pins.get().length) : ''
       if (!drawer.items.length) { closePreview(); return }
       const i = drawer.items.findIndex(p => p.id === keep)
       setDrawerFocus(i >= 0 ? i : Math.min(Math.max(drawer.focus, 0), drawer.items.length - 1), true)
@@ -4937,18 +4938,18 @@ export default {
       const el = drawer.el
       if (!el || i < 0 || i >= drawer.items.length) return
       drawer.focus = i
-      const rows = [...el.querySelectorAll('.zf-dw-item')]
+      const rows = [...el.querySelectorAll('.atr-dw-item')]
       rows.forEach((r, k) => {
         const on = k === i
         r.toggleAttribute('data-focus', on)
         r.querySelectorAll('button').forEach(b => { b.tabIndex = on ? 0 : -1 })
       })
       const id = drawer.items[i].id
-      lib.el?.querySelectorAll('.zf-lib-row').forEach(r => r.toggleAttribute('data-current', r.dataset.id === id))
+      lib.el?.querySelectorAll('.atr-lib-row').forEach(r => r.toggleAttribute('data-current', r.dataset.id === id))
       // centre the open one, measuring it at its opened height
-      const list = el.querySelector('.zf-dw-list')
+      const list = el.querySelector('.atr-dw-list')
       const row = rows[i]
-      const h = row.querySelector('.zf-dw-line').offsetHeight + row.querySelector('.zf-dw-inner').scrollHeight
+      const h = row.querySelector('.atr-dw-line').offsetHeight + row.querySelector('.atr-dw-inner').scrollHeight
       const top = row.offsetTop - list.offsetTop - Math.max(0, (list.clientHeight - h) / 2)
       list.scrollTo({ top: Math.max(0, top), behavior: instant || reducedMotion() ? 'auto' : 'smooth' })
     }
@@ -4968,13 +4969,13 @@ export default {
         setDrawerFocus(drawer.focus + (e.key === 'ArrowDown' ? 1 : -1))
       } else if (e.key === 'Enter' && !e.target.closest?.('button')) {
         e.preventDefault()
-        drawer.el.querySelector('.zf-dw-item[data-focus] [data-act=attach]')?.click()
+        drawer.el.querySelector('.atr-dw-item[data-focus] [data-act=attach]')?.click()
       }
     }
     const onDrawerOutside = e => {
       if (!drawer.el || drawer.el.contains(e.target)) return
       // a snippet elsewhere re-aims the drawer instead of closing it
-      if (e.target.closest?.('#atrium-snips .zf-lib-row, .zf-snip, .zf-tile')) return
+      if (e.target.closest?.('#atr-snips .atr-lib-row, .atr-snip, .atr-tile')) return
       closePreview()
     }
     const closePreview = () => {
@@ -4985,7 +4986,7 @@ export default {
       document.removeEventListener('keydown', onDrawerKey, true)
       document.removeEventListener('pointerdown', onDrawerOutside, true)
       window.removeEventListener('resize', placeDrawer)
-      lib.el?.querySelectorAll('.zf-lib-row[data-current]').forEach(r => r.removeAttribute('data-current'))
+      lib.el?.querySelectorAll('.atr-lib-row[data-current]').forEach(r => r.removeAttribute('data-current'))
       if (reducedMotion()) el.remove()
       else { el.setAttribute('data-leaving', ''); setTimeout(() => el.remove(), 170) }
       try { if (el.contains(document.activeElement)) drawer.prevFocus?.focus?.() } catch {}
@@ -4997,19 +4998,19 @@ export default {
       if (!drawer.el) {
         drawer.prevFocus = document.activeElement
         const el = document.createElement('div')
-        el.id = 'atrium-snip-drawer'
+        el.id = 'atr-snip-drawer'
         el.tabIndex = -1
         el.setAttribute('role', 'dialog')
         el.setAttribute('aria-label', 'Snippets')
-        el.innerHTML = '<div class="zf-dw-head"><span>Snippets</span><span class="zf-dw-count"></span><span class="zf-dw-keys">↑ ↓</span>'
-          + `<button type="button" class="zf-dw-icon" data-act="close" aria-label="Close" title="Close (Esc)">${ICON_X}</button></div><div class="zf-dw-list"></div>`
+        el.innerHTML = '<div class="atr-dw-head"><span>Snippets</span><span class="atr-dw-count"></span><span class="atr-dw-keys">↑ ↓</span>'
+          + `<button type="button" class="atr-dw-icon" data-act="close" aria-label="Close" title="Close (Esc)">${ICON_X}</button></div><div class="atr-dw-list"></div>`
         el.addEventListener('click', e => {
           const btn = e.target.closest?.('[data-act]')
-          const row = e.target.closest?.('.zf-dw-item')
-          if (!btn) { if (row && !row.hasAttribute('data-focus')) setDrawerFocus([...el.querySelectorAll('.zf-dw-item')].indexOf(row)); return }
+          const row = e.target.closest?.('.atr-dw-item')
+          if (!btn) { if (row && !row.hasAttribute('data-focus')) setDrawerFocus([...el.querySelectorAll('.atr-dw-item')].indexOf(row)); return }
           const act = btn.dataset.act
           if (act === 'close') { closePreview(); return }
-          const it = drawer.items[[...el.querySelectorAll('.zf-dw-item')].indexOf(row)]
+          const it = drawer.items[[...el.querySelectorAll('.atr-dw-item')].indexOf(row)]
           if (!it) return
           if (act === 'pin') { if (isPinned(it.id)) { drawer.loose = it; unpinSnip(it.id) } else pinSnip(it); renderDrawer() }
           else if (act === 'copy') { void navigator.clipboard?.writeText(snipText(it)); say(btn, 'Copied') }
@@ -5019,8 +5020,8 @@ export default {
           }
         })
         // the wheel walks the column one snippet at a time
-        el.querySelector('.zf-dw-list').addEventListener('wheel', e => {
-          if (e.target.closest?.('.zf-dw-full') && e.target.closest('.zf-dw-full').scrollHeight > e.target.closest('.zf-dw-full').clientHeight) return
+        el.querySelector('.atr-dw-list').addEventListener('wheel', e => {
+          if (e.target.closest?.('.atr-dw-full') && e.target.closest('.atr-dw-full').scrollHeight > e.target.closest('.atr-dw-full').clientHeight) return
           e.preventDefault()
           const now = Date.now()
           if (now - drawer.wheelAt > 300) drawer.wheel = 0
@@ -5049,14 +5050,14 @@ export default {
     // A snippet dragged over the card shows as a ghost row where it will land.
     const LIB_MAX_ROWS = 6
     const ICON_BOOKMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>'
-    const ICON_CHEV = '<svg class="zf-lib-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
+    const ICON_CHEV = '<svg class="atr-lib-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
     const lib = { el: null, sig: '', phantom: null, open: stored(STORE_KEYS.libraryOpen) !== false, h: 0, key: '', room: null }
     const ensureLib = () => {
       if (lib.el) return lib.el
       const el = document.createElement('div')
-      el.id = 'atrium-snips'
+      el.id = 'atr-snips'
       el.hidden = true
-      el.innerHTML = `<div class="zf-lib-head" role="button" tabindex="0">${ICON_BOOKMARK}<span class="zf-lib-label">Snippets</span><span class="zf-lib-count"></span>${ICON_CHEV}</div><div class="zf-lib-rows"></div>`
+      el.innerHTML = `<div class="atr-lib-head" role="button" tabindex="0">${ICON_BOOKMARK}<span class="atr-lib-label">Snippets</span><span class="atr-lib-count"></span>${ICON_CHEV}</div><div class="atr-lib-rows"></div>`
       const head = el.firstElementChild
       const toggle = () => {
         lib.open = !lib.open
@@ -5068,13 +5069,13 @@ export default {
       head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } })
       const rows = el.lastElementChild
       rows.addEventListener('pointerdown', e => {
-        const row = e.target.closest?.('.zf-lib-row[data-id]')
+        const row = e.target.closest?.('.atr-lib-row[data-id]')
         if (!row) return
         const entry = pins.get().find(p => p.id === row.dataset.id)
         if (entry) startDrag(e, { type: 'pin', entry }, row, true)
       })
       rows.addEventListener('keydown', e => {
-        const row = e.target.closest?.('.zf-lib-row[data-id]')
+        const row = e.target.closest?.('.atr-lib-row[data-id]')
         if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPreview(pins.get().find(p => p.id === row.dataset.id)) }
       })
       document.body.appendChild(el)
@@ -5083,11 +5084,11 @@ export default {
     }
     const libRow = (p, phantom) => {
       const row = document.createElement('div')
-      row.className = 'zf-lib-row'
+      row.className = 'atr-lib-row'
       if (phantom) row.setAttribute('data-phantom', '')
       else { row.dataset.id = p.id; row.tabIndex = 0; row.setAttribute('role', 'button'); row.title = [p.title, p.value].filter(Boolean).join(': ') + '. Click to preview' }
-      if (p.title) { const t = document.createElement('span'); t.className = 'truncate zf-lib-title'; t.textContent = p.title; row.appendChild(t) }
-      const v = document.createElement('span'); v.className = 'truncate zf-lib-value'; v.textContent = p.value || p.note || ''
+      if (p.title) { const t = document.createElement('span'); t.className = 'truncate atr-lib-title'; t.textContent = p.title; row.appendChild(t) }
+      const v = document.createElement('span'); v.className = 'truncate atr-lib-value'; v.textContent = p.value || p.note || ''
       row.appendChild(v)
       return row
     }
@@ -5097,29 +5098,29 @@ export default {
       const ph = lib.phantom && !list.some(p => p.id === lib.phantom.id) ? lib.phantom : null
       const sig = JSON.stringify(list.map(p => p.id)) + (ph ? '+' + ph.id : '')
       const count = list.length ? String(list.length) : ''
-      const countEl = el.querySelector('.zf-lib-count')
+      const countEl = el.querySelector('.atr-lib-count')
       if (countEl && countEl.textContent !== count) countEl.textContent = count
       if (sig === lib.sig) return
       lib.sig = sig
-      const rows = el.querySelector('.zf-lib-rows')
+      const rows = el.querySelector('.atr-lib-rows')
       rows.replaceChildren(...list.map(p => libRow(p, false)), ...(ph ? [libRow(ph, true)] : []))
       if (!list.length && !ph) {
         const hint = document.createElement('div')
-        hint.className = 'zf-lib-hint'
+        hint.className = 'atr-lib-hint'
         hint.textContent = 'Drag a snippet here, or pin one'
         rows.appendChild(hint)
       }
     }
     const cropLib = () => {
       if (!lib.el || lib.el.hidden) return
-      for (const row of lib.el.querySelectorAll('.zf-lib-row')) {
+      for (const row of lib.el.querySelectorAll('.atr-lib-row')) {
         const spans = [...row.querySelectorAll('.truncate')].filter(sp => sp.firstChild?.nodeType === 3).map(spanInfo)
         try { fitLine(row, spans) } catch {}
       }
     }
     const unlib = () => {
       if (lib.el) lib.el.hidden = true
-      if (lib.room) { lib.room.removeAttribute('data-atrium-lib-room'); lib.room.style.removeProperty('--zf-lib-room'); lib.room = null }
+      if (lib.room) { lib.room.removeAttribute('data-atr-lib-room'); lib.room.style.removeProperty('--atr-lib-room'); lib.room = null }
       lib.h = 0
       lib.key = ''
     }
@@ -5143,12 +5144,12 @@ export default {
       const prev = room.previousElementSibling
       const ceiling = prev ? prev.getBoundingClientRect().bottom + flexGap : (content ? content.getBoundingClientRect().top + (parseFloat(cs.paddingTop) || 0) : r.top)
       const statusOn = dock.side && dock.head && !dock.head.hidden
-      const statusH = statusOn ? (parseFloat(dock.head.style.getPropertyValue('--zf-sd-h')) || 0) + gap : 0
+      const statusH = statusOn ? (parseFloat(dock.head.style.getPropertyValue('--atr-sd-h')) || 0) + gap : 0
       const n = pins.get().length + (lib.sig.includes('+') ? 1 : 0)
       // the estimate from the sessions row height, or the rows as they actually
       // render if that's taller (a bigger font, a hint line), so nothing clips
       const estH = Math.round(Math.max(1, Math.min(n, LIB_MAX_ROWS)) * (rowH + 0.1 * rem) + 0.45 * rem)
-      const libRows = el.querySelector('.zf-lib-rows')
+      const libRows = el.querySelector('.atr-lib-rows')
       const shown = libRows ? [...libRows.children].slice(0, LIB_MAX_ROWS) : []
       const realH = shown.length ? Math.ceil(shown.reduce((a, k) => a + Math.max(rowH, k.getBoundingClientRect().height), 0) + (shown.length - 1) * 0.1 * rem + 0.45 * rem) : 0
       const bodyH = Math.max(estH, realH)
@@ -5164,17 +5165,17 @@ export default {
       el.toggleAttribute('data-open', lib.open)
       el.firstElementChild.setAttribute('aria-expanded', String(lib.open))
       el.firstElementChild.title = lib.open ? 'Collapse snippets' : 'Expand snippets'
-      el.style.setProperty('--zf-lib-x', `${x}px`)
-      el.style.setProperty('--zf-lib-y', `${top}px`)
-      el.style.setProperty('--zf-lib-w', `${w}px`)
-      el.style.setProperty('--zf-lib-h', `${h}px`)
-      el.style.setProperty('--zf-lib-head', `${headH}px`)
-      el.style.setProperty('--zf-sd-rowh', `${rowH}px`)
-      if (btn) el.style.setProperty('--zf-sd-font', getComputedStyle(btn).fontSize)
+      el.style.setProperty('--atr-lib-x', `${x}px`)
+      el.style.setProperty('--atr-lib-y', `${top}px`)
+      el.style.setProperty('--atr-lib-w', `${w}px`)
+      el.style.setProperty('--atr-lib-h', `${h}px`)
+      el.style.setProperty('--atr-lib-head', `${headH}px`)
+      el.style.setProperty('--atr-sd-rowh', `${rowH}px`)
+      if (btn) el.style.setProperty('--atr-sd-font', getComputedStyle(btn).fontSize)
       const lab = side.querySelector("[class*='tracking-[0.16em]']")
-      if (lab) { const c = getComputedStyle(lab); el.style.setProperty('--zf-sd-lab-size', c.fontSize); el.style.setProperty('--zf-sd-lab-color', c.color) }
-      room.setAttribute('data-atrium-lib-room', '')
-      room.style.setProperty('--zf-lib-room', `${h + gap}px`)
+      if (lab) { const c = getComputedStyle(lab); el.style.setProperty('--atr-sd-lab-size', c.fontSize); el.style.setProperty('--atr-sd-lab-color', c.color) }
+      room.setAttribute('data-atr-lib-room', '')
+      room.style.setProperty('--atr-lib-room', `${h + gap}px`)
       lib.room = room
       lib.h = h + gap
       requestAnimationFrame(cropLib)
@@ -5188,7 +5189,7 @@ export default {
       if (!entry && lib.reopen) { lib.open = false; lib.reopen = false }
       lib.key = ''
       layoutLibrary()
-      if (entry) morphFrom(lib.el.querySelector('.zf-lib-row[data-phantom]'), ghostRect(), 260)
+      if (entry) morphFrom(lib.el.querySelector('.atr-lib-row[data-phantom]'), ghostRect(), 260)
     }
     const onPinsChanged = () => {
       if (drawer.el) renderDrawer()
@@ -5254,7 +5255,7 @@ export default {
       const min = 4.5 * rem
       let w = w0
       tile.setAttribute('data-resizing', '')
-      document.documentElement.setAttribute('data-zf-resizing', '')
+      document.documentElement.setAttribute('data-atr-resizing', '')
       const move = ev => {
         if (ev.pointerId !== e.pointerId) return
         // tiles are centred, so the edge moves half as fast as the width
@@ -5268,7 +5269,7 @@ export default {
         window.removeEventListener('pointerup', up, true)
         window.removeEventListener('pointercancel', up, true)
         tile.removeAttribute('data-resizing')
-        document.documentElement.removeAttribute('data-zf-resizing')
+        document.documentElement.removeAttribute('data-atr-resizing')
         pinDrag.endedAt = Date.now()
         if (Math.abs(w - w0) >= 2) { ref.w = w; saveShelf() }
       }
@@ -5308,7 +5309,7 @@ export default {
     }
     const tapStatusTile = (ref, tile, at) => {
       const row = statusRowFor(ref.key)
-      const face = tile.querySelector('.zf-tile-face')
+      const face = tile.querySelector('.atr-tile-face')
       if (!row || !face) return false
       const hit = at && face.contains(at) ? at.closest(CONTROL) : null
       const twin = hit && face.contains(hit) ? twinOf(face, row, hit) : null
@@ -5333,32 +5334,32 @@ export default {
       for (const sl of SHELF_SLOTS) {
         if (shelfEls[sl]) continue
         const el = document.createElement('div')
-        el.id = `atrium-shelf-${sl}`
-        el.className = 'zf-shelf'
+        el.id = `atr-shelf-${sl}`
+        el.className = 'atr-shelf'
         el.dataset.slot = sl
         el.hidden = true
         el.addEventListener('pointerdown', e => {
-          const tile = e.target.closest?.('.zf-tile')
+          const tile = e.target.closest?.('.atr-tile')
           if (!tile) return
-          const idx = [...el.querySelectorAll('.zf-tile')].indexOf(tile)
+          const idx = [...el.querySelectorAll('.atr-tile')].indexOf(tile)
           const ref = shelf[sl][idx]
           if (!ref) return
-          if (e.target.closest('.zf-tile-grip')) { startResize(e, tile, ref); return }
+          if (e.target.closest('.atr-tile-grip')) { startResize(e, tile, ref); return }
           startDrag(e, { type: 'tile', ref, slot: sl, idx, at: e.target }, tile, true)
         })
         el.addEventListener('dblclick', e => {
-          const tile = e.target.closest?.('.zf-tile')
-          if (!tile || !e.target.closest('.zf-tile-grip')) return
-          const ref = shelf[sl][[...el.querySelectorAll('.zf-tile')].indexOf(tile)]
+          const tile = e.target.closest?.('.atr-tile')
+          if (!tile || !e.target.closest('.atr-tile-grip')) return
+          const ref = shelf[sl][[...el.querySelectorAll('.atr-tile')].indexOf(tile)]
           if (ref?.w) { delete ref.w; saveShelf() }
         })
         // the clone's own controls are dead DOM: never let one act natively
-        el.addEventListener('click', e => { if (e.target.closest?.('.zf-tile-face')) e.preventDefault() })
+        el.addEventListener('click', e => { if (e.target.closest?.('.atr-tile-face')) e.preventDefault() })
         el.addEventListener('keydown', e => {
-          const tile = e.target.closest?.('.zf-tile')
+          const tile = e.target.closest?.('.atr-tile')
           if (!tile || !(e.key === 'Enter' || e.key === ' ')) return
           e.preventDefault()
-          const ref = shelf[sl][[...el.querySelectorAll('.zf-tile')].indexOf(tile)]
+          const ref = shelf[sl][[...el.querySelectorAll('.atr-tile')].indexOf(tile)]
           if (ref?.kind === 'snip') openPreview(ref.entry)
           else if (ref && !tapStatusTile(ref, tile, null)) openStatusFrom(ref.key, tile, null)
         })
@@ -5371,7 +5372,7 @@ export default {
       for (const sl of SHELF_SLOTS) {
         const el = shelfEls[sl]
         if (!el || el.hidden || !inRect(el, x, y, 10)) continue
-        const tiles = [...el.querySelectorAll('.zf-tile:not([data-phantom])')]
+        const tiles = [...el.querySelectorAll('.atr-tile:not([data-phantom])')]
         const index = tiles.filter(t => { const r = t.getBoundingClientRect(); return r.left + r.width / 2 < x }).length
         return { slot: sl, index }
       }
@@ -5416,7 +5417,7 @@ export default {
       }
       const el = shelfEls[hit.slot]
       SHELF_SLOTS.forEach(sl => shelfEls[sl]?.toggleAttribute('data-preview', sl === hit.slot))
-      const tiles = [...el.querySelectorAll('.zf-tile:not([data-phantom])')]
+      const tiles = [...el.querySelectorAll('.atr-tile:not([data-phantom])')]
       el.insertBefore(phantom.el, tiles[hit.index] || null)
       phantom.slot = hit.slot
       phantom.index = hit.index
@@ -5433,18 +5434,18 @@ export default {
     const statusLast = {}
     const tileFor = (ref, w) => {
       const tile = document.createElement('div')
-      tile.className = 'zf-tile'
+      tile.className = 'atr-tile'
       tile.dataset.kind = ref.kind
       tile.tabIndex = 0
       tile.setAttribute('role', 'button')
       const label = document.createElement('span')
-      label.className = 'zf-tile-label'
+      label.className = 'atr-tile-label'
       const value = document.createElement('span')
-      value.className = 'zf-tile-value'
+      value.className = 'atr-tile-value'
       if (ref.kind === 'snip') {
         const e = ref.entry
         label.textContent = e.title || 'Snippet'
-        const t = document.createElement('span'); t.className = 'zf-tile-text'; t.textContent = e.value || e.note || ''
+        const t = document.createElement('span'); t.className = 'atr-tile-text'; t.textContent = e.value || e.note || ''
         value.appendChild(t)
         tile.title = [e.title, e.value].filter(Boolean).join(': ') + '. Click to preview, drag off to remove'
       } else {
@@ -5457,10 +5458,10 @@ export default {
           face.querySelectorAll('[id], [title]').forEach(n => { n.removeAttribute('id'); n.removeAttribute('title') })
           face.removeAttribute('id')
           face.removeAttribute('title')
-          ;[...face.attributes].filter(a => a.name.startsWith('data-atrium') || a.name.startsWith('aria-')).forEach(a => face.removeAttribute(a.name))
+          ;[...face.attributes].filter(a => a.name.startsWith('data-atr-') || a.name.startsWith('aria-')).forEach(a => face.removeAttribute(a.name))
           // the sidebar's smart crop rides along in the clone: undo it
-          face.querySelectorAll('[data-zf-full]').forEach(n => { if (n.firstChild?.nodeType === 3) n.firstChild.nodeValue = n.dataset.zfFull; delete n.dataset.zfFull; delete n.dataset.zfCrop })
-          face.classList.add('zf-tile-face')
+          face.querySelectorAll('[data-atr-full]').forEach(n => { if (n.firstChild?.nodeType === 3) n.firstChild.nodeValue = n.dataset.atrFull; delete n.dataset.atrFull; delete n.dataset.atrCrop })
+          face.classList.add('atr-tile-face')
           // live-looking but dead: a tap on any part is replayed on the same
           // part of the real row (pause, the menu...), see tapStatusTile
           ;[face, ...face.querySelectorAll('*')].forEach(n => [...n.attributes].forEach(at => { if (/^on/i.test(at.name)) n.removeAttribute(at.name) }))
@@ -5482,15 +5483,15 @@ export default {
       // a sized tile keeps its width (it still shrinks if the shelf is full)
       if (ref.w > 0) tile.style.flex = `0 1 ${ref.w}px`
       const grip = document.createElement('span')
-      grip.className = 'zf-tile-grip'
+      grip.className = 'atr-tile-grip'
       grip.title = 'Drag to resize. Double-click to reset'
       tile.appendChild(grip)
       return tile
     }
     const cropTile = tile => {
-      const v = tile?.querySelector('.zf-tile-value')
+      const v = tile?.querySelector('.atr-tile-value')
       if (!v) return
-      const face = v.querySelector('.zf-tile-face')
+      const face = v.querySelector('.atr-tile-face')
       if (!face && !v.querySelector('.truncate')) return
       try { fitLine(face || v, (face ? croppable(face) : [...v.querySelectorAll('.truncate')]).map(spanInfo)) } catch {}
     }
@@ -5538,10 +5539,10 @@ export default {
           continue
         }
         if (el.hidden) el.hidden = false
-        el.style.setProperty('--zf-sh-x', `${x}px`)
-        el.style.setProperty('--zf-sh-y', `${top}px`)
-        el.style.setProperty('--zf-sh-w', `${w}px`)
-        el.style.setProperty('--zf-sh-h', `${H}px`)
+        el.style.setProperty('--atr-sh-x', `${x}px`)
+        el.style.setProperty('--atr-sh-y', `${top}px`)
+        el.style.setProperty('--atr-sh-w', `${w}px`)
+        el.style.setProperty('--atr-sh-h', `${H}px`)
         el.toggleAttribute('data-empty', !items.length)
         // render first, measure after (below), so the slot fits its tallest tile
         const live = items.map(r => r.kind === 'status' ? (statusRowFor(r.key)?.innerHTML || '') : '').join('|')
@@ -5550,24 +5551,24 @@ export default {
           shelfSig[sl] = sig
           if (!items.length) {
             const hint = document.createElement('div')
-            hint.className = 'zf-shelf-hint'
+            hint.className = 'atr-shelf-hint'
             hint.textContent = sl === 'above' ? 'Drop here' : 'Or here'
             el.replaceChildren(hint)
           } else {
             el.replaceChildren(...items.map(r => tileFor(r, w)))
             // smart-crop each value line to its tile
-            el.querySelectorAll('.zf-tile').forEach(cropTile)
+            el.querySelectorAll('.atr-tile').forEach(cropTile)
           }
         }
         // grow to the tallest tile (a wrapped snippet), never below the base
         // height; the upper slot grows upward so it keeps its gap to the mark
         if (items.length) {
-          el.style.setProperty('--zf-sh-h', 'auto')
+          el.style.setProperty('--atr-sh-h', 'auto')
           const Hs = Math.max(H, Math.ceil(el.getBoundingClientRect().height))
           const topS = sl === 'above' ? Math.round(mr.top - gap - Hs) : top
           const fitsS = sl === 'above' ? topS >= ceil : topS + Hs <= floor
-          el.style.setProperty('--zf-sh-y', `${fitsS ? topS : top}px`)
-          el.style.setProperty('--zf-sh-h', `${fitsS ? Hs : H}px`)
+          el.style.setProperty('--atr-sh-y', `${fitsS ? topS : top}px`)
+          el.style.setProperty('--atr-sh-h', `${fitsS ? Hs : H}px`)
         }
       }
     }
@@ -5590,17 +5591,17 @@ export default {
     const ensureSideHead = () => {
       if (dock.head) return dock.head
       const head = document.createElement('div')
-      head.id = 'atrium-statusdock-head'
-      // a zf- class opts the card out of the global control radius (8px), so
+      head.id = 'atr-statusdock-head'
+      // a atr- class opts the card out of the global control radius (8px), so
       // it keeps the 12px of every other sidebar card
-      head.className = 'zf-sd-card'
+      head.className = 'atr-sd-card'
       head.setAttribute('role', 'button')
       head.tabIndex = 0
-      head.innerHTML = '<span class="zf-sd-row">'
-        + '<svg class="zf-sd-eq" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6v4M8 3.5v9M12 5.5v5"/></svg>'
-        + '<svg class="zf-sd-pinico" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
-        + '<span class="zf-sd-label">Status</span><span class="zf-sd-pin" title="Pinned. Drag off the title to unpin"></span>'
-        + '<svg class="zf-sd-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
+      head.innerHTML = '<span class="atr-sd-row">'
+        + '<svg class="atr-sd-eq" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6v4M8 3.5v9M12 5.5v5"/></svg>'
+        + '<svg class="atr-sd-pinico" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
+        + '<span class="atr-sd-label">Status</span><span class="atr-sd-pin" title="Pinned. Drag off the title to unpin"></span>'
+        + '<svg class="atr-sd-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
         + '</span>'
       const toggle = () => {
         dock.manual = { open: !dock.sideOpen, auto: dock.lastAuto }
@@ -5614,7 +5615,7 @@ export default {
       head.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() }
       })
-      head.querySelector('.zf-sd-pin').addEventListener('pointerdown', e => startPinDrag(e, null))
+      head.querySelector('.atr-sd-pin').addEventListener('pointerdown', e => startPinDrag(e, null))
       document.body.appendChild(head)
       dock.head = head
       return head
@@ -5655,13 +5656,13 @@ export default {
         dock.face = face
         const set = (el, k, v) => { if (v) el.style.setProperty(k, v); else el.style.removeProperty(k) }
         for (const el of [head, bar]) {
-          set(el, '--zf-sd-font', btn && getComputedStyle(btn).fontSize)
-          set(el, '--zf-sd-rowh', row ? `${Math.round(rowH)}px` : '')
+          set(el, '--atr-sd-font', btn && getComputedStyle(btn).fontSize)
+          set(el, '--atr-sd-rowh', row ? `${Math.round(rowH)}px` : '')
         }
         if (lab) {
           const c = getComputedStyle(lab)
-          set(head, '--zf-sd-lab-size', c.fontSize); set(head, '--zf-sd-lab-weight', c.fontWeight)
-          set(head, '--zf-sd-lab-track', c.letterSpacing === 'normal' ? '' : c.letterSpacing); set(head, '--zf-sd-lab-color', c.color)
+          set(head, '--atr-sd-lab-size', c.fontSize); set(head, '--atr-sd-lab-weight', c.fontWeight)
+          set(head, '--atr-sd-lab-track', c.letterSpacing === 'normal' ? '' : c.letterSpacing); set(head, '--atr-sd-lab-color', c.color)
         }
       }
       const maxBody = Math.round(r.height * 0.5)
@@ -5693,20 +5694,20 @@ export default {
       if (key === dock.sideKey) return true
       dock.sideKey = key
       dock.sideOpen = open
-      room.style.setProperty('--zf-sd-room', `${cardH + gap}px`)
+      room.style.setProperty('--atr-sd-room', `${cardH + gap}px`)
       const padX = cs ? parseFloat(cs.paddingLeft) || 10 : 10
       const x = Math.round(r.left + padX)
       const w = Math.round(r.width - 2 * padX)
       const top = Math.round(ceiling)
       for (const el of [head, bar]) {
-        el.style.setProperty('--zf-sd-x', `${x}px`)
-        el.style.setProperty('--zf-sd-w', `${w}px`)
+        el.style.setProperty('--atr-sd-x', `${x}px`)
+        el.style.setProperty('--atr-sd-w', `${w}px`)
       }
-      head.style.setProperty('--zf-sd-y-head', `${top}px`)
-      head.style.setProperty('--zf-sd-h', `${cardH}px`)
-      head.style.setProperty('--zf-sd-head', `${headH}px`)
-      bar.style.setProperty('--zf-sd-y', `${top + headH}px`)
-      bar.style.setProperty('--zf-sd-max', `${maxBody}px`)
+      head.style.setProperty('--atr-sd-y-head', `${top}px`)
+      head.style.setProperty('--atr-sd-h', `${cardH}px`)
+      head.style.setProperty('--atr-sd-head', `${headH}px`)
+      bar.style.setProperty('--atr-sd-y', `${top + headH}px`)
+      bar.style.setProperty('--atr-sd-max', `${maxBody}px`)
       bar.toggleAttribute(DOCK_OPEN_ATTR, open)
       head.setAttribute('aria-expanded', String(open))
       head.title = open ? 'Collapse status' : 'Expand status'
@@ -5725,18 +5726,18 @@ export default {
       // opened from a Shelf tile: drop it under the tile instead
       const pa = dock.popAnchor
       if (pa && pa.el.isConnected && Date.now() - pa.at < 1500) {
-        if (!wrap.dataset.zfAnchored) { wrap.dataset.zfAnchored = '1'; pa.at = 0; wrap.zfAnchor = pa.el }
+        if (!wrap.dataset.atrAnchored) { wrap.dataset.atrAnchored = '1'; pa.at = 0; wrap.atrAnchor = pa.el }
       }
-      if (wrap.zfAnchor?.isConnected) {
-        const a = wrap.zfAnchor.getBoundingClientRect()
+      if (wrap.atrAnchor?.isConnected) {
+        const a = wrap.atrAnchor.getBoundingClientRect()
         const h = wrap.offsetHeight || 0
         const w = wrap.offsetWidth || 0
         const x = Math.max(8, Math.min(a.left + a.width / 2 - w / 2, window.innerWidth - w - 8))
         const below = a.bottom + 6 + h <= window.innerHeight - 8
         const y = below ? a.bottom + 6 : Math.max(8, a.top - 6 - h)
-        wrap.style.setProperty('--zf-pop-x', `${Math.round(x)}px`)
-        wrap.style.setProperty('--zf-pop-y', `${Math.round(y)}px`)
-        wrap.style.setProperty('--zf-pop-origin', below ? 'center top' : 'center bottom')
+        wrap.style.setProperty('--atr-pop-x', `${Math.round(x)}px`)
+        wrap.style.setProperty('--atr-pop-y', `${Math.round(y)}px`)
+        wrap.style.setProperty('--atr-pop-origin', below ? 'center top' : 'center bottom')
         return
       }
       const b = bar.getBoundingClientRect()
@@ -5746,9 +5747,9 @@ export default {
       const toRight = b.left + b.width / 2 < window.innerWidth / 2
       const x = toRight ? b.right + 8 : b.left - 8 - w
       const y = Math.max(8, Math.min(t.top, window.innerHeight - h - 8))
-      wrap.style.setProperty('--zf-pop-x', `${Math.round(x)}px`)
-      wrap.style.setProperty('--zf-pop-y', `${Math.round(y)}px`)
-      wrap.style.setProperty('--zf-pop-origin', toRight ? 'left top' : 'right top')
+      wrap.style.setProperty('--atr-pop-x', `${Math.round(x)}px`)
+      wrap.style.setProperty('--atr-pop-y', `${Math.round(y)}px`)
+      wrap.style.setProperty('--atr-pop-origin', toRight ? 'left top' : 'right top')
     }
     const adoptDockPop = wrap => {
       const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_ATTR}]`)
@@ -5815,7 +5816,7 @@ export default {
           dock.lastTry = t
           pressStatusbarKeybind()
           dock.pressed = true
-          if (dock.tries === 2) console.info?.('[atrium] status dock: the status-bar keybind did not answer (rebound?), leaving it')
+          if (dock.tries === 2) console.info?.('[hermes-atrium] status dock: the status-bar keybind did not answer (rebound?), leaving it')
         }
         return
       }
@@ -5840,11 +5841,11 @@ export default {
       if (target?.nodeType === 1 && target.closest?.('[data-chat-surface]')) return
       lastScrollAt = Date.now()
       const root = document.documentElement
-      if (root && !root.hasAttribute('data-zf-scrolling')) root.setAttribute('data-zf-scrolling', '')
+      if (root && !root.hasAttribute('data-atr-scrolling')) root.setAttribute('data-atr-scrolling', '')
       if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
       scrollIdleTimer = setTimeout(() => {
         scrollIdleTimer = 0
-        document.documentElement?.removeAttribute?.('data-zf-scrolling')
+        document.documentElement?.removeAttribute?.('data-atr-scrolling')
       }, 150)
     }
     if (typeof document !== 'undefined') {
@@ -5911,7 +5912,7 @@ export default {
       let text = ''
       for (let n = walker.nextNode(); n && text.length < 800; n = walker.nextNode()) {
         const host = n.parentElement
-        if (host?.closest?.('[data-conversation-scaffold], .atrium-work-summary')) continue
+        if (host?.closest?.('[data-conversation-scaffold], .atr-work-summary')) continue
         text += n.nodeValue
       }
       text = text.replace(/\s+/g, ' ').trim().slice(0, 800)
@@ -6043,7 +6044,7 @@ export default {
       if (e && !e.d) { e.d = Date.now(); saveStarts() }
     }
     const startOf = root => {
-      if (root.dataset.zfStart) return Number(root.dataset.zfStart)
+      if (root.dataset.atrStart) return Number(root.dataset.atrStart)
       const key = liveKey(root)
       let t = savedStart(key)
       if (t === undefined) {
@@ -6054,7 +6055,7 @@ export default {
         t = Date.now() - ago * 1000
         if (key) rememberStart(key, t)
       }
-      root.dataset.zfStart = String(t)
+      root.dataset.atrStart = String(t)
       return t
     }
 
@@ -6067,7 +6068,7 @@ export default {
 
     const setToggleExpanded = (toggle, contentEls, expanded) => {
       for (const contentEl of contentEls) {
-        if (contentEl) put(contentEl, 'data-atrium-work-collapsed', expanded ? 'false' : 'true')
+        if (contentEl) put(contentEl, 'data-atr-work-collapsed', expanded ? 'false' : 'true')
       }
       put(toggle, 'data-expanded', expanded ? 'true' : 'false')
       put(toggle, 'aria-expanded', expanded ? 'true' : 'false')
@@ -6081,7 +6082,7 @@ export default {
     const WORK_MARKERS = "[data-conversation-scaffold], [data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]"
     // Set on a tile that Atrium opened itself for a running turn, so the fold can
     // close it when the model stops without overriding a click.
-    const AUTO_OPEN_ATTR = 'data-zf-auto-open'
+    const AUTO_OPEN_ATTR = 'data-atr-auto-open'
     // Node is absent from the CSS test rigs, so fall back to the spec's values.
     const DOC_FOLLOWING = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_FOLLOWING : 4
     const DOC_CONTAINED = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_CONTAINED_BY : 16
@@ -6096,8 +6097,8 @@ export default {
           // without containing it (a wrapper holding the work is not before it)
           const interim = Boolean(lastWork) &&
             (md.compareDocumentPosition(lastWork) & (DOC_FOLLOWING | DOC_CONTAINED)) === DOC_FOLLOWING
-          if (interim) put(md, 'data-atrium-work-interim', 'true')
-          else if (md.hasAttribute?.('data-atrium-work-interim')) md.removeAttribute('data-atrium-work-interim')
+          if (interim) put(md, 'data-atr-work-interim', 'true')
+          else if (md.hasAttribute?.('data-atr-work-interim')) md.removeAttribute('data-atr-work-interim')
         }
       }
     }
@@ -6208,9 +6209,9 @@ export default {
 
       if (!isEnabled) {
         for (const { content } of parts) {
-          if (content.hasAttribute?.('data-atrium-work-collapsed')) content.removeAttribute('data-atrium-work-collapsed')
-          content.querySelector?.('.atrium-work-summary')?.remove()
-          content.querySelectorAll?.('[data-atrium-work-interim]').forEach(el => el.removeAttribute?.('data-atrium-work-interim'))
+          if (content.hasAttribute?.('data-atr-work-collapsed')) content.removeAttribute('data-atr-work-collapsed')
+          content.querySelector?.('.atr-work-summary')?.remove()
+          content.querySelectorAll?.('[data-atr-work-interim]').forEach(el => el.removeAttribute?.('data-atr-work-interim'))
         }
         return
       }
@@ -6219,7 +6220,7 @@ export default {
         ...part,
         live: isStreamingRoot(part.root),
         scaffolds: Array.from(part.content.querySelectorAll?.('[data-conversation-scaffold]') || []),
-        toggle: part.content.querySelector?.('.atrium-work-summary') || null
+        toggle: part.content.querySelector?.('.atr-work-summary') || null
       }))
       const scaffolds = info.flatMap(part => part.scaffolds)
       // The owner is the last part with something to fold: work, a live
@@ -6253,8 +6254,8 @@ export default {
       if (!toggle) {
         toggle = document.createElement('button')
         toggle.type = 'button'
-        toggle.className = 'atrium-work-summary'
-        put(toggle, 'data-atrium-work-toggle', 'true')
+        toggle.className = 'atr-work-summary'
+        put(toggle, 'data-atr-work-toggle', 'true')
         toggle.addEventListener('click', e => {
           e.preventDefault()
           e.stopPropagation()
@@ -6274,10 +6275,10 @@ export default {
           }
           // Closing: the shape only collapses when the display fade ends, so
           // the pin has to wait for that moment or the transcript lurches.
-          // The fade runs on --zf-t-1; read it so Motion off settles at once,
+          // The fade runs on --atr-t-1; read it so Motion off settles at once,
           // and keep a timeout fallback in case transitionend is swallowed.
           const fadeRoot = toggle.parentElement || owner.content
-          const ms = parseFloat(getComputedStyle?.(fadeRoot)?.getPropertyValue('--zf-t-1')) || 90
+          const ms = parseFloat(getComputedStyle?.(fadeRoot)?.getPropertyValue('--atr-t-1')) || 90
           let done = false
           const finish = () => {
             if (done) return
@@ -6308,11 +6309,11 @@ export default {
       // state lives on the tile: a part that joins later (a new step, a
       // swapped-in root) reads it from there instead of arriving open.
       const expanded = toggle.getAttribute('data-expanded') === 'true'
-      for (const stray of container.querySelectorAll?.('.atrium-work-summary') || []) if (stray !== toggle) stray.remove?.()
+      for (const stray of container.querySelectorAll?.('.atr-work-summary') || []) if (stray !== toggle) stray.remove?.()
       for (const part of info) {
         const foldable = part.scaffolds.length || Boolean(part.content.querySelector?.(WORK_MARKERS))
-        if (foldable) put(part.content, 'data-atrium-work-collapsed', expanded ? 'false' : 'true')
-        else if (part.content.hasAttribute?.('data-atrium-work-collapsed')) part.content.removeAttribute('data-atrium-work-collapsed')
+        if (foldable) put(part.content, 'data-atr-work-collapsed', expanded ? 'false' : 'true')
+        else if (part.content.hasAttribute?.('data-atr-work-collapsed')) part.content.removeAttribute('data-atr-work-collapsed')
       }
 
       const livePart = info.find(part => part.live) || null
@@ -6326,7 +6327,7 @@ export default {
       }
 
       // Just finished: if Hermes stamped no badge, keep the time we counted.
-      const started = info.map(part => part.root.dataset.zfStart).find(Boolean)
+      const started = info.map(part => part.root.dataset.atrStart).find(Boolean)
       const counted = toggle.getAttribute('data-live') === 'true' && started
         ? (Date.now() - Number(started)) / 1000 : null
       toggle.removeAttribute('data-live')
@@ -6374,21 +6375,21 @@ export default {
       const signature = `${icons.join(',')}|${labelText}`
       if (toggle.dataset.signature === signature) return
       const iconsKey = icons.join(',')
-      if (toggle.dataset.icons !== iconsKey || !toggle.querySelector('.atrium-work-summary-label')) {
+      if (toggle.dataset.icons !== iconsKey || !toggle.querySelector('.atr-work-summary-label')) {
         putData(toggle, 'icons', iconsKey)
         const iconStackHtml = icons.length > 0 ? [
-          '<span class="atrium-work-icon-stack" aria-hidden="true">',
-          ...icons.map(k => `<span class="atrium-work-icon-item">${WORK_ICONS[k] || ''}</span>`),
+          '<span class="atr-work-icon-stack" aria-hidden="true">',
+          ...icons.map(k => `<span class="atr-work-icon-item">${WORK_ICONS[k] || ''}</span>`),
           '</span>'
         ].join('') : ''
         toggle.innerHTML = [
           iconStackHtml,
-          '<span class="atrium-work-summary-label"></span>',
-          '<span class="atrium-work-summary-caret" aria-hidden="true">\u203A</span>'
+          '<span class="atr-work-summary-label"></span>',
+          '<span class="atr-work-summary-caret" aria-hidden="true">\u203A</span>'
         ].join('')
       }
       // only the text node changes while the timer ticks: no icon re-parse
-      putText(toggle.querySelector('.atrium-work-summary-label'), labelText)
+      putText(toggle.querySelector('.atr-work-summary-label'), labelText)
       const wantTitle = detail ? `${detail}. Click to ${toggle.getAttribute('data-expanded') === 'true' ? 'hide' : 'show'} the steps.` : ''
       if (toggle.title !== wantTitle) toggle.title = wantTitle
       putData(toggle, 'signature', signature)
@@ -6459,9 +6460,9 @@ export default {
       if (typeof document === 'undefined' || !document.documentElement) return
       if (!document.documentElement.dataset) document.documentElement.dataset = {}
       if (on) {
-        document.documentElement.dataset.atriumCollapseWork = 'on'
+        document.documentElement.dataset.atrCollapseWork = 'on'
       } else {
-        delete document.documentElement.dataset.atriumCollapseWork
+        delete document.documentElement.dataset.atrCollapseWork
       }
       scanWorkProgress()
     }
@@ -6504,7 +6505,7 @@ export default {
     // commits more pages, Shiki highlights after mount, the code plugin
     // re-renders markdown, fonts swap and tables apply widths — all after
     // core's two quiet frames. So the plugin holds its own curtain
-    // (data-atrium-settling, paint-only via CSS) until the transcript is
+    // (data-atr-settling, paint-only via CSS) until the transcript is
     // actually quiet, bounded by SETTLE_MAX_MS and lifted on any user input.
     const SETTLE_QUIET_MS = 160
     const SETTLE_MAX_MS = 1400
@@ -6517,7 +6518,7 @@ export default {
         settleRunners.delete(surface)
         try { runner.stop() } catch {}
       }
-      surface?.removeAttribute?.('data-atrium-settling')
+      surface?.removeAttribute?.('data-atr-settling')
     }
 
     const finishAllSettles = () => {
@@ -6529,7 +6530,7 @@ export default {
       if (!surface || !viewport) return
       // A re-armed switch restarts clean rather than stacking runners.
       finishSettle(surface)
-      surface.setAttribute?.('data-atrium-settling', '')
+      surface.setAttribute?.('data-atr-settling', '')
       if (typeof requestAnimationFrame !== 'function' || viewport.isConnected === false) {
         finishSettle(surface)
         return
@@ -6668,7 +6669,7 @@ export default {
           }
           if (mutation?.type !== 'childList') continue
           const target = mutation.target
-          if (target.nodeType !== 1 || target.closest?.('.atrium-work-summary')) continue
+          if (target.nodeType !== 1 || target.closest?.('.atr-work-summary')) continue
           // Streamed children can affect any part of their response group,
           // but leave the composer and other turns alone.
           if (queueTurn(target)) continue
@@ -6768,8 +6769,8 @@ export default {
       if (!ghost) return
       const at = liveGhosts.indexOf(ghost)
       if (at !== -1) liveGhosts.splice(at, 1)
-      try { ghost.removeEventListener?.('animationend', ghost.__zfOnEnd) } catch {}
-      if (ghost.__zfTimeout != null) clearTimeout(ghost.__zfTimeout)
+      try { ghost.removeEventListener?.('animationend', ghost.__atrOnEnd) } catch {}
+      if (ghost.__atrTimeout != null) clearTimeout(ghost.__atrTimeout)
       try { ghost.remove?.() } catch {}
       try { ghost.parentNode?.removeChild?.(ghost) } catch {}
     }
@@ -6778,7 +6779,7 @@ export default {
       let ghost = null
       try { ghost = el.cloneNode(true) } catch {}
       if (!ghost || ghost.nodeType !== 1) return
-      ghost.classList?.add('zf-ghost')
+      ghost.classList?.add('atr-ghost')
       try { ghost.removeAttribute('id') } catch {}
       try { ghost.removeAttribute('tabindex') } catch {}
       try { ghost.querySelectorAll?.('[id], [tabindex]').forEach(node => { node.removeAttribute('id'); node.removeAttribute('tabindex') }) } catch {}
@@ -6810,19 +6811,19 @@ export default {
         ms = /ms/.test(raw) ? value / 1000 : value
       } catch {}
       const durMs = Math.max(120, ms * 1000 + 80)
-      ghost.__zfOnEnd = event => {
+      ghost.__atrOnEnd = event => {
         // A descendant's own animation ending bubbles up; only the ghost's
         // exit (fired on the ghost itself) may drop it.
         if (event && event.target !== ghost) return
-        if (ghost.__zfTimeout != null) { clearTimeout(ghost.__zfTimeout); ghost.__zfTimeout = null }
+        if (ghost.__atrTimeout != null) { clearTimeout(ghost.__atrTimeout); ghost.__atrTimeout = null }
         dropGhost(ghost)
       }
-      ghost.__zfDrop = () => {
-        if (ghost.__zfTimeout != null) { clearTimeout(ghost.__zfTimeout); ghost.__zfTimeout = null }
+      ghost.__atrDrop = () => {
+        if (ghost.__atrTimeout != null) { clearTimeout(ghost.__atrTimeout); ghost.__atrTimeout = null }
         dropGhost(ghost)
       }
-      ghost.addEventListener?.('animationend', ghost.__zfOnEnd, { once: true })
-      ghost.__zfTimeout = setTimeout(ghost.__zfDrop, durMs)
+      ghost.addEventListener?.('animationend', ghost.__atrOnEnd, { once: true })
+      ghost.__atrTimeout = setTimeout(ghost.__atrDrop, durMs)
     }
 
     if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
@@ -6851,7 +6852,7 @@ export default {
           for (const node of record.addedNodes || []) {
             if (node?.nodeType !== 1) continue
             // Our own ghosts are clones of surfaces; never track them.
-            if (node.classList?.contains?.('zf-ghost')) continue
+            if (node.classList?.contains?.('atr-ghost')) continue
             // Every ghost slot is a data-slot; this skips the 13-selector
             // match for the plain wrapper divs a virtual row commit adds.
             if (!node.hasAttribute?.('data-slot')) continue
@@ -6904,7 +6905,7 @@ export default {
       if (surfaceTracker) cancelAnimationFrame?.(surfaceTracker)
       surfaceTracker = 0
       trackedSurfaces.clear()
-      for (const ghost of liveGhosts.slice()) ghost.__zfDrop?.()
+      for (const ghost of liveGhosts.slice()) ghost.__atrDrop?.()
     })
 
     if (typeof window !== 'undefined') {
@@ -6935,7 +6936,7 @@ export default {
     // The look is one still picture and one palette, so "now" is simply now;
     // there is no held moment, no sun position and no clock to follow.
     const nowAt = () => new Date()
-    let zfDisposed = false
+    let atrDisposed = false
     let replyRefreshKey = ''
     let replyPictureVersion = 0
 
@@ -6945,7 +6946,7 @@ export default {
     // so the same numbers work on the painting and on your own screenshot.
     const renderReplyGround = () => {
       if (typeof document === 'undefined' || !document.head) return
-      const sheet = document.getElementById('atrium-reply-ground')
+      const sheet = document.getElementById('atr-reply-ground')
       if (!replyGround.get()) { sheet?.remove(); replyRefreshKey = ''; return }
       if (document.hidden) return
       const key = [away, chromeOn.get(), backdropOn.get(), look.get(), replyPictureVersion, pictureRevision,
@@ -6971,10 +6972,10 @@ export default {
       if (!css) { sheet?.remove(); return }
       if (!sheet) {
         const el = document.createElement('style')
-        el.id = 'atrium-reply-ground'
+        el.id = 'atr-reply-ground'
         document.head.appendChild(el)
       }
-      const target = document.getElementById('atrium-reply-ground')
+      const target = document.getElementById('atr-reply-ground')
       if (target.textContent !== css) target.textContent = css
     }
 
@@ -7000,7 +7001,7 @@ export default {
     let flareStyle = null
     if (typeof document !== 'undefined') {
       flareStyle = document.createElement('style')
-      flareStyle.id = 'atrium-stack-flare'
+      flareStyle.id = 'atr-stack-flare'
       flareStyle.textContent = STACK_FLARE_CSS
       document.head.appendChild(flareStyle)
     }
@@ -7021,7 +7022,7 @@ export default {
     const liveTimer = setInterval(() => {
       if (typeof document === 'undefined' || document.hidden || !collapseWork.get() || !scrollSettled()) return
       const groups = new Set()
-      document.querySelectorAll?.('.atrium-work-summary[data-live]').forEach(el => {
+      document.querySelectorAll?.('.atr-work-summary[data-live]').forEach(el => {
         const g = groupContainerOf(el.closest?.("[data-slot='aui_assistant-message-root']")); if (g) groups.add(g)
       })
       const newest = newestMessageRoot()
@@ -7032,15 +7033,15 @@ export default {
     apply()
 
     // ── themes: one stable host entry ──────────────────────────────────────
-    // Atrium publishes a single theme name and re-registers it with the current
+    // Hermes Atrium publishes a single theme name and re-registers it with the current
     // look's colours, so the pick in Appearance never changes as the look does.
     function registerLive() {
       const key = gruvboxTinted() ? 'gruvbox-tint:' + GLASS_KEYS.filter(k => k !== 'thumb').map(k => GLASS[k]).join() : look.get()
       if (liveFor === key) return
       liveFor = key
-      ctx.register({ id: 'atrium.theme', area: THEMES_AREA, order: 38, data: {
-        name: THEME_NAME, label: 'Atrium',
-        description: 'Choose Gruvbox or Custom in Settings → Atrium.',
+      ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
+        name: THEME_NAME, label: 'Hermes Atrium',
+        description: 'Choose Gruvbox or Custom in Settings → Hermes Atrium.',
         colors: gruvboxTinted() ? glassGrounds() : GRUVBOX_GROUNDS
       } })
     }
@@ -7103,7 +7104,7 @@ export default {
 
     // ── settings ─────────────────────────────────────────────────────────────
     // Look is the short, front page: the appearance gallery, the background and
-    // Atrium styling switches. Picture knobs appear only on Custom, and the long
+    // Hermes Atrium styling switches. Picture knobs appear only on Custom, and the long
     // Chat/Snippets sections stay folded until asked for.
     // `collapse` keeps the long, occasional sections (chat, snippets) to one
     // line until they are opened. Native <details>/<summary> needs no state and
@@ -7153,7 +7154,7 @@ export default {
     if (typeof storedPicture === 'string' && storedPicture.length > 32) customSkin.image = storedPicture
     // Zero tint always restores the shipped painting and panel values.
     setSkin(look.get() === 'custom' ? customSkin : gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
-    pictureReady = () => { if (!zfDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
+    pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
 
     ensurePictureStyle(SKIN.image)
     const skin = atom({ ...customSkin })
@@ -7229,7 +7230,7 @@ export default {
       if (!overlay || window.innerWidth >= 640) { clearNarrowHide(); return }
       const target = event.target
       if (!(target instanceof Element)) return
-      if (target.closest('[data-narrow-overlay], [data-pane-overlay], [role="dialog"], [role="menu"], [data-radix-popper-content-wrapper], div.fixed[data-zf-sbbtn]')) {
+      if (target.closest('[data-narrow-overlay], [data-pane-overlay], [role="dialog"], [role="menu"], [data-radix-popper-content-wrapper], div.fixed[data-atr-sbbtn]')) {
         clearNarrowHide()
         return
       }
@@ -7248,7 +7249,7 @@ export default {
       document.removeEventListener('pointermove', outsideNarrowRail)
     })
 
-    const BACKDROP_STYLE = 'atrium-glass-backdrop'
+    const BACKDROP_STYLE = 'atr-glass-backdrop'
     let backdrop = ''
     try { const b = ctx.storage.get('glassBackdrop'); if (typeof b === 'string' && b.startsWith('data:image/')) backdrop = b } catch {}
     let bx = NaN, by = NaN, trackTimer = 0, trackRaf = 0, still = 0
@@ -7258,10 +7259,10 @@ export default {
       if (x === bx && y === by) return false
       bx = x; by = y
       const root = document.documentElement.style
-      root.setProperty('--zf-bx', `${-x}px`)
-      root.setProperty('--zf-by', `${-y}px`)
-      root.setProperty('--zf-bw', `${window.screen.width}px`)
-      root.setProperty('--zf-bh', `${window.screen.height}px`)
+      root.setProperty('--atr-bx', `${-x}px`)
+      root.setProperty('--atr-by', `${-y}px`)
+      root.setProperty('--atr-bw', `${window.screen.width}px`)
+      root.setProperty('--atr-bh', `${window.screen.height}px`)
       return true
     }
     const stopTracking = () => { clearTimeout(trackTimer); cancelAnimationFrame(trackRaf); trackTimer = 0; trackRaf = 0 }
@@ -7284,13 +7285,13 @@ export default {
     const syncBackdrop = () => {
       const on = !!backdrop && gruvboxTinted()
       const root = document.documentElement
-      if (on) root.setAttribute('data-zf-backdrop', '')
-      else root.removeAttribute?.('data-zf-backdrop')
+      if (on) root.setAttribute('data-atr-backdrop', '')
+      else root.removeAttribute?.('data-atr-backdrop')
       let el = document.getElementById(BACKDROP_STYLE)
       if (!on) { el?.remove(); stopTracking(); return }
       windowGlassOff()
       if (!el) { el = document.createElement('style'); el.id = BACKDROP_STYLE; document.head.appendChild(el) }
-      const css = `html:root[data-zf-backdrop] body { background: linear-gradient(rgba(var(--zf-glass-rgb), var(--zf-glass-a)), rgba(var(--zf-glass-rgb), var(--zf-glass-a))) fixed, url("${backdrop}") var(--zf-bx, 0px) var(--zf-by, 0px) / var(--zf-bw, 100vw) var(--zf-bh, 100vh) no-repeat fixed, #000 !important; }`
+      const css = `html:root[data-atr-backdrop] body { background: linear-gradient(rgba(var(--atr-glass-rgb), var(--atr-glass-a)), rgba(var(--atr-glass-rgb), var(--atr-glass-a))) fixed, url("${backdrop}") var(--atr-bx, 0px) var(--atr-by, 0px) / var(--atr-bw, 100vw) var(--atr-bh, 100vh) no-repeat fixed, #000 !important; }`
       if (el.textContent !== css) el.textContent = css
       bx = by = NaN
       placeBackdrop()
@@ -7308,7 +7309,7 @@ export default {
       document.removeEventListener('visibilitychange', trackBackdrop)
       window.removeEventListener('resize', onBackdropResize)
       document.getElementById(BACKDROP_STYLE)?.remove()
-      document.documentElement.removeAttribute('data-zf-backdrop')
+      document.documentElement.removeAttribute('data-atr-backdrop')
     })
     // Bake: cover-fit to the screen's size in points, blurred like a terminal's
     // background-blur. Drawn oversize so the blur doesn't darken the edges.
@@ -7401,7 +7402,7 @@ export default {
       writeConfig(SKIN_DEFAULTS)
       apply()
     }
-    // ── files: the painting, and ~/.hermes/atrium-theme.json ─────────────
+    // ── files: the painting, and ~/.hermes/hermes-atrium-theme.json ─────────────
     // The theme file IS the Custom look. Every key is optional; anything left
     // out keeps its default. Edit it in any editor and the app follows within
     // a couple of seconds; moving a knob in Settings writes it back.
@@ -7429,7 +7430,7 @@ export default {
       const abs = decodeURI(t.slice(7))
       return homeDir && abs.startsWith(homeDir + '/') ? '~' + abs.slice(homeDir.length) : abs
     }
-    const CONFIG_HELP = 'Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. Delete a key to get its default.'
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
@@ -7450,7 +7451,7 @@ export default {
       if (text === null || text === lastConfigText) return
       lastConfigText = text
       let data
-      try { data = JSON.parse(text) } catch (error) { console.warn('[atrium] atrium-theme.json is not valid JSON:', String(error)); return }
+      try { data = JSON.parse(text) } catch (error) { console.warn('[hermes-atrium] hermes-atrium-theme.json is not valid JSON:', String(error)); return }
       if (!data || typeof data !== 'object') return
       const patch = {}
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
@@ -7473,18 +7474,18 @@ export default {
     // there is used if it is missing, so swapping the painting is one file copy.
     const IMAGE_RE = /\.(?:jpe?g|png|webp|avif)$/i
     const PICTURE_NAMES = ['gruvbox.jpg', 'gruvbox.jpeg', 'gruvbox.png', 'gruvbox.webp']
-    const pluginDirName = 'atrium'
+    const pluginDirName = 'hermes-atrium'
 
     const resolvePluginFiles = async () => {
       if (!desk?.desktopPluginsRoot || !desk?.readDir) {
-        console.warn('[atrium] no desktop file bridge; the painting stays unloaded')
+        console.warn('[hermes-atrium] no desktop file bridge; the painting stays unloaded')
         return
       }
       const root = await desk.desktopPluginsRoot()
       // The bridge reports the native separator, so build paths with it.
       const sep = root.includes('\\') ? '\\' : '/'
       homeDir = root.replace(/[\\/]\.hermes[\\/]desktop-plugins[\\/]?$/, '')
-      configPath = root.replace(/[\\/]desktop-plugins[\\/]?$/, '') + sep + 'atrium-theme.json'
+      configPath = root.replace(/[\\/]desktop-plugins[\\/]?$/, '') + sep + 'hermes-atrium-theme.json'
       const names = async dir => {
         try { return ((await desk.readDir(dir)) || {}).entries || [] } catch { return [] }
       }
@@ -7498,7 +7499,7 @@ export default {
         try {
           const res = await desk.readFileText(dir.path.replace(/[\\/]+$/, '') + sep + 'plugin.js')
           const text = typeof res === 'string' ? res : res?.text ?? res?.content ?? ''
-          return /id:\s*['"]atrium['"]/.test(String(text))
+          return /id:\s*['"]hermes-atrium['"]/.test(String(text))
         } catch { return false }
       }
       const tops = await names(root)
@@ -7535,14 +7536,14 @@ export default {
         ensurePictureStyle(SKIN.image)
         appearanceAssets.set(appearanceAssets.get() + 1)
         apply()
-        console.info(`[atrium] painting: ${owner}/assets/${found.split(/[\\/]/).pop()}`)
+        console.info(`[hermes-atrium] painting: ${owner}/assets/${found.split(/[\\/]/).pop()}`)
       } else {
-        console.warn(`[atrium] no picture in <plugin>/assets (looked for ${PICTURE_NAMES[0]} or any image)`)
+        console.warn(`[hermes-atrium] no picture in <plugin>/assets (looked for ${PICTURE_NAMES[0]} or any image)`)
       }
       await readConfig(false)
     }
-    resolvePluginFiles().catch(error => console.warn('[atrium] plugin files:', String(error)))
-    // atrium-theme.json is read through the desktop bridge, so a poll is an IPC
+    resolvePluginFiles().catch(error => console.warn('[hermes-atrium] plugin files:', String(error)))
+    // hermes-atrium-theme.json is read through the desktop bridge, so a poll is an IPC
     // plus a file read, not a property access. 2s while you are looking at the
     // window (an edit lands live), 30s while you are not (an edit is followed by
     // coming back here anyway).
@@ -7599,12 +7600,12 @@ export default {
     if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') try {
       const root = document.documentElement
       let pageDead = false
-      document.querySelectorAll('#zf-landing').forEach(el => el.remove())
+      document.querySelectorAll('#atr-landing').forEach(el => el.remove())
       const landing = document.createElement('div')
-      landing.id = 'zf-landing'
+      landing.id = 'atr-landing'
       landing.setAttribute('aria-hidden', 'true')
       const LINES = ['Where should we begin?', 'What are we making today?', 'Bring the stuck part. We will work it out.', 'Drop in a task, a file, or a rough idea.', 'What should Hermes tackle?']
-      landing.innerHTML = '<div class="zf-land-mark">HERMES AGENT</div><div class="zf-land-line"></div>'
+      landing.innerHTML = '<div class="atr-land-mark">HERMES AGENT</div><div class="atr-land-line"></div>'
       landing.lastElementChild.textContent = LINES[Math.floor(Math.random() * LINES.length)]
       document.body.appendChild(landing)
       // borrow the app's own intro (font-fitted wordmark and all) once seen
@@ -7699,7 +7700,7 @@ export default {
 
         // ── drawing ──
         const el = document.createElement('div')
-        el.id = 'zf-home'
+        el.id = 'atr-home'
         el.setAttribute('aria-label', 'Suggested sessions')
         el.dataset.cards = homeCard.get()
         document.body.appendChild(el)
@@ -7707,25 +7708,25 @@ export default {
         const open = id => { try { Promise.resolve(host.openSession(id)).catch(() => {}) } catch {} }
         const card = (item, dropTitle, drop) => {
           const wrap = document.createElement('div')
-          wrap.className = 'zf-card'
+          wrap.className = 'atr-card'
           const b = document.createElement('button')
           b.type = 'button'
-          b.className = 'zf-card-open'
+          b.className = 'atr-card-open'
           const t = document.createElement('span')
-          t.className = 'zf-card-title'
+          t.className = 'atr-card-title'
           t.textContent = (item.session.title || '').trim() || 'Untitled'
           const r = document.createElement('span')
-          r.className = 'zf-card-why'
+          r.className = 'atr-card-why'
           r.textContent = item.reason
           b.append(t, r)
           b.addEventListener('click', () => open(item.id))
           const x = document.createElement('button')
           x.type = 'button'
-          x.className = 'zf-card-x'
+          x.className = 'atr-card-x'
           x.title = dropTitle
           x.setAttribute('aria-label', dropTitle)
           x.textContent = '×'
-          x.addEventListener('click', e => { e.stopPropagation(); drop(item); wrap.remove(); if (!el.querySelector('.zf-card')) el.replaceChildren() })
+          x.addEventListener('click', e => { e.stopPropagation(); drop(item); wrap.remove(); if (!el.querySelector('.atr-card')) el.replaceChildren() })
           wrap.append(b, x)
           return wrap
         }
@@ -7735,7 +7736,7 @@ export default {
           const h = document.createElement('h3')
           h.textContent = label
           const cards = document.createElement('div')
-          cards.className = 'zf-cards'
+          cards.className = 'atr-cards'
           for (const it of items) cards.appendChild(card(it, dropTitle, drop))
           sec.append(h, cards)
           return sec
@@ -7756,7 +7757,7 @@ export default {
           const tb = tagline && tagline.getBoundingClientRect()
           let top = tb && tb.height > 0 && tb.bottom > r.top && tb.bottom < r.top + r.height ? tb.bottom + 44 : r.top + r.height * 0.6
           // the pinned status shelf sits right under the tagline: start below it when it is showing
-          const pinned = document.getElementById('atrium-shelf-below')
+          const pinned = document.getElementById('atr-shelf-below')
           const sb = pinned && !pinned.hidden ? pinned.getBoundingClientRect() : null
           if (sb && sb.height > 0 && sb.bottom + 28 > top && sb.top < r.top + r.height) top = sb.bottom + 28
           const next = { left: Math.round(r.left + (r.width - width) / 2) + 'px', top: Math.round(top) + 'px', width: Math.round(width) + 'px', maxHeight: Math.max(0, Math.round(r.top + r.height - top - 88)) + 'px' }
@@ -7775,7 +7776,7 @@ export default {
             shown = true
             const mine = ++token
             if (sessions.length) draw()
-            refresh().then(() => { if (shown && mine === token && !el.querySelector('.zf-card')) draw() })
+            refresh().then(() => { if (shown && mine === token && !el.querySelector('.atr-card')) draw() })
           },
           // Re-measure directly during a view-transition update: hit testing
           // in syncPage can see the transition snapshot rather than the pane.
@@ -7820,18 +7821,18 @@ export default {
         const empties = shown.filter(p => p.empty)
         // no pane found at all (a page like Capabilities on top) frosts as it always did
         const chat = chats.length > 0 || !shown.length
-        if (chat) { if (root.dataset.zfChat !== '1') root.dataset.zfChat = '1' }
-        else if (root.dataset.zfChat) delete root.dataset.zfChat
+        if (chat) { if (root.dataset.atrChat !== '1') root.dataset.atrChat = '1' }
+        else if (root.dataset.atrChat) delete root.dataset.atrChat
         // a split with a conversation and an empty pane: cut the empty pane out of the frost
         if (chat && chats.length && empties.length) {
           const W = Math.round(window.innerWidth), H = Math.round(window.innerHeight)
           const hole = p => `M${Math.round(p.r.left)} ${Math.round(p.r.top)}h${Math.round(p.r.width)}v${Math.round(p.r.height)}h${-Math.round(p.r.width)}z`
           const clip = `path(evenodd, 'M0 0h${W}v${H}h${-W}z${empties.map(hole).join('')}')`
-          if (root.style.getPropertyValue('--zf-chat-clip') !== clip) root.style.setProperty('--zf-chat-clip', clip)
-          if (root.dataset.zfClip !== '1') root.dataset.zfClip = '1'
-        } else if (root.dataset.zfClip) {
-          delete root.dataset.zfClip
-          root.style.removeProperty('--zf-chat-clip')
+          if (root.style.getPropertyValue('--atr-chat-clip') !== clip) root.style.setProperty('--atr-chat-clip', clip)
+          if (root.dataset.atrClip !== '1') root.dataset.atrClip = '1'
+        } else if (root.dataset.atrClip) {
+          delete root.dataset.atrClip
+          root.style.removeProperty('--atr-chat-clip')
         }
         borrowIntro((shown.find(p => p.intro) || {}).intro || document.querySelector("[data-slot='aui_intro']"))
         const landPanes = empties.filter(p => !p.introShown)
@@ -7839,7 +7840,7 @@ export default {
         while (extraLandings.length < landPanes.length - 1) {
           const copy = landing.cloneNode(true)
           copy.removeAttribute('id')
-          copy.className = 'zf-landing-x'
+          copy.className = 'atr-landing-x'
           document.body.appendChild(copy)
           extraLandings.push(copy)
         }
@@ -7850,14 +7851,14 @@ export default {
             for (const k in next) if (el.style[k] !== next[k]) el.style[k] = next[k]
           }
           landPanes.forEach((p, i) => place(i === 0 ? landing : extraLandings[i - 1], p.r))
-          if (root.dataset.zfLanding !== '1') {
+          if (root.dataset.atrLanding !== '1') {
             if (!landing.dataset.cloned) landing.lastElementChild.textContent = LINES[Math.floor(Math.random() * LINES.length)]
-            root.dataset.zfLanding = '1'
+            root.dataset.atrLanding = '1'
           }
-        } else if (root.dataset.zfLanding) {
-          delete root.dataset.zfLanding
+        } else if (root.dataset.atrLanding) {
+          delete root.dataset.atrLanding
         }
-        home.sync(empties.length ? empties[0].r : null, [...document.querySelectorAll("[data-slot='aui_intro'] p, #zf-landing p")].filter(e => !/wordmark/.test(String(e.className)) && e.getClientRects().length).pop(), empties[0]?.v)
+        home.sync(empties.length ? empties[0].r : null, [...document.querySelectorAll("[data-slot='aui_intro'] p, #atr-landing p")].filter(e => !/wordmark/.test(String(e.className)) && e.getClientRects().length).pop(), empties[0]?.v)
       }
       let pageQueued = false
       // The sheet matched 13 things with :has(). Scrolling mounts rows, and each
@@ -7872,13 +7873,13 @@ export default {
           const two = tl.children.length === 2 && tl.children[1].getAttribute('data-slot') === 'pane-tab'
           want.set(p, (want.get(p) || false) || two)
         })
-        document.querySelectorAll('[data-zf-strip]').forEach(el => {
-          if (!want.has(el)) { el.removeAttribute('data-zf-strip'); el.removeAttribute('data-zf-switch') }
+        document.querySelectorAll('[data-atr-strip]').forEach(el => {
+          if (!want.has(el)) { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') }
         })
         want.forEach((two, el) => {
-          if (!el.hasAttribute('data-zf-strip')) el.setAttribute('data-zf-strip', '')
-          if (two && !el.hasAttribute('data-zf-switch')) el.setAttribute('data-zf-switch', '')
-          else if (!two && el.hasAttribute('data-zf-switch')) el.removeAttribute('data-zf-switch')
+          if (!el.hasAttribute('data-atr-strip')) el.setAttribute('data-atr-strip', '')
+          if (two && !el.hasAttribute('data-atr-switch')) el.setAttribute('data-atr-switch', '')
+          else if (!two && el.hasAttribute('data-atr-switch')) el.removeAttribute('data-atr-switch')
         })
       }
 
@@ -7891,20 +7892,20 @@ export default {
       const markHas = () => {
         const tc = document.querySelector("[data-slot='aui_thread-content']")
         if (tc) {
-          flag(tc, 'data-zf-intro', !!tc.querySelector("[data-slot='aui_intro'], .wordmark, [class*='wordmark']"))
-          flag(tc, 'data-zf-msgs', !!tc.querySelector("[data-slot*='message'], [data-slot='aui_turn-pair'], [data-slot='aui_message-group']"))
+          flag(tc, 'data-atr-intro', !!tc.querySelector("[data-slot='aui_intro'], .wordmark, [class*='wordmark']"))
+          flag(tc, 'data-atr-msgs', !!tc.querySelector("[data-slot*='message'], [data-slot='aui_turn-pair'], [data-slot='aui_message-group']"))
         }
         const grid = document.querySelector("[class*='grid-cols-[13rem_minmax(0,1fr)]']")
-        flag(document.documentElement, 'data-zf-settings', !!grid)
+        flag(document.documentElement, 'data-atr-settings', !!grid)
         const boxes = new Set()
         if (grid) for (let p = grid.parentElement, d = 0; p && d < 2; p = p.parentElement, d++) if (p.matches('div.rounded-xl')) boxes.add(p)
-        sweep('data-zf-setbox', boxes)
+        sweep('data-atr-setbox', boxes)
         const fx = new Set()
         document.querySelectorAll("div.fixed > button[aria-label*='sidebar' i]").forEach(b => fx.add(b.parentElement))
-        sweep('data-zf-sbbtn', fx)
+        sweep('data-atr-sbbtn', fx)
         const nav = new Set()
         document.querySelectorAll("[data-tour^='sidebar-nav-']").forEach(n => { const b = n.closest("[data-slot='sidebar-menu-button']"); if (b) nav.add(b) })
-        sweep('data-zf-nav', nav)
+        sweep('data-atr-nav', nav)
       }
       const schedulePage = () => {
         if (pageQueued) return
@@ -7944,21 +7945,21 @@ export default {
         pageDead = true
         home.dispose()
         clearTimeout(rootTimer)
-        delete root.dataset.zfClip
-        root.style.removeProperty('--zf-chat-clip')
-        document.querySelectorAll('[data-zf-strip]').forEach(el => { el.removeAttribute('data-zf-strip'); el.removeAttribute('data-zf-switch') })
-        for (const a of ['data-zf-intro', 'data-zf-msgs', 'data-zf-settings', 'data-zf-setbox', 'data-zf-sbbtn', 'data-zf-nav']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
+        delete root.dataset.atrClip
+        root.style.removeProperty('--atr-chat-clip')
+        document.querySelectorAll('[data-atr-strip]').forEach(el => { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') })
+        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
         pageObs.disconnect()
         pageSizeObs?.disconnect()
         window.removeEventListener('resize', schedulePage)
-        delete root.dataset.zfChat
-        delete root.dataset.zfLanding
+        delete root.dataset.atrChat
+        delete root.dataset.atrLanding
         landing.remove()
         for (const x of extraLandings) x.remove()
         extraLandings.length = 0
       })
     } catch (err) {
-      console.error('[atrium] page state failed: ' + (err && err.stack || err))
+      console.error('[hermes-atrium] page state failed: ' + (err && err.stack || err))
     }
 
     // ── Session clicks ───────────────────────────────────────────────────────
@@ -7968,7 +7969,7 @@ export default {
       // always routes a row click to the first (workspace) tab; when a session
       // tab is active, open the row as a tab through the row's own menu and
       // retire the tab it replaces.
-      const topTabs = () => Array.from(document.querySelectorAll("[role='tab'][data-tree-tab]")).filter(t => !t.closest('[data-zf-arc-col]'))
+      const topTabs = () => Array.from(document.querySelectorAll("[role='tab'][data-tree-tab]")).filter(t => !t.closest('[data-atr-arc-col]'))
       let swapping = false
       let replaying = false
       const onRowClick = event => {
@@ -7987,10 +7988,10 @@ export default {
         event.preventDefault()
         event.stopImmediatePropagation()
         swapping = true
-        root.dataset.zfGhostMenu = '1'
+        root.dataset.atrGhostMenu = '1'
         const r = btn.getBoundingClientRect()
         row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 20, clientY: r.top + r.height / 2, button: 2 }))
-        const finish = () => { swapping = false; delete root.dataset.zfGhostMenu }
+        const finish = () => { swapping = false; delete root.dataset.atrGhostMenu }
         // pick and retire run on animation frames, which a hidden window never delivers
         setTimeout(() => { if (swapping) finish() }, 3000)
         let tries = 0
@@ -8067,7 +8068,7 @@ export default {
             SkinRow(`${label} — ${fmt(cfg[key])}`, jsx('input', {
               type: 'range', min, max, step, value: cfg[key],
               'aria-label': label,
-              style: { width: '10rem', accentColor: 'var(--zf-accent, var(--ui-accent, currentColor))' },
+              style: { width: '10rem', accentColor: 'var(--atr-accent, var(--ui-accent, currentColor))' },
               onChange: event => push({ [key]: Number(event.target.value) })
             }))
           ),
@@ -8090,7 +8091,7 @@ export default {
       return jsxs('div', { className: 'mt-1 flex flex-wrap items-center gap-2 pb-2', children: [
         jsx('label', {
           className: 'cursor-pointer rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
           children: [
             'Choose image…',
             jsx('input', {
@@ -8108,7 +8109,7 @@ export default {
           value: isUpload ? '' : String(cfg.image || ''),
           placeholder: isUpload ? '(uploaded image)' : 'image URL or file path',
           className: 'rounded-md bg-transparent px-2 py-1 text-[0.75rem]',
-          style: { flex: '1 1 12rem', minWidth: '10rem', border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+          style: { flex: '1 1 12rem', minWidth: '10rem', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
           onChange: event => {
             const value = event.target.value.trim()
             if (value) pushSkin({ image: value })
@@ -8117,15 +8118,15 @@ export default {
         jsx('button', {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
           onClick: () => resetSkin(),
           children: 'Reset'
         }),
         jsx('button', {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          title: '~/.hermes/atrium-theme.json: every colour, opacity and filter of the Custom look, as one editable file',
+          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+          title: '~/.hermes/hermes-atrium-theme.json: every colour, opacity and filter of the Custom look, as one editable file',
           onClick: () => { openConfig() },
           children: 'Theme file'
         })
@@ -8134,7 +8135,7 @@ export default {
 
     const GruvboxTintEditor = () => {
       const g = useValue(glassState)
-      const btn = { border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' }
+      const btn = { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' }
       const chip = hex => jsx('span', { title: hex, style: { display: 'inline-block', width: '1.1rem', height: '1.1rem', borderRadius: '4px', background: hex, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)' } }, hex)
       return jsxs('div', { className: 'flex flex-col gap-2 py-2', children: [
         jsx(ListRow, {
@@ -8148,7 +8149,7 @@ export default {
         }),
         jsx(ListRow, {
           title: 'Tint', description: '0 keeps the painting. Higher values reveal more of the desktop; wallpaper colours are kept for next time.',
-          action: jsx('input', { type: 'range', 'aria-label': 'Gruvbox tint', 'aria-valuetext': Math.round(g.tint * 100) + '% transparency', min: 0, max: 0.92, step: 0.01, value: g.tint, style: { width: '10rem', accentColor: 'var(--zf-accent, currentColor)' }, onChange: e => pushGlass({ tint: Number(e.target.value) }) })
+          action: jsx('input', { type: 'range', 'aria-label': 'Gruvbox tint', 'aria-valuetext': Math.round(g.tint * 100) + '% transparency', min: 0, max: 0.92, step: 0.01, value: g.tint, style: { width: '10rem', accentColor: 'var(--atr-accent, currentColor)' }, onChange: e => pushGlass({ tint: Number(e.target.value) }) })
         }),
         jsx('div', { className: 'flex flex-wrap gap-1.5', 'aria-label': 'Gruvbox tint palette', children: ['ground', 'cardTint', 'bubbleTint', 'edge', 'accent', 'ink', 'ink2', 'quiet', 'link', 'code', 'quote'].map(k => chip(g[k])) })
       ] })
@@ -8159,13 +8160,13 @@ export default {
       const slider = ([key, label, min, max, step]) =>
         SkinRow(label, jsx('input', {
           type: 'range', min, max, step, value: cfg[key],
-          style: { width: '10rem', accentColor: 'var(--zf-accent, var(--ui-accent, currentColor))' },
+          style: { width: '10rem', accentColor: 'var(--atr-accent, var(--ui-accent, currentColor))' },
           onChange: event => pushSkin({ [key]: Number(event.target.value) })
         }))
       const swatch = ([key, label]) =>
         SkinRow(label, jsx('input', {
           type: 'color', value: cfg[key],
-          style: { width: '2.25rem', height: '1.5rem', padding: '0', border: '1px solid var(--zf-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))', borderRadius: '0.375rem', background: 'transparent' },
+          style: { width: '2.25rem', height: '1.5rem', padding: '0', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))', borderRadius: '0.375rem', background: 'transparent' },
           onChange: event => pushSkin({ [key]: event.target.value })
         }))
       return jsxs('div', { className: 'mt-1 flex flex-col gap-0.5', children: [
@@ -8175,10 +8176,10 @@ export default {
     }
 
     ctx.registerSettingsPage?.({
-      id: 'atrium',
-      title: 'Atrium',
+      id: 'hermes-atrium',
+      title: 'Hermes Atrium',
       icon: 'atrium',
-      render: function AtriumSettings() {
+      render: function HermesAtriumSettings() {
         useValue(appearanceAssets)
         useValue(skin)
         useValue(glassState)
@@ -8198,14 +8199,14 @@ export default {
         const list = useValue(pins)
 
         const status = selectedLook === 'hermes'
-          ? 'Hermes appearance · Atrium appearance paused'
+          ? 'Hermes appearance · Hermes Atrium appearance paused'
           : lookNow === 'custom'
-            ? ['Custom picture', isChrome ? 'Atrium styling' : 'Hermes styling'].join('  ·  ')
-            : ['Gruvbox', gruvboxTinted() ? Math.round(GLASS.tint * 100) + '% desktop transparency' : 'our painting, gruvbox.jpg · 4096 × 2428 at full size', isChrome ? 'Atrium styling' : 'Hermes styling'].join('  ·  ')
+            ? ['Custom picture', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
+            : ['Gruvbox', gruvboxTinted() ? Math.round(GLASS.tint * 100) + '% desktop transparency' : 'our painting, gruvbox.jpg · 4096 × 2428 at full size', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
 
         const header = jsxs('div', {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
-          style: { background: 'var(--zf-glass-sunk, var(--ui-bg-tertiary))', boxShadow: 'var(--zf-lift, none)' },
+          style: { background: 'var(--atr-glass-sunk, var(--ui-bg-tertiary))', boxShadow: 'var(--atr-lift, none)' },
           children: [
             // the bare mark, in the page's own ink: no card, no shadow
             jsx('div', {
@@ -8216,10 +8217,10 @@ export default {
             jsxs('div', {
               className: 'min-w-0',
               children: [
-                jsx('div', { className: 'text-[1.05rem] font-semibold text-foreground', children: 'Atrium' }),
+                jsx('div', { className: 'text-[1.05rem] font-semibold text-foreground', children: 'Hermes Atrium' }),
                 jsx('p', {
                   className: 'mt-1 text-[0.8125rem] leading-5 text-(--ui-text-secondary)',
-                  children: 'A better UI for Hermes. Atrium puts a painting or a picture of your own behind the app, '
+                  children: 'A glossy Atrium for Hermes: a painting or a picture of your own behind the app, '
                     + 'tints every panel to match, and gives each reply a panel of its own. It also adds a floating '
                     + 'sidebar, wide tabs, folded work steps and snippet cards you can pin.'
                 }),
@@ -8231,7 +8232,7 @@ export default {
 
         const lookSection = section('paintcan', 'Appearance', [
           jsx('div', {
-            role: 'group', 'aria-label': 'Atrium looks',
+            role: 'group', 'aria-label': 'Hermes Atrium looks',
             style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', margin: '1rem 0' },
             children: APPEARANCE_LOOKS.map(item => jsx(Button, {
               variant: selectedLook === item.id ? 'secondary' : 'outline',
@@ -8239,29 +8240,29 @@ export default {
               style: { height: 'auto', minWidth: 0, padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', whiteSpace: 'normal', textAlign: 'left', ...(selectedLook === item.id ? { outline: '2px solid var(--ui-accent)', outlineOffset: '2px' } : {}) },
               onClick: () => selectAppearance(item.id),
               children: [
-                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--zf-r-control, 8px)', background: item.id === 'gruvbox' && gruvboxTinted() ? (GLASS.thumb ? `linear-gradient(rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))}), rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))})), center / cover url("${GLASS.thumb}")` : `linear-gradient(135deg, ${GLASS.ground} 40%, ${GLASS.bubbleTint} 70%, ${GLASS.accent})`) : item.id === 'gruvbox' ? `center / cover url("${PAINTING_URL}")` : item.id === 'custom' && skin.get().image ? `center / cover url("${String(skin.get().image).replace(/"/g, '%22')}")` : item.preview } }),
+                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: item.id === 'gruvbox' && gruvboxTinted() ? (GLASS.thumb ? `linear-gradient(rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))}), rgba(${hexTriple(GLASS.ground)}, ${Number((1 - GLASS.tint).toFixed(4))})), center / cover url("${GLASS.thumb}")` : `linear-gradient(135deg, ${GLASS.ground} 40%, ${GLASS.bubbleTint} 70%, ${GLASS.accent})`) : item.id === 'gruvbox' ? `center / cover url("${PAINTING_URL}")` : item.id === 'custom' && skin.get().image ? `center / cover url("${String(skin.get().image).replace(/"/g, '%22')}")` : item.preview } }),
                 jsxs('span', { style: { display: 'flex', justifyContent: 'space-between' }, children: [item.label, selectedLook === item.id ? jsx(Codicon, { name: 'check', size: '1rem' }) : null] }),
                 jsx('span', { className: 'text-xs text-muted-foreground', children: item.description })
               ]
             }, item.id))
           }),
-          selectedLook === 'hermes' ? jsx('p', { className: 'text-sm text-muted-foreground', children: 'Hermes appearance is active. Choose a look above to resume Atrium styling.' }) : null,
+          selectedLook === 'hermes' ? jsx('p', { className: 'text-sm text-muted-foreground', children: 'Hermes appearance is active. Choose a look above to resume Hermes Atrium styling.' }) : null,
           selectedLook === 'gruvbox' ? jsx(GruvboxTintEditor, {}) : null,
           selectedLook !== 'hermes' ? jsx(ToggleRow, {
-            checked: isBackdrop, label: 'Background', description: 'Show the painting or picture behind the app. Off keeps the colours and Atrium styling.',
+            checked: isBackdrop, label: 'Background', description: 'Show the painting or picture behind the app. Off keeps the colours and Hermes Atrium styling.',
             onChange: on => { backdropOn.set(on); persist(); repaint() }
           }) : null,
           selectedLook !== 'hermes' ? jsx(ToggleRow, {
             checked: isChrome,
             description: 'Atrium’s glass panels, floating sidebar, cards and type. Off keeps Hermes’s own chrome and only the background you chose.',
-            label: 'Atrium styling',
+            label: 'Hermes Atrium styling',
             onChange: on => {
               chromeOn.set(on)
               persist()
               repaint()
             }
           }) : null,
-          jsx(ListRow, { description: 'Use your last Hermes theme and pause Atrium appearance.', action: jsx(Button, { size: 'sm', variant: 'outline', disabled: selectedLook === 'hermes', onClick: () => selectAppearance('hermes'), children: 'Use Hermes appearance' }) })
+          jsx(ListRow, { description: 'Use your last Hermes theme and pause Hermes Atrium appearance.', action: jsx(Button, { size: 'sm', variant: 'outline', disabled: selectedLook === 'hermes', onClick: () => selectAppearance('hermes'), children: 'Use Hermes appearance' }) })
         ])
 
         const skinSection = selectedLook === 'custom'
@@ -8430,24 +8431,24 @@ export default {
     // off-screen, and a touch on the left edge slides it in. The app's own
     // toggle (button or shortcut) flips between this and a pinned sidebar.
     if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') try {
-      window.__zfRailGen = (window.__zfRailGen || 0) + 1
-      const railGen = window.__zfRailGen
+      window.__atrRailGen = (window.__atrRailGen || 0) + 1
+      const railGen = window.__atrRailGen
       let railDead = false
-      const alive = () => !railDead && window.__zfRailGen === railGen
+      const alive = () => !railDead && window.__atrRailGen === railGen
       const root = document.documentElement
-      const ARC_KEY = 'atrium.arc.v1'
+      const ARC_KEY = 'hermes-atrium.arc.v1'
       let arc = (() => { try { return localStorage.getItem(ARC_KEY) !== '0' } catch { return true } })()
       let open = false
       let autoUntil = 0
       let closeTimer = 0
 
-      document.querySelectorAll('#zf-rail-hot').forEach(el => el.remove())
+      document.querySelectorAll('#atr-rail-hot').forEach(el => el.remove())
 
-      document.querySelectorAll('#zf-mode-btn').forEach(el => el.remove())
+      document.querySelectorAll('#atr-mode-btn').forEach(el => el.remove())
       const modeBtn = document.createElement('button')
       modeBtn.type = 'button'
-      modeBtn.id = 'zf-mode-btn'
-      modeBtn.className = 'zf-mode-btn'
+      modeBtn.id = 'atr-mode-btn'
+      modeBtn.className = 'atr-mode-btn'
       modeBtn.setAttribute('aria-label', 'Toggle sidebar mode')
       document.body.appendChild(modeBtn)
       const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>'
@@ -8467,12 +8468,12 @@ export default {
       modeBtn.addEventListener('keydown', e => e.stopPropagation())
 
       const hot = document.createElement('div')
-      hot.id = 'zf-rail-hot'
+      hot.id = 'atr-rail-hot'
       hot.setAttribute('aria-hidden', 'true')
       document.body.appendChild(hot)
 
       // The sidebar switch is drawn by SIDEBAR_CSS, which is part of the
-      // styling sheet. With Atrium styling off there is no sheet to position or
+      // styling sheet. With Hermes Atrium styling off there is no sheet to position or
       // hide it, so keep the raw button and the edge sensor out of the way.
       const syncChromeControls = () => {
         const show = chromeOn.get()
@@ -8507,11 +8508,11 @@ export default {
         const col = column()
         const split = col && col.parentElement
         const main = split && Array.from(split.children).filter(c => c !== col && c.getClientRects().length).sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0]
-        if (col) col.style.viewTransitionName = 'zf-side'
-        if (main) main.style.viewTransitionName = 'zf-main'
-        const home = document.getElementById('zf-home')
-        if (home) home.style.viewTransitionName = 'zf-home'
-        root.dataset.zfMorph = '1'
+        if (col) col.style.viewTransitionName = 'atr-side'
+        if (main) main.style.viewTransitionName = 'atr-main'
+        const home = document.getElementById('atr-home')
+        if (home) home.style.viewTransitionName = 'atr-home'
+        root.dataset.atrMorph = '1'
         // The toggle must not wait on the animation: a view transition holds its callback until a
         // frame is presented, which can take seconds under load, and a second press then undoes the first.
         let ran = false
@@ -8522,8 +8523,8 @@ export default {
           if (col) col.style.viewTransitionName = ''
           if (main) main.style.viewTransitionName = ''
           if (home) home.style.viewTransitionName = ''
-          delete root.dataset.zfMorph
-          window.dispatchEvent(new Event('zf-morph-end'))
+          delete root.dataset.atrMorph
+          window.dispatchEvent(new Event('atr-morph-end'))
         })
       }
 
@@ -8537,8 +8538,8 @@ export default {
         clearTimeout(closeTimer)
         if (open === value) return
         open = value
-        if (value) root.dataset.zfArcOpen = '1'
-        else delete root.dataset.zfArcOpen
+        if (value) root.dataset.atrArcOpen = '1'
+        else delete root.dataset.atrArcOpen
         if (instant) {
           const col = column()
           const els = [col].filter(Boolean)
@@ -8555,9 +8556,9 @@ export default {
           clearTimeout(closeTimer)
           modeBtn.style.display = 'none'
           hot.style.display = 'none'
-          delete root.dataset.zfArc
-          delete root.dataset.zfArcOpen
-          document.querySelectorAll('[data-zf-arc-col]').forEach(el => { delete el.dataset.zfArcCol })
+          delete root.dataset.atrArc
+          delete root.dataset.atrArcOpen
+          document.querySelectorAll('[data-atr-arc-col]').forEach(el => { delete el.dataset.atrArcCol })
           return
         }
         syncChromeControls()
@@ -8568,7 +8569,7 @@ export default {
           if (Date.now() > autoUntil) {
             const btn = toggleBtn()
             if (btn && /^show sidebar/i.test(btn.getAttribute('aria-label') || '')) {
-              arc = !arc || !root.dataset.zfArcSeen ? true : !arc
+              arc = !arc || !root.dataset.atrArcSeen ? true : !arc
               try { localStorage.setItem(ARC_KEY, arc ? '1' : '0') } catch {}
               setOpen(false, true)
               press(btn)
@@ -8576,24 +8577,24 @@ export default {
           }
           return
         }
-        if (root.dataset.zfArcSeen !== '1') root.dataset.zfArcSeen = '1'
+        if (root.dataset.atrArcSeen !== '1') root.dataset.atrArcSeen = '1'
         const col = column()
-        document.querySelectorAll('[data-zf-arc-col]').forEach(el => { if (el !== col) delete el.dataset.zfArcCol })
-        if (col && !col.dataset.zfArcCol) col.dataset.zfArcCol = '1'
+        document.querySelectorAll('[data-atr-arc-col]').forEach(el => { if (el !== col) delete el.dataset.atrArcCol })
+        if (col && !col.dataset.atrArcCol) col.dataset.atrArcCol = '1'
         if (col && modeBtn.parentElement !== col) col.appendChild(modeBtn)
-        if (arc) { if (root.dataset.zfArc !== '1') root.dataset.zfArc = '1' }
-        else if (root.dataset.zfArc) delete root.dataset.zfArc
+        if (arc) { if (root.dataset.atrArc !== '1') root.dataset.atrArc = '1' }
+        else if (root.dataset.atrArc) delete root.dataset.atrArc
         if (modeBtn.dataset.arc !== String(arc)) { modeBtn.dataset.arc = String(arc); paintMode() }
 
-        if (!root.dataset.zfArcReady) root.dataset.zfArcReady = '1'
+        if (!root.dataset.atrArcReady) root.dataset.atrArcReady = '1'
         // the floating card's inner x, so the fixed layers above can sit on it
         const content = side.querySelector("[data-slot='sidebar-content']")
         if (content) {
           const padX = parseFloat(getComputedStyle(content).paddingLeft) || 10
           const x = Math.round(10 + padX)
           const w = Math.round(272 - 2 * padX)
-          if (root.style.getPropertyValue('--zf-rail-x') !== x + 'px') root.style.setProperty('--zf-rail-x', x + 'px')
-          if (root.style.getPropertyValue('--zf-rail-w') !== w + 'px') root.style.setProperty('--zf-rail-w', w + 'px')
+          if (root.style.getPropertyValue('--atr-rail-x') !== x + 'px') root.style.setProperty('--atr-rail-x', x + 'px')
+          if (root.style.getPropertyValue('--atr-rail-w') !== w + 'px') root.style.setProperty('--atr-rail-w', w + 'px')
         }
       }
       let queued = false
@@ -8679,23 +8680,23 @@ export default {
         clearTimeout(closeTimer)
         try { chromeUnsub?.() } catch {}
         hot.remove(); modeBtn.remove()
-        for (const k of ['zfArc', 'zfArcOpen', 'zfArcReady', 'zfArcSeen', 'zfMorph']) delete root.dataset[k]
-        document.querySelectorAll('[data-zf-arc-col]').forEach(el => { delete el.dataset.zfArcCol })
+        for (const k of ['atrArc', 'atrArcOpen', 'atrArcReady', 'atrArcSeen', 'atrMorph']) delete root.dataset[k]
+        document.querySelectorAll('[data-atr-arc-col]').forEach(el => { delete el.dataset.atrArcCol })
       })
     } catch (err) {
-      console.error('[zf-rail] failed: ' + (err && err.stack || err))
+      console.error('[atr-rail] failed: ' + (err && err.stack || err))
     }
 
     // A plugin is a guest: leave the host as we found it when it unloads.
     ctx.onDispose?.(() => {
-      zfDisposed = true
+      atrDisposed = true
       themeObs?.disconnect()
       stopPreviewMeasure?.()
       clearInterval(configTimer)
       clearInterval(flareTimer)
       clearInterval(dockTimer)
       iconStyle?.remove()
-      if (typeof document !== 'undefined') { document.removeEventListener('pointerdown', onRowPointerDown, true); endPinDrag(); undock(); dock.ro?.disconnect(); dock.popObs?.disconnect(); document.querySelectorAll(`[${DOCK_POP_ATTR}]`).forEach(el => el.removeAttribute(DOCK_POP_ATTR)); document.getElementById('atrium-statusdock-tab')?.remove(); dock.head?.remove(); dock.style?.remove(); document.getElementById('atrium-snippet-style')?.remove(); document.getElementById('atrium-motion-style')?.remove(); closePreview(); unlib(); lib.el?.remove(); SHELF_SLOTS.forEach(sl => shelfEls[sl]?.remove()); shelf$.ro?.disconnect(); try { pinsUnsub?.() } catch {}; document.documentElement.removeAttribute('data-zf-dragging') }
+      if (typeof document !== 'undefined') { document.removeEventListener('pointerdown', onRowPointerDown, true); endPinDrag(); undock(); dock.ro?.disconnect(); dock.popObs?.disconnect(); document.querySelectorAll(`[${DOCK_POP_ATTR}]`).forEach(el => el.removeAttribute(DOCK_POP_ATTR)); document.getElementById('atr-statusdock-tab')?.remove(); dock.head?.remove(); dock.style?.remove(); document.getElementById('atr-snippet-style')?.remove(); document.getElementById('atr-motion-style')?.remove(); closePreview(); unlib(); lib.el?.remove(); SHELF_SLOTS.forEach(sl => shelfEls[sl]?.remove()); shelf$.ro?.disconnect(); try { pinsUnsub?.() } catch {}; document.documentElement.removeAttribute('data-atr-dragging') }
       clearInterval(liveTimer)
       colObs?.disconnect()
       if (typeof document !== 'undefined') unfitColumn()
@@ -8703,7 +8704,7 @@ export default {
       document.querySelector?.(`[${STACK_FLARE_ATTR}]`)?.removeAttribute(STACK_FLARE_ATTR)
       clearSheet()
       try { panelUnsub?.() } catch {}
-      document.getElementById('atrium-reply-ground')?.remove()
+      document.getElementById('atr-reply-ground')?.remove()
       pictureReady = () => {}
       setAccentOverride(null)
       unpinWordmark()
@@ -8712,20 +8713,20 @@ export default {
       if (workFrame !== null) cancelAnimationFrame?.(workFrame)
       dirtyTurns.clear()
       if (typeof document !== 'undefined' && document.documentElement) {
-        document.documentElement.style.removeProperty('--atrium-sun')
+        document.documentElement.style.removeProperty('--atr-sun')
         if (document.documentElement.dataset) {
-          delete document.documentElement.dataset.atriumMargins
-          delete document.documentElement.dataset.atriumCollapseWork
-          delete document.documentElement.dataset.atriumMotion
+          delete document.documentElement.dataset.atrMargins
+          delete document.documentElement.dataset.atrCollapseWork
+          delete document.documentElement.dataset.atrMotion
         }
-        document.querySelectorAll?.('.atrium-work-summary').forEach(el => el.remove?.())
-        document.querySelectorAll?.('[data-atrium-work-collapsed]').forEach(el => el.removeAttribute?.('data-atrium-work-collapsed'))
-        document.querySelectorAll?.('[data-atrium-work-interim]').forEach(el => el.removeAttribute?.('data-atrium-work-interim'))
+        document.querySelectorAll?.('.atr-work-summary').forEach(el => el.remove?.())
+        document.querySelectorAll?.('[data-atr-work-collapsed]').forEach(el => el.removeAttribute?.('data-atr-work-collapsed'))
+        document.querySelectorAll?.('[data-atr-work-interim]').forEach(el => el.removeAttribute?.('data-atr-work-interim'))
         document.removeEventListener?.('click', onDocClick, true)
         document.removeEventListener?.('scroll', onAnyScroll, { capture: true })
         if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
         scrollIdleTimer = 0
-        document.documentElement?.removeAttribute?.('data-zf-scrolling')
+        document.documentElement?.removeAttribute?.('data-atr-scrolling')
       }
       if (typeof window !== 'undefined') {
         window.removeEventListener?.('popstate', onNavChange)
