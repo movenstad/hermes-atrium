@@ -1,9 +1,9 @@
 {
-  "name": "atrium",
+  "name": "hermes-atrium",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Atrium: your own picture behind Hermes",
+  "description": "Hermes Atrium: a painting or your own picture behind Hermes, with a panel behind every reply.",
   "scripts": {
     "check": "node --check plugin.js"
   },
