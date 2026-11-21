@@ -1506,31 +1506,30 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // picture. It is a constant of the look, not of the clock.
   const NIGHT = zf.night
   // The reading pane and the cards hold the picture back differently; the
-  // sidebar's own numbers live in `sideFill` and `sideCard` below.
+  // sidebar's own numbers live in `sideCard` below.
   const density = glass ? '0' : String(skinNumber(SKIN.chrome, 0.88))
   const cardDensity = glass ? '0.55' : String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
   // gruvbox has no white in its palette; fg0 is the brightest ink it uses.
   const solidInk = glass ? GLASS.ink : gbHex(GB.fg0)
-  // The sidebar's two surfaces, both from the one Sidebar opacity slider.
+  // The sidebar is the cards, and only the cards.
   //
-  // `sideFill` is the column behind the cards: thin, so the picture still
-  // reads through the gaps and the cards look like they float on it. It is
-  // deliberately NOT the cards' own fill. When the rail and the cards wear the
-  // same alpha the cards stop separating from their gaps and the whole column
-  // collapses into one slab.
+  // `sideCard` is the cards' own fill: the deeper ground with the ink mixed in,
+  // at the slider's alpha, because a card that was only the ground was the same
+  // colour as the gaps.
   //
-  // `sideCard` is the cards themselves: the deeper ground with the ink mixed
-  // in, at the slider's alpha, because a card that was only the ground was the
-  // same colour as the gaps. Glass keeps the terminal look: a faint lift of the
-  // ink, no ground at all.
+  // The rail behind them is transparent and stays that way. It used to carry a
+  // wash of its own, and that wash is what killed the floating look: it dimmed
+  // the picture inside the gaps, so the gaps came down to the cards' tone and
+  // the column read as one slab with rounded corners. Measured on the user's own
+  // screenshot, the gaps sat 8.9 luma under the cards; the reference look, with
+  // a clear rail, separates them by 32.6. Leaving the rail alone gives the gaps
+  // the full picture back, which is the contrast that makes the cards float.
+  //
+  // Glass keeps the terminal look: a faint lift of the ink, no ground at all.
   const sideAlpha = skinNumber(SKIN.sidebar, 0.92)
-  const glassSideCard = `rgba(${hexTriple(GLASS.ink)}, 0.035)`
-  const sideFill = glass
-    ? glassSideCard
-    : `rgba(${hexTriple(SKIN.deeper)}, ${String((sideAlpha * 0.4).toFixed(3))})`
   const sideCard = glass
-    ? glassSideCard
+    ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
     : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
@@ -1613,20 +1612,18 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // No live backdrop-filter here: re-blurring the picture behind the whole
     // column costs a full-window pass on every scroll.
     //
-    // The rail is a thin wash, not a wall, and the cards inside it are the
-    // thicker surface. That is what makes the column read as floating pieces:
-    // the gaps show the picture through `sideFill`, and each card is a real
-    // step up from its gap. Sidebar opacity moves both, the cards by the
-    // slider's value and the rail at a fraction of it.
+    // Both the rail and the shell wrapper go transparent, so the gaps between
+    // the cards show the picture at full strength. That contrast is what makes
+    // the cards float; any fill here flattens the column into one panel.
     "[data-tour='sessions-sidebar'] {",
-    `  background: ${sideFill};`,
+    '  background: transparent;',
     '  border-color: transparent;',
     '}',
     // The wrapper below the window's own theme scope, so it is the host's
-    // color-mix that would win here; the seed mix is what makes that mix follow
-    // the slider instead of the theme's opaque seed.
+    // color-mix that would win here; the seed mix keeps that mix off the
+    // neutral, and transparent keeps the shell from painting the whole window.
     "[data-slot='sidebar-wrapper'] {",
-    `  background-color: ${sideFill} !important;`,
+    '  background-color: transparent !important;',
     '}',
     "[data-slot='sidebar-content'] {",
     '  gap: 0.5rem;',
