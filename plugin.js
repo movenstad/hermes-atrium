@@ -2784,7 +2784,22 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Tint tokens and scrollbars must win over the shared chrome above.
     ...(glass ? glassChromeCss() : []),
   ] : []].map(lines => lines.join('\n'))
-  if (split) return sections
+  // Two style elements by contract: `paintSheet` installs exactly the two
+  // entries in SHEET_IDS and silently drops anything past that. The array above
+  // is assembled as five cascade-ordered groups (backdrop, the chrome tokens,
+  // the tool/media rules, the widget tokens and the big rule block) and the
+  // first two of those carry almost none of Atrium's own custom properties:
+  // --atr-side-card, --theme-neutral-card and the rest live in the later
+  // groups. Returning them raw meant every sidebar card read an undefined
+  // variable and painted nothing, and Card opacity changed a token that was
+  // never installed. Fold the groups into two halves: everything up to and
+  // including the widget-token group is the base sheet, the rule block is the
+  // details sheet. Keep them in order, because the rule block has to win.
+  if (split) {
+    const defined = sections.filter(Boolean)
+    const details = defined[defined.length - 1] || ''
+    return [defined.slice(0, -1).join('\n'), details]
+  }
   const header = glass
     ? `/* Hermes Atrium · glass. Tint ${GLASS.ground} at ${Number((1 - GLASS.tint).toFixed(4))} over the native window material. */`
     : LOOK_MODE === 'custom'
