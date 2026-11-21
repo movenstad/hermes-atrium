@@ -1506,21 +1506,32 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // picture. It is a constant of the look, not of the clock.
   const NIGHT = zf.night
   // The reading pane and the cards hold the picture back differently; the
-  // sidebar's own numbers live in `sideFill` below.
+  // sidebar's own numbers live in `sideFill` and `sideCard` below.
   const density = glass ? '0' : String(skinNumber(SKIN.chrome, 0.88))
   const cardDensity = glass ? '0.55' : String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
   // gruvbox has no white in its palette; fg0 is the brightest ink it uses.
   const solidInk = glass ? GLASS.ink : gbHex(GB.fg0)
-  // The sidebar's own fill, in one place: the sidebar cards, the app's sidebar
-  // token (menus, the settings rail, hover rows) and its in-between gaps all
-  // read it, so the one Sidebar opacity slider moves the whole column. It is
-  // the deeper ground with the ink mixed in, because a card that was only the
-  // ground was the same colour as the gaps and the surface disappeared. Glass
-  // keeps the terminal look: a faint lift of the ink, no ground at all.
+  // The sidebar's two surfaces, both from the one Sidebar opacity slider.
+  //
+  // `sideFill` is the column behind the cards: thin, so the picture still
+  // reads through the gaps and the cards look like they float on it. It is
+  // deliberately NOT the cards' own fill. When the rail and the cards wear the
+  // same alpha the cards stop separating from their gaps and the whole column
+  // collapses into one slab.
+  //
+  // `sideCard` is the cards themselves: the deeper ground with the ink mixed
+  // in, at the slider's alpha, because a card that was only the ground was the
+  // same colour as the gaps. Glass keeps the terminal look: a faint lift of the
+  // ink, no ground at all.
+  const sideAlpha = skinNumber(SKIN.sidebar, 0.92)
+  const glassSideCard = `rgba(${hexTriple(GLASS.ink)}, 0.035)`
   const sideFill = glass
-    ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
-    : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(skinNumber(SKIN.sidebar, 0.92))})`
+    ? glassSideCard
+    : `rgba(${hexTriple(SKIN.deeper)}, ${String((sideAlpha * 0.4).toFixed(3))})`
+  const sideCard = glass
+    ? glassSideCard
+    : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
   // opaque seed decides the fill on its own and swallows the neutral above
@@ -1555,7 +1566,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // The panes ARE the palette (bg0 chrome, bg0_hard sidebar, bg1 cards), so
     // each is a gruvbox surface with the painting behind it, not soot.
     `  --theme-neutral-chrome: rgba(${hexTriple(SKIN.ground)}, ${density});`,
-    `  --theme-neutral-sidebar: ${sideFill};`,
+    `  --theme-neutral-sidebar: ${sideCard};`,
     // The host builds every sidebar fill (the rail, the settings list, hover
     // rows, and the whole window in the sidebar's own colour mode) as
     // `color-mix(<seed> var(--theme-mix-sidebar), var(--theme-neutral-sidebar))`.
@@ -1602,11 +1613,11 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // No live backdrop-filter here: re-blurring the picture behind the whole
     // column costs a full-window pass on every scroll.
     //
-    // The column is not transparent any more. It was, so the gaps between the
-    // cards showed the painting, but with the cards only a hair of ink over the
-    // same ground the whole rail read as one flat strip: the surface was there
-    // and you could not see it. The rails wear the cards' own fill, so each
-    // card is a step up from its gap and Sidebar opacity moves both.
+    // The rail is a thin wash, not a wall, and the cards inside it are the
+    // thicker surface. That is what makes the column read as floating pieces:
+    // the gaps show the picture through `sideFill`, and each card is a real
+    // step up from its gap. Sidebar opacity moves both, the cards by the
+    // slider's value and the rail at a fraction of it.
     "[data-tour='sessions-sidebar'] {",
     `  background: ${sideFill};`,
     '  border-color: transparent;',
@@ -2366,8 +2377,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // night grey is carried by `--atr-tint` itself, so a material can never be
     // opaque on one surface and translucent on the next after dark.
     // Sidebar cards are the exception: they are the Sidebar opacity slider's
-    // surface, so they read the sidebar's own fill rather than the tint.
-    `  --atr-side-card: ${sideFill};`,
+    // surface, so they read the card fill rather than the tint.
+    `  --atr-side-card: ${sideCard};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
     '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
     '  --atr-hover: rgba(255, 255, 255, 0.065);',
