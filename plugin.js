@@ -103,11 +103,16 @@ const SKIN_DEFAULTS = {
   posX: 46,
   posY: 45,
   scrim: 0.31,
-  blur: 18,
+  // No blur and no sidebar wash by default. A still picture gains nothing from
+  // being blurred behind the reading column, and the blur was a full-window
+  // compositor pass on every scroll. The sidebar's zero is the same idea for
+  // the rail: the gaps between the cards show the picture at full strength,
+  // which is what makes the cards float.
+  blur: 0,
   saturate: 1.3,
   brightness: 0.90,
   chrome: 0.74,
-  sidebar: 0.74,
+  sidebar: 0,
   card: 0.78,
   bubble: 0.78,
   ground: '#16261e',
@@ -140,7 +145,13 @@ const SKIN_SLIDERS = [
   ['saturate', 'Glass saturation', 0.5, 2, 0.05],
   ['brightness', 'Glass brightness', 0.5, 1.1, 0.01],
   ['chrome', 'Chat pane opacity', 0.4, 1, 0.01],
-  ['sidebar', 'Sidebar opacity', 0.4, 1, 0.01],
+  // Sidebar opacity starts at zero, and zero means clear: the rail behind the
+  // cards is transparent and the gaps show the picture. The range is 0..1 and
+  // the wash is `sidebar * 0.5`, so the old 0.74 position is still reachable at
+  // 0.74 and now reads as the 0.37 wash it always painted. It used to start at
+  // 0.4 with the floor remapped to clear, which meant the number under the
+  // slider was never the number it used, and zero was not selectable at all.
+  ['sidebar', 'Sidebar opacity', 0, 1, 0.01],
   ['card', 'Card opacity', 0.4, 1, 0.01],
   ['bubble', 'Your message opacity', 0.4, 1, 0.01]
 ]
@@ -838,16 +849,25 @@ const gruvboxTextCss = () => [
   // It hangs off html::after rather than a thread element precisely because a
   // thread element's width ends at the pane boundary, and that boundary is the
   // hard line we are trying to get rid of.
-  ...[
-  "html[data-atr-chat='1']::after {",
-  "  content: '';",
-  '  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;',
-  '  pointer-events: none;',
-  `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`,
-  `  backdrop-filter: blur(${skinNumber(SKIN.blur, 16)}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
-  '}',
-  "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
-  ],
+  // The soft-focus layer is opt-in. At blur 0 there is nothing to filter, and
+  // emitting `blur(0px)` still asks the compositor for a full-window
+  // backdrop-filter pass on every scroll, so the whole rule is skipped and only
+  // the scrim remains. Any blur above 0 brings the filter back.
+  ...(() => {
+    const blur = skinNumber(SKIN.blur, 0)
+    const scrim = `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`
+    if (!(blur > 0)) return []
+    return [
+      "html[data-atr-chat='1']::after {",
+      "  content: '';",
+      '  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: -1;',
+      '  pointer-events: none;',
+      scrim,
+      `  backdrop-filter: blur(${blur}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
+      '}',
+      "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
+    ]
+  })(),
   `::selection { background: ${SKIN.edge} !important; color: ${SKIN.ink} !important; }`,
   // The tab bar floats on the picture with nothing marking where it ends. The very top of the
   // window is a touch darker, fading out under the tabs, with a faint line at the bar's foot.
@@ -1419,14 +1439,13 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // floor is what gives it a genuinely solid end of the range.
   const sideAlpha = skinNumber(SKIN.card, 0.96)
   const sideCard = `rgba(${hexTriple(hexFade(SKIN.deeper, SKIN.ink, 0.04))}, ${String(sideAlpha)})`
-  // Sidebar opacity is the column the cards sit on. The slider runs 0.4..1, and
-  // it has to be able to reach NOTHING: at its floor the gaps between the cards
-  // should be the bare picture, which is the floating look. So the range maps
-  // linearly onto alpha 0..0.5 rather than being used raw: 0.4 is clear, 0.74
-  // lands on 0.28 (what this column looked like before), and 1.0 is a half
-  // wash. Using the raw value left a floor of 0.16 that no setting could clear.
-  const sideSlider = skinNumber(SKIN.sidebar, 0.92)
-  const sideWashAlpha = Math.max(0, Math.min(1, (sideSlider - 0.4) / 0.6)) * 0.5
+  // Sidebar opacity is the column the cards sit on. The slider now runs 0..1
+  // and zero is genuinely clear, which is the floating look: at 0 the gaps
+  // between the cards are the bare picture. The top half of the range is the
+  // useful part, so the wash is `sidebar * 0.5`: 0.74 lands on the 0.37 wash
+  // this column has always painted, and 1.0 is a half wash.
+  const sideSlider = skinNumber(SKIN.sidebar, 0)
+  const sideWashAlpha = Math.max(0, Math.min(1, sideSlider)) * 0.5
   const sideWash = `rgba(${hexTriple(SKIN.deeper)}, ${sideWashAlpha.toFixed(3)})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
