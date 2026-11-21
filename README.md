@@ -1,16 +1,15 @@
 # Atrium
 
-A desktop plugin for Hermes Agent. It puts a painting — or any picture you
-choose — behind the app, lays tinted glass over it, and gives every reply a
-panel of its own.
+A desktop plugin for Hermes Agent. It puts a painting, or any picture you
+choose, behind the app. It lays tinted glass over it.
 
 Two looks, no more:
 
-- **Gruvbox** — a landscape behind dark, warm glass. Tints from the painting
-  itself; a slider can trade the painting for your desktop wallpaper.
-- **Custom** — the same machinery driven by your own picture and colours.
+- **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
+  itself. A slider can trade the painting for your desktop wallpaper.
+- **Custom**: the same machinery driven by your own picture and colours.
 
-There is no sky, no weather and **no network access of any kind**. Nothing in
+**No network access of any kind**. Nothing in
 this plugin leaves your computer.
 
 ## Install
@@ -40,13 +39,13 @@ Every picture comes from `assets/`, and only from `assets/`:
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
   never picked up.
 
-To use your own wallpaper instead, open **Settings ▸ Atrium** and switch on
+To use your own wallpaper instead, open **Settings --> Atrium** and switch on
 **Tint** under Gruvbox: the painting fades out and the desktop shows through the
 glass. The painting's own colours are kept for when you switch back.
 
 ## Reply panels
 
-**Settings ▸ Atrium ▸ Chat & motion ▸ Reply panels** gives every reply a solid
+**Settings --> Atrium --> Chat & motion --> Reply panels** gives every reply a solid
 panel, so prose never sits directly on the picture. With it on, five sliders
 appear:
 
@@ -64,9 +63,9 @@ photograph you drop in. **Reset panel** returns all five to the shipped values.
 
 ## Custom look
 
-`~/.hermes/atrium-theme.json` *is* the Custom look. Every key is optional;
-anything left out keeps its default. Edit it in any editor and the app follows
-within a couple of seconds; moving a knob in Settings writes it back.
+`~/.hermes/atrium-theme.json` *is* the Custom look. Every key is optional.
+Anything left out keeps its default. Edit it in any editor and the app follows
+within a couple of seconds. Moving a knob in Settings writes it back.
 
 ## What it also adds
 
@@ -77,4 +76,4 @@ within a couple of seconds; moving a knob in Settings writes it back.
 - A status panel at the foot of the sidebar in Simple mode.
 - Suggestions on a new tab, learned only from local session activity.
 
-Every one of those is a switch in **Settings ▸ Atrium**.
+Every one of those is a switch in **Settings --> Atrium**.
