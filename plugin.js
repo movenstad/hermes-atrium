@@ -1576,6 +1576,17 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // is not overwritten by the theme.
     `  --theme-mix-sidebar: ${sideSeedMix};`,
     `  --theme-neutral-card: rgba(${hexTriple(SKIN.cardTint)}, ${cardDensity});`,
+    // Same story for the cards, and this is the one that made Card opacity look
+    // dead. The host builds both card surfaces by blending an opaque seed over
+    // this neutral:
+    //   --ui-bg-editor   = color-mix(card-seed     var(--theme-mix-card),     neutral-card)
+    //   --ui-bg-elevated = color-mix(elevated-seed var(--theme-mix-elevated), neutral-card)
+    // Its own dark theme leaves 38% and 46% of a white seed in the mix, so at
+    // Card opacity 0.40 the card rendered pale at 0.63 alpha, not dark at 0.40,
+    // and the slider read as doing nothing. Zeroing the two mix weights hands
+    // the fill back to the neutral, exactly as the sidebar seed fix does.
+    '  --theme-mix-card: 0%;',
+    '  --theme-mix-elevated: 0%;',
     `  --ui-text-primary: ${SKIN.ink};`,
     '  --ui-text-secondary: var(--atr-ink-2);',
     '  --ui-text-tertiary: var(--atr-ink-3);',
