@@ -2035,33 +2035,25 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  background: var(--atr-glass) !important;',
     `  color: ${solidInk} !important;`,
     '}',
-    // The zone headers (the tab bar and the SESSIONS | BOTS strip) are cards too,
-    // on the same slider as the sidebar cards. They were deliberately bare so
-    // the tab inside them carried the material; with the sidebar's own column
-    // now clear at the bottom of its range, a bare header left the strip and the
-    // top bar floating with nothing behind them. They wear --atr-side-card, so
-    // Card opacity paints them.
+    // The zone headers (the tab bar and the SESSIONS | BOTS strip) stay BARE:
+    // no card, no edge, no radius. A card on the header AND a box on the tab
+    // inside it read as a box in a box, and giving the header a fill put a card
+    // behind the whole top bar, which is window chrome and not part of the
+    // sidebar. Only the tab carries the material, so the header is the backdrop.
     //
-    // Card vs strip: the strip is a card of its own, so it needs the radius and
-    // the same gutter as the cards below it, or it reads as part of the window
-    // chrome instead of part of the column.
+    // The strip's own small track is the one thing that is painted, and it is
+    // styled below with the switch: a pill hugging the two labels, not a card
+    // spanning the column. That is what the reference look does.
     '[data-panel-header],',
     "[class~='group/pane-header'],",
     '[data-atr-strip] {',
-    '  background: var(--atr-side-card);',
+    '  background: transparent;',
     '  border: none;',
     // The active tab paints nothing of its own: the pill on the track IS the
     // state now, and a tab fill under it would read as a box inside a box.
     '  --pane-tab-active-bg: transparent;',
     '  --pane-tab-strip-bg: transparent;',
     '  --pane-tab-active-accent: transparent;',
-    '}',
-    // The strip is the sidebar's own header band, so it follows the cards'
-    // rounding and sits in the column's gutter. The pane header spans the chat
-    // column too, so the radius is not applied to it: it would cut the corners
-    // of the whole window's top edge.
-    `${STRIP_HOOK} {`,
-    '  border-radius: var(--atr-radius);',
     '}',
     // ── SESSIONS | BOTS: one long sliding switch ──────────────────────────
     // Two boxes that trade places read as two buttons. A switch reads as ONE
