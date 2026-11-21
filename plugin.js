@@ -320,7 +320,7 @@ const GRUVBOX_GROUNDS = {
   accent: GB.orange, accentForeground: gbHex(GB.bg0h),
   border: RIVER_EDGE, input: gbA(RIVER.card, 0.95),
   ring: GB.yellow, destructive: GB.red, destructiveForeground: gbHex(GB.bg0h),
-  sidebarBackground: gbA(RIVER.deep, 0.92), sidebarBorder: RIVER_EDGE,
+  sidebarBackground: 'transparent', sidebarBorder: RIVER_EDGE,
   userBubble: gbA(RIVER.bubble, 0.95), userBubbleBorder: RIVER_EDGE
 }
 
@@ -1527,10 +1527,23 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // the full picture back, which is the contrast that makes the cards float.
   //
   // Glass keeps the terminal look: a faint lift of the ink, no ground at all.
-  const sideAlpha = skinNumber(SKIN.sidebar, 0.92)
+  //
+  // Which slider owns the sidebar cards: Card opacity, not Sidebar opacity.
+  // Sidebar opacity was the original owner, which left the card slider only
+  // touching the chat's own cards while every sidebar surface ignored it. The
+  // slider is named for the cards it paints, and the reply panels' Solidity
+  // floor is what gives it a genuinely solid end of the range.
+  const sideAlpha = skinNumber(SKIN.card, 0.96)
   const sideCard = glass
     ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
     : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
+  // Sidebar opacity is the column the cards sit on, at a fraction of its own
+  // value so it stays a wash rather than competing with the cards. It fills the
+  // gaps between them; at the bottom of its range the gaps go clear and the
+  // picture shows between the cards.
+  const sideWash = glass
+    ? 'transparent'
+    : `rgba(${hexTriple(SKIN.deeper)}, ${String((skinNumber(SKIN.sidebar, 0.92) * 0.4).toFixed(3))})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
   // opaque seed decides the fill on its own and swallows the neutral above
@@ -1626,8 +1639,17 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Both the rail and the shell wrapper go transparent, so the gaps between
     // the cards show the picture at full strength. That contrast is what makes
     // the cards float; any fill here flattens the column into one panel.
-    "[data-tour='sessions-sidebar'] {",
-    '  background: transparent;',
+    //
+    // [data-slot='sidebar'] matters most. The host renders it with
+    // `collapsible="none"`, and that div carries Tailwind's `bg-sidebar`, which
+    // maps to --sidebar, which the theme above used to paint solid. This div is
+    // the parent of sidebar-content, so it sits behind every card: as long as it
+    // has a fill, the cards' gaps are that fill and the column reads as one slab
+    // no matter what the cards do. Measured on the user's screenshot: a flat
+    // band from the first card to the bottom of the window, no gap anywhere.
+    "[data-tour='sessions-sidebar'],",
+    "[data-slot='sidebar'] {",
+    `  background: ${sideWash} !important;`,
     '  border-color: transparent;',
     '}',
     // The wrapper below the window's own theme scope, so it is the host's
