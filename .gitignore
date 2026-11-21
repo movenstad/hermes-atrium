@@ -1,0 +1,5 @@
+# Pictures used for testing. Not part of the plugin: they are large, and the
+# plugin ships exactly one painting. backwater.jpg stays tracked because it is
+# the default the theme paints.
+assets/*
+!assets/backwater.jpg
