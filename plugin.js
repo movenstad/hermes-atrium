@@ -320,7 +320,7 @@ const GRUVBOX_GROUNDS = {
   accent: GB.orange, accentForeground: gbHex(GB.bg0h),
   border: RIVER_EDGE, input: gbA(RIVER.card, 0.95),
   ring: GB.yellow, destructive: GB.red, destructiveForeground: gbHex(GB.bg0h),
-  sidebarBackground: gbA(RIVER.deep, 0.92), sidebarBorder: RIVER_EDGE,
+  sidebarBackground: 'transparent', sidebarBorder: RIVER_EDGE,
   userBubble: gbA(RIVER.bubble, 0.95), userBubbleBorder: RIVER_EDGE
 }
 
@@ -1509,15 +1509,56 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   // Gruvbox's own night factor: how much weight the glass carries over a
   // picture. It is a constant of the look, not of the clock.
   const NIGHT = zf.night
+  // The reading pane and the cards hold the picture back differently; the
+  // sidebar's own numbers live in `sideCard` below.
   const density = glass ? '0' : String(skinNumber(SKIN.chrome, 0.88))
-  // The painting has real light and shade, so the three neutrals are tuned
-  // separately: the reading pane lets the painting through, the sidebar
-  // (smallest text) and the cards hold it back.
-  const sideDensity = glass ? '0.22' : String(skinNumber(SKIN.sidebar, 0.92))
   const cardDensity = glass ? '0.55' : String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
   // gruvbox has no white in its palette; fg0 is the brightest ink it uses.
   const solidInk = glass ? GLASS.ink : gbHex(GB.fg0)
+  // The sidebar is the cards, and only the cards.
+  //
+  // `sideCard` is the cards' own fill: the deeper ground with the ink mixed in,
+  // at the slider's alpha, because a card that was only the ground was the same
+  // colour as the gaps.
+  //
+  // The rail behind them is transparent and stays that way. It used to carry a
+  // wash of its own, and that wash is what killed the floating look: it dimmed
+  // the picture inside the gaps, so the gaps came down to the cards' tone and
+  // the column read as one slab with rounded corners. Measured on the user's own
+  // screenshot, the gaps sat 8.9 luma under the cards; the reference look, with
+  // a clear rail, separates them by 32.6. Leaving the rail alone gives the gaps
+  // the full picture back, which is the contrast that makes the cards float.
+  //
+  // Glass keeps the terminal look: a faint lift of the ink, no ground at all.
+  //
+  // Which slider owns the sidebar cards: Card opacity, not Sidebar opacity.
+  // Sidebar opacity was the original owner, which left the card slider only
+  // touching the chat's own cards while every sidebar surface ignored it. The
+  // slider is named for the cards it paints, and the reply panels' Solidity
+  // floor is what gives it a genuinely solid end of the range.
+  const sideAlpha = skinNumber(SKIN.card, 0.96)
+  const sideCard = glass
+    ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
+    : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
+  // Sidebar opacity is the column the cards sit on. The slider runs 0.4..1, and
+  // it has to be able to reach NOTHING: at its floor the gaps between the cards
+  // should be the bare picture, which is the floating look. So the range maps
+  // linearly onto alpha 0..0.5 rather than being used raw: 0.4 is clear, 0.74
+  // lands on 0.28 (what this column looked like before), and 1.0 is a half
+  // wash. Using the raw value left a floor of 0.16 that no setting could clear.
+  const sideSlider = skinNumber(SKIN.sidebar, 0.92)
+  const sideWashAlpha = Math.max(0, Math.min(1, (sideSlider - 0.4) / 0.6)) * 0.5
+  const sideWash = glass
+    ? 'transparent'
+    : `rgba(${hexTriple(SKIN.deeper)}, ${sideWashAlpha.toFixed(3)})`
+  // Zero, always: the host's token chain puts the theme's seed at
+  // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
+  // opaque seed decides the fill on its own and swallows the neutral above
+  // (and its alpha), which is exactly how this slider stopped working.
+  // Measured in Chromium: at 0% the neutral arrives with its own alpha intact,
+  // 0.74 in and 0.74 out, so the token follows the slider.
+  const sideSeedMix = '0%'
 
   // Keep the sections in cascade order. The clock only changes the backdrop
   // and material, so a refresh doesn't reparse the layout and widget rules.
@@ -1545,8 +1586,28 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // The panes ARE the palette (bg0 chrome, bg0_hard sidebar, bg1 cards), so
     // each is a gruvbox surface with the painting behind it, not soot.
     `  --theme-neutral-chrome: rgba(${hexTriple(SKIN.ground)}, ${density});`,
-    `  --theme-neutral-sidebar: rgba(${hexTriple(SKIN.deeper)}, ${sideDensity});`,
+    `  --theme-neutral-sidebar: ${sideCard};`,
+    // The host builds every sidebar fill (the rail, the settings list, hover
+    // rows, and the whole window in the sidebar's own colour mode) as
+    // `color-mix(<seed> var(--theme-mix-sidebar), var(--theme-neutral-sidebar))`.
+    // Its own themes leave the seed transparent at 100%, so the neutral is the
+    // one input that decides the fill; Atrium publishes an opaque seed, and at
+    // 100% that seed alone decides it. Point the mix at the seed's own alpha
+    // instead, so the neutral above is what reaches the screen and the slider
+    // is not overwritten by the theme.
+    `  --theme-mix-sidebar: ${sideSeedMix};`,
     `  --theme-neutral-card: rgba(${hexTriple(SKIN.cardTint)}, ${cardDensity});`,
+    // Same story for the cards, and this is the one that made Card opacity look
+    // dead. The host builds both card surfaces by blending an opaque seed over
+    // this neutral:
+    //   --ui-bg-editor   = color-mix(card-seed     var(--theme-mix-card),     neutral-card)
+    //   --ui-bg-elevated = color-mix(elevated-seed var(--theme-mix-elevated), neutral-card)
+    // Its own dark theme leaves 38% and 46% of a white seed in the mix, so at
+    // Card opacity 0.40 the card rendered pale at 0.63 alpha, not dark at 0.40,
+    // and the slider read as doing nothing. Zeroing the two mix weights hands
+    // the fill back to the neutral, exactly as the sidebar seed fix does.
+    '  --theme-mix-card: 0%;',
+    '  --theme-mix-elevated: 0%;',
     `  --ui-text-primary: ${SKIN.ink};`,
     '  --ui-text-secondary: var(--atr-ink-2);',
     '  --ui-text-tertiary: var(--atr-ink-3);',
@@ -1582,9 +1643,28 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // No live backdrop-filter here: re-blurring the picture behind the whole
     // column costs a full-window pass on every scroll.
-    "[data-tour='sessions-sidebar'] {",
-    '  background: transparent;',
+    //
+    // Both the rail and the shell wrapper go transparent, so the gaps between
+    // the cards show the picture at full strength. That contrast is what makes
+    // the cards float; any fill here flattens the column into one panel.
+    //
+    // [data-slot='sidebar'] matters most. The host renders it with
+    // `collapsible="none"`, and that div carries Tailwind's `bg-sidebar`, which
+    // maps to --sidebar, which the theme above used to paint solid. This div is
+    // the parent of sidebar-content, so it sits behind every card: as long as it
+    // has a fill, the cards' gaps are that fill and the column reads as one slab
+    // no matter what the cards do. Measured on the user's screenshot: a flat
+    // band from the first card to the bottom of the window, no gap anywhere.
+    "[data-tour='sessions-sidebar'],",
+    "[data-slot='sidebar'] {",
+    `  background: ${sideWash} !important;`,
     '  border-color: transparent;',
+    '}',
+    // The wrapper below the window's own theme scope, so it is the host's
+    // color-mix that would win here; the seed mix keeps that mix off the
+    // neutral, and transparent keeps the shell from painting the whole window.
+    "[data-slot='sidebar-wrapper'] {",
+    '  background-color: transparent !important;',
     '}',
     "[data-slot='sidebar-content'] {",
     '  gap: 0.5rem;',
@@ -1960,14 +2040,14 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `  color: ${solidInk} !important;`,
     '}',
     // The zone headers (the tab bar and the SESSIONS | BOTS strip) stay BARE:
-    // no fill, no edge, no radius. A card on the header AND a box on the tab
-    // inside it read as a box in a box, which is what the nesting complaint was.
-    // Only the tab carries the material, so the header is just the backdrop.
+    // no card, no edge, no radius. A card on the header AND a box on the tab
+    // inside it read as a box in a box, and giving the header a fill put a card
+    // behind the whole top bar, which is window chrome and not part of the
+    // sidebar. Only the tab carries the material, so the header is the backdrop.
     //
-    // These tokens are set on the header rather than the tab, because the tab's
-    // fill is token-driven: active tabs paint --pane-tab-active-bg, inactive ones
-    // --pane-tab-strip-bg, and the active underline is --pane-tab-active-accent.
-    // Setting the tokens beats fighting each state's own rule.
+    // The strip's own small track is the one thing that is painted, and it is
+    // styled below with the switch: a pill hugging the two labels, not a card
+    // spanning the column. That is what the reference look does.
     '[data-panel-header],',
     "[class~='group/pane-header'],",
     '[data-atr-strip] {',
@@ -2334,7 +2414,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Every card, the composer and the sidebar are the same tier now; the
     // night grey is carried by `--atr-tint` itself, so a material can never be
     // opaque on one surface and translucent on the next after dark.
-    '  --atr-side-card: var(--atr-glass);',
+    // Sidebar cards are the exception: they are the Sidebar opacity slider's
+    // surface, so they read the card fill rather than the tint.
+    `  --atr-side-card: ${sideCard};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
     '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
     '  --atr-hover: rgba(255, 255, 255, 0.065);',
@@ -2366,7 +2448,6 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='sidebar-content'] > [data-sessions-mode],",
     "[data-slot='sidebar-content'] > div:has(input),",
     "[data-slot='sidebar-content'] > div:last-child {",
-    // flat: no 1px edge, like the status card
     '  box-shadow: none !important;',
     '}',
     // One gutter and one row shape inside every sidebar card. The nav card used
@@ -2711,7 +2792,22 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Tint tokens and scrollbars must win over the shared chrome above.
     ...(glass ? glassChromeCss() : []),
   ] : []].map(lines => lines.join('\n'))
-  if (split) return sections
+  // Two style elements by contract: `paintSheet` installs exactly the two
+  // entries in SHEET_IDS and silently drops anything past that. The array above
+  // is assembled as five cascade-ordered groups (backdrop, the chrome tokens,
+  // the tool/media rules, the widget tokens and the big rule block) and the
+  // first two of those carry almost none of Atrium's own custom properties:
+  // --atr-side-card, --theme-neutral-card and the rest live in the later
+  // groups. Returning them raw meant every sidebar card read an undefined
+  // variable and painted nothing, and Card opacity changed a token that was
+  // never installed. Fold the groups into two halves: everything up to and
+  // including the widget-token group is the base sheet, the rule block is the
+  // details sheet. Keep them in order, because the rule block has to win.
+  if (split) {
+    const defined = sections.filter(Boolean)
+    const details = defined[defined.length - 1] || ''
+    return [defined.slice(0, -1).join('\n'), details]
+  }
   const header = glass
     ? `/* Hermes Atrium · glass. Tint ${GLASS.ground} at ${Number((1 - GLASS.tint).toFixed(4))} over the native window material. */`
     : LOOK_MODE === 'custom'
