@@ -20,7 +20,7 @@ Copy this folder to your Hermes desktop-plugins directory:
 ~/.hermes/desktop-plugins/hermes-atrium/
 ├── plugin.js
 └── assets/
-    └── gruvbox.jpg
+    └── backwater.jpg
 ```
 
 On Windows that is `%USERPROFILE%\.hermes\desktop-plugins\hermes-atrium\`. Then restart
@@ -34,9 +34,11 @@ itself can be renamed.
 
 Every picture comes from `assets/`, and only from `assets/`:
 
-- `gruvbox.jpg` is preferred.
-- Any other image dropped in `assets/` is used if `gruvbox.jpg` is missing, so
-  swapping the painting is a single file copy (`.jpg`, `.png`, `.webp`, `.avif`).
+- `backwater.jpg` is the painting the theme ships with, and it wins by name.
+- Any other image dropped in `assets/` is used only if that file is missing, so
+  the folder can hold test pictures without them becoming the default (`.jpg`,
+  `.png`, `.webp`, `.avif`). Only `backwater.jpg` is committed; the rest are
+  ignored by git.
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
   never picked up.
 
