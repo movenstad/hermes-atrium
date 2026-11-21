@@ -1,0 +1,11 @@
+name: atrium
+manifest_version: 2
+version: "1.0.0"
+description: "Atrium: your own picture behind Hermes"
+license: "MIT"
+requires_hermes: ">=0.21.3"
+tags:
+  - desktop
+  - themes
+  - glass
+  - customizable
