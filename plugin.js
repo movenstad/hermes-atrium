@@ -1537,13 +1537,17 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   const sideCard = glass
     ? `rgba(${hexTriple(GLASS.ink)}, 0.035)`
     : `rgba(${hexTriple(gbHex(mixHex(SKIN.deeper, SKIN.ink, 0.04)))}, ${String(sideAlpha)})`
-  // Sidebar opacity is the column the cards sit on, at a fraction of its own
-  // value so it stays a wash rather than competing with the cards. It fills the
-  // gaps between them; at the bottom of its range the gaps go clear and the
-  // picture shows between the cards.
+  // Sidebar opacity is the column the cards sit on. The slider runs 0.4..1, and
+  // it has to be able to reach NOTHING: at its floor the gaps between the cards
+  // should be the bare picture, which is the floating look. So the range maps
+  // linearly onto alpha 0..0.5 rather than being used raw: 0.4 is clear, 0.74
+  // lands on 0.28 (what this column looked like before), and 1.0 is a half
+  // wash. Using the raw value left a floor of 0.16 that no setting could clear.
+  const sideSlider = skinNumber(SKIN.sidebar, 0.92)
+  const sideWashAlpha = Math.max(0, Math.min(1, (sideSlider - 0.4) / 0.6)) * 0.5
   const sideWash = glass
     ? 'transparent'
-    : `rgba(${hexTriple(SKIN.deeper)}, ${String((skinNumber(SKIN.sidebar, 0.92) * 0.4).toFixed(3))})`
+    : `rgba(${hexTriple(SKIN.deeper)}, ${sideWashAlpha.toFixed(3)})`
   // Zero, always: the host's token chain puts the theme's seed at
   // --theme-mix-sidebar and colour-mix takes a percentage there. At 100% an
   // opaque seed decides the fill on its own and swallows the neutral above
@@ -2031,25 +2035,33 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  background: var(--atr-glass) !important;',
     `  color: ${solidInk} !important;`,
     '}',
-    // The zone headers (the tab bar and the SESSIONS | BOTS strip) stay BARE:
-    // no fill, no edge, no radius. A card on the header AND a box on the tab
-    // inside it read as a box in a box, which is what the nesting complaint was.
-    // Only the tab carries the material, so the header is just the backdrop.
+    // The zone headers (the tab bar and the SESSIONS | BOTS strip) are cards too,
+    // on the same slider as the sidebar cards. They were deliberately bare so
+    // the tab inside them carried the material; with the sidebar's own column
+    // now clear at the bottom of its range, a bare header left the strip and the
+    // top bar floating with nothing behind them. They wear --atr-side-card, so
+    // Card opacity paints them.
     //
-    // These tokens are set on the header rather than the tab, because the tab's
-    // fill is token-driven: active tabs paint --pane-tab-active-bg, inactive ones
-    // --pane-tab-strip-bg, and the active underline is --pane-tab-active-accent.
-    // Setting the tokens beats fighting each state's own rule.
+    // Card vs strip: the strip is a card of its own, so it needs the radius and
+    // the same gutter as the cards below it, or it reads as part of the window
+    // chrome instead of part of the column.
     '[data-panel-header],',
     "[class~='group/pane-header'],",
     '[data-atr-strip] {',
-    '  background: transparent;',
+    '  background: var(--atr-side-card);',
     '  border: none;',
     // The active tab paints nothing of its own: the pill on the track IS the
     // state now, and a tab fill under it would read as a box inside a box.
     '  --pane-tab-active-bg: transparent;',
     '  --pane-tab-strip-bg: transparent;',
     '  --pane-tab-active-accent: transparent;',
+    '}',
+    // The strip is the sidebar's own header band, so it follows the cards'
+    // rounding and sits in the column's gutter. The pane header spans the chat
+    // column too, so the radius is not applied to it: it would cut the corners
+    // of the whole window's top edge.
+    `${STRIP_HOOK} {`,
+    '  border-radius: var(--atr-radius);',
     '}',
     // ── SESSIONS | BOTS: one long sliding switch ──────────────────────────
     // Two boxes that trade places read as two buttons. A switch reads as ONE
