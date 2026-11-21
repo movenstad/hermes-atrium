@@ -357,9 +357,18 @@ const gruvboxLayers = () => {
     // in a visible line
     `    radial-gradient(125% 115% at 50% 42%, rgba(${hexTriple(SKIN.deeper)}, 0) 0%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.10).toFixed(3)}) 35%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.32).toFixed(3)}) 55%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.62).toFixed(3)}) 72%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.90).toFixed(3)}) 88%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 1.05).toFixed(3)}) 100%),`,
     `    linear-gradient(rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.70).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.70).toFixed(3)})),`,
-    // the artwork itself: a custom property, so swapping the picture is one tiny
-    // style element instead of rebuilding a multi-megabyte CSS string
-    `    var(--atr-pic, url("${PAINTING_URL}"));`,
+    // The artwork itself, inline. It used to ride a custom property (--atr-pic)
+    // so that a swap touched one small <style> instead of re-emitting this
+    // sheet. That reason died with the sky: the sheet is now rebuilt whenever a
+    // look changes, which is exactly when a picture changes too.
+    //
+    // Inline is also the only thing that works. Chromium refuses to store a
+    // custom property whose value exceeds 2 MiB, and it does so silently: the
+    // declaration is dropped, var() falls through to its fallback, and the
+    // shipped painting is what you see. Two of the pictures in use (a 2.3 MB
+    // PNG and a 3.4 MB JPEG) sat over that line and could never be applied,
+    // while every smaller one worked. background-image has no such limit.
+    `    url("${String(SKIN.image || PAINTING_URL).replace(/"/g, '%22')}");`,
     `  background-size: 160px 160px, cover, cover, ${SKIN.fit === 'contain' ? 'contain' : 'cover'};`,
     `  background-position: 0 0, center, center, ${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%;`,
     '  background-repeat: repeat, no-repeat, no-repeat, no-repeat;',
@@ -414,18 +423,13 @@ const glassChromeCss = () => [
   "* { scrollbar-color: rgba(" + hexTriple(GLASS.ink) + ", 0.16) transparent; }",
 ]
 
-// The picture lives in its own style element: a 5 MB data URL must not be
-// re-stringified on every clock tick.
-const ensurePictureStyle = url => {
-  if (typeof document === 'undefined' || !document.head) return
-  let el = document.getElementById('atr-picture')
-  if (!el) {
-    el = document.createElement('style')
-    el.id = 'atr-picture'
-    document.head.appendChild(el)
-  }
-  const value = `:root { --atr-pic: url("${String(url).replace(/"/g, '%22')}"); }`
-  if (el.textContent !== value) { el.textContent = value; pictureRevision += 1 }
+// A picture change invalidates the cached sample grid the reply-panel solver
+// reads, and the sheet that paints the background. There is no longer a
+// separate style element for the picture: it is part of the sheet itself, so a
+// multi-megabyte data URL lives in exactly one place.
+const ensurePictureStyle = () => {
+  pictureRevision += 1
+  document.getElementById('atr-picture')?.remove()
 }
 
 // The image changes rarely; decode a small source grid once, then crop it to
@@ -7156,7 +7160,7 @@ export default {
     setSkin(look.get() === 'custom' ? customSkin : gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
     pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
 
-    ensurePictureStyle(SKIN.image)
+    ensurePictureStyle()
     const skin = atom({ ...customSkin })
     const selectAppearance = next => {
       if (!['gruvbox', 'custom', 'hermes'].includes(next)) return
@@ -7180,7 +7184,7 @@ export default {
       appearance.set(next)
       setLookMode(look.get())
       setSkin(next === 'custom' ? { ...skin.get() } : gruvboxTinted() ? glassSkin() : { ...SKIN_DEFAULTS })
-      ensurePictureStyle(SKIN.image)
+      ensurePictureStyle()
       if (gruvboxTinted()) ensureWindowGlass()
       persist()
       syncBackdrop()
@@ -7389,7 +7393,7 @@ export default {
       if (!fromFile) writeConfig(next)
       if (patch.image !== undefined) {
         ctx.storage.set(STORE_KEYS.skinImage, next.image)
-        ensurePictureStyle(next.image)
+        ensurePictureStyle()
       }
       apply()
     }
@@ -7398,7 +7402,7 @@ export default {
       setSkin({ ...SKIN_DEFAULTS })
       ctx.storage.set(STORE_KEYS.skin, { ...SKIN_DEFAULTS })
       ctx.storage.set(STORE_KEYS.skinImage, SKIN_DEFAULTS.image)
-      ensurePictureStyle(SKIN_DEFAULTS.image)
+      ensurePictureStyle()
       writeConfig(SKIN_DEFAULTS)
       apply()
     }
@@ -7533,7 +7537,7 @@ export default {
           || /[\\/]backwater\.(?:jpe?g|png|webp)$/i.test(String(img))
         if (stale(SKIN.image)) setSkin({ ...SKIN, image: url })
         if (stale(skin.get().image)) skin.set({ ...skin.get(), image: url })
-        ensurePictureStyle(SKIN.image)
+        ensurePictureStyle()
         appearanceAssets.set(appearanceAssets.get() + 1)
         apply()
         console.info(`[hermes-atrium] painting: ${owner}/assets/${found.split(/[\\/]/).pop()}`)
@@ -7569,16 +7573,33 @@ export default {
     })
     // Keep the original bytes whenever the store can take them; only re-encode
     // when a picture is too big for the browser's storage, and then once.
-    const shrinkDataUrl = (dataUrl, max = 2560) => new Promise(resolve => {
+    // Re-encode to a width and quality that fits the budget, and keep trying
+    // until it does. The stored string is base64 (33% larger than the JPEG
+    // bytes) inside a JSON string in localStorage, which fails silently when a
+    // quota is hit, so a picture that merely "fit" could still go missing.
+    const shrinkDataUrl = (dataUrl, budget, max = 2560, quality = 0.92) => new Promise(resolve => {
       const img = new Image()
       img.onload = () => {
-        if (!img.naturalWidth || img.naturalWidth <= max) return resolve(dataUrl)
-        const scale = max / img.naturalWidth
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
-        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.92))
+        const encode = (width, q) => {
+          const scale = Math.min(1, width / Math.max(1, img.naturalWidth))
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+          canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+          const g = canvas.getContext('2d')
+          if (!g) return dataUrl
+          g.drawImage(img, 0, 0, canvas.width, canvas.height)
+          try { return canvas.toDataURL('image/jpeg', q) } catch { return dataUrl }
+        }
+        if (!img.naturalWidth || dataUrl.length <= budget) return resolve(dataUrl)
+        let width = max, q = quality, out = encode(width, q)
+        // Halve the long edge and step the quality down: four rounds takes any
+        // realistic photograph under a couple of megabytes.
+        for (let i = 0; i < 8 && out.length > budget; i += 1) {
+          if (i % 2 === 1) q = Math.max(0.62, q - 0.08)
+          else width = Math.max(640, Math.round(width * 0.72))
+          out = encode(width, q)
+        }
+        resolve(out)
       }
       img.onerror = () => resolve(dataUrl)
       img.src = dataUrl
@@ -7587,7 +7608,9 @@ export default {
       if (!file) return
       const raw = await readAsDataUrl(file)
       if (!raw) return
-      const fitted = raw.length > 3_200_000 ? await shrinkDataUrl(raw) : raw
+      // 2.5 MB of base64 leaves room for the surrounding JSON and the rest of
+      // this plugin's keys while staying well inside a 5 MB localStorage.
+      const fitted = raw.length > 2_500_000 ? await shrinkDataUrl(raw, 2_500_000) : raw
       pushSkin({ image: fitted })
     }
 
