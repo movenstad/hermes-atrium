@@ -8179,19 +8179,16 @@ export default {
         // The same editor for both looks, because both looks are now the same
         // thing: a saved skin. Every control below edits whichever look is
         // selected, and the other look keeps its own values.
+        //
+        // The colour/glass block is a `section` with `collapse`, not a
+        // hand-rolled <details>: that one helper is what gives the other menus
+        // (Fine-tune appearance, Chat & motion, Snippets) their icon and type,
+        // so building it by hand drifted to 0.75rem tertiary text with no
+        // icon. Reusing the helper keeps every disclosure row the same shape.
         const skinSection = selectedLook !== 'hermes'
           ? section('paintcan', 'Picture & glass', [
             jsx(SkinPicture, {}),
-            jsx('details', {
-              className: 'mb-2',
-              children: [
-                jsx('summary', {
-                  className: 'cursor-pointer py-1 text-[0.75rem] text-(--ui-text-tertiary)',
-                  children: 'Colour, glass and fit'
-                }),
-                jsx(SkinEditor, {})
-              ]
-            })
+            section('color-mode', 'Colour, glass and fit', [jsx(SkinEditor, {})], { collapse: true })
           ])
           : null
 
