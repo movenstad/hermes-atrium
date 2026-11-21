@@ -81,7 +81,7 @@ const GRUVBOX_ACCENT = '#fe8019'
 // Resolved at startup from wherever the plugin is installed (assets/ in a
 // clone, or next to plugin.js); see resolvePluginFiles.
 let PAINTING_URL = 'data:,'
-const PAINTING_FILE = 'gruvbox.jpg'
+const PAINTING_FILE = 'backwater.jpg'
 
 // The palette, verbatim from gruvbox.vim's `s:gb` dictionary.
 const GB = {
@@ -7474,11 +7474,21 @@ export default {
     let fromFile = false
     // ── Shipping pictures ───────────────────────────────────────────────────
     // Every picture the plugin draws comes from its own `assets/` folder, and
-    // nowhere else. `gruvbox.jpg` is preferred; any other image dropped in
-    // there is used if it is missing, so swapping the painting is one file copy.
+    // nowhere else.
+    //
+    // `backwater.jpg` is the one the plugin ships with, and it wins by name.
+    // Anything else in `assets/` is used only if that file is absent, so extra
+    // images can sit there for testing without ever becoming the default.
+    //
+    // The fallback sorts before it picks. readdir order is not guaranteed, so
+    // an unsorted `find` over several candidates can change answer between
+    // launches, or between machines, which looks like the picture randomly
+    // resetting itself.
     const IMAGE_RE = /\.(?:jpe?g|png|webp|avif)$/i
-    const PICTURE_NAMES = ['gruvbox.jpg', 'gruvbox.jpeg', 'gruvbox.png', 'gruvbox.webp']
+    const PICTURE_NAMES = ['backwater.jpg', 'backwater.jpeg', 'backwater.png', 'backwater.webp']
     const pluginDirName = 'hermes-atrium'
+    // The directory part of a path, keeping the native separator.
+    const assetsDirOf = p => String(p || '').replace(/[\\/][^\\/]*$/, '')
 
     const resolvePluginFiles = async () => {
       if (!desk?.desktopPluginsRoot || !desk?.readDir) {
@@ -7511,6 +7521,7 @@ export default {
         ...tops.filter(e => e.isDirectory && e.name.toLowerCase() !== pluginDirName)]
       let found = null
       let owner = null
+      let present = []
       for (const dir of dirs) {
         if (!(await isMine(dir))) continue
         const here = await names(dir.path)
@@ -7518,11 +7529,14 @@ export default {
         const assetsDir = here.find(e => e.name === 'assets' && e.isDirectory)
         if (!assetsDir) continue
         const assets = await names(assetsDir.path)
-        const image = assets.find(e => PICTURE_NAMES.includes(e.name.toLowerCase()))
-          || assets.find(e => IMAGE_RE.test(e.name))
+        const files = assets
+          .filter(e => !e.isDirectory && IMAGE_RE.test(e.name))
+          .sort((a, b) => a.name.localeCompare(b.name))
+        const image = files.find(e => PICTURE_NAMES.includes(e.name.toLowerCase())) || files[0]
         if (!image) continue
         found = image.path
         owner = dir.name
+        present = files.map(e => e.name.toLowerCase())
         break
       }
       if (found) {
@@ -7530,13 +7544,35 @@ export default {
         const was = PAINTING_URL
         PAINTING_URL = url
         SKIN_DEFAULTS.image = url
-        // Replace a stale pointer in every place it may have been remembered:
-        // an earlier release resolved the same file from the plugin root, and
-        // its absolute path is now wrong.
-        const stale = img => !img || img === was || img === 'data:,'
-          || /[\\/]backwater\.(?:jpe?g|png|webp)$/i.test(String(img))
+        // Replace a pointer that can no longer resolve.
+        //   - `was` is a previous release's path for the same file: an earlier
+        //     one looked in the plugin root, so its absolute path went stale.
+        //   - `data:,` is the unloaded placeholder.
+        //   - a path into OUR OWN assets/ naming a file that is not there any
+        //     more. This is what a rename leaves behind: the old painting stored
+        //     as the Custom picture would otherwise paint nothing, and the new
+        //     default would never take over. Pictures from anywhere else (an
+        //     upload, ~/Pictures) are never touched.
+        const assetsDirUrl = fileUrl(assetsDirOf(found))
+        const stale = img => {
+          const s2 = String(img || '')
+          if (!s2 || s2 === was || s2 === 'data:,') return true
+          if (!s2.startsWith(assetsDirUrl)) return false
+          const name = decodeURI(s2.slice(assetsDirUrl.length + 1)).toLowerCase()
+          return name !== '' && !present.includes(name)
+        }
+        // Write the heal back, not just paint it: leaving a dangling path in
+        // storage means every later load has to work it out again, and anything
+        // reading `skinImage` directly keeps seeing a file that is not there.
         if (stale(SKIN.image)) setSkin({ ...SKIN, image: url })
-        if (stale(skin.get().image)) skin.set({ ...skin.get(), image: url })
+        if (stale(skin.get().image)) {
+          const next = { ...skin.get(), image: url }
+          skin.set(next)
+          try { ctx.storage.set(STORE_KEYS.skin, next) } catch {}
+        }
+        if (stale(ctx.storage.get(STORE_KEYS.skinImage))) {
+          try { ctx.storage.set(STORE_KEYS.skinImage, url) } catch {}
+        }
         ensurePictureStyle()
         appearanceAssets.set(appearanceAssets.get() + 1)
         apply()
@@ -8225,7 +8261,7 @@ export default {
           ? 'Hermes appearance · Hermes Atrium appearance paused'
           : lookNow === 'custom'
             ? ['Custom picture', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
-            : ['Gruvbox', gruvboxTinted() ? Math.round(GLASS.tint * 100) + '% desktop transparency' : 'our painting, gruvbox.jpg · 4096 × 2428 at full size', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
+            : ['Gruvbox', gruvboxTinted() ? Math.round(GLASS.tint * 100) + '% desktop transparency' : 'backwater.jpg · 4096 × 2428 at full size', isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
 
         const header = jsxs('div', {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
