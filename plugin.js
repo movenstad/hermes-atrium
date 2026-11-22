@@ -1349,12 +1349,13 @@ const replyHostGround = () => {
 
 // ══ §3 SIDEBAR SWITCH HOOKS ════════════════════════════════════════════════
 
-// The sidebar's own strip: a header on the sidebar surface that owns a tablist.
-// The workspace tab bar and the terminal rail do not match it.
+// The sidebar's own strip: the zone header whose tablist holds the Sessions
+// tab (markStrips). The workspace tab bar, Files and Terminal do not match it.
 const STRIP_HOOK = '[data-atr-strip]'
 
-// Only a two-way strip becomes a switch — SESSIONS | BOTS. A three-way strip
-// falls back to the app's own tabs rather than getting a pill that cannot land.
+// A strip of two or three tabs becomes a switch: SESSIONS | BOTS, plus Bots'
+// own Scheduled jobs while it is open. data-atr-switch holds the count, which
+// sizes the pill. A longer strip falls back to the app's own tabs.
 const MENU_SURFACES = ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'], [data-slot='dialog-content'] [data-slot='command'])"
 const MENU_ROWS = ":is([role='menuitem'], [role='option'], [role='menuitemcheckbox'], [role='menuitemradio'], [cmdk-item], [data-slot='command-item'])"
 const SWITCH_HOOK = '[data-atr-strip][data-atr-switch]'
@@ -2045,9 +2046,16 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);',
     '  pointer-events: none;',
     '}',
-    // The far halt: the SECOND label is the active one, so the pill rides over.
-    `${SWITCH_HOOK} > [role='tablist']:has(> [data-slot='pane-tab']:last-child[data-active='true'])::after {`,
+    // Three halts: the pill is a third of the track.
+    `${SWITCH_HOOK}[data-atr-switch='3'] > [role='tablist']::after {`,
+    '  width: calc(100% / 3);',
+    '}',
+    // The pill rides to whichever label is active, one pill-width per halt.
+    `${SWITCH_HOOK} > [role='tablist']:has(> [data-slot='pane-tab']:nth-child(2)[data-active='true'])::after {`,
     '  transform: translateX(100%);',
+    '}',
+    `${SWITCH_HOOK} > [role='tablist']:has(> [data-slot='pane-tab']:nth-child(3)[data-active='true'])::after {`,
+    '  transform: translateX(200%);',
     '}',
     // The labels: equal halves over the track, bare — no box, no underline, no
     // hover wash — and above the pill in paint order.
@@ -2069,6 +2077,18 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'] [class~='pane-tab-content'] {`,
     '  justify-content: center;',
+    '}',
+    // Three halts share the strip the host gives Bots (it drops the header to
+    // the titlebar band there), so the labels lose their tracking and inner
+    // padding to fit whole words where they can.
+    `${SWITCH_HOOK}[data-atr-switch='3'] > [role='tablist'] > [data-slot='pane-tab'] {`,
+    '  font-size: 0.625rem;',
+    '  letter-spacing: 0;',
+    '}',
+    `${SWITCH_HOOK}[data-atr-switch='3'] > [role='tablist'] > [data-slot='pane-tab'] :is([class~='pane-tab-content'], [class~='pane-tab-content'] > span, [class~='tracking-wide']) {`,
+    '  padding-inline: 0;',
+    '  margin-inline: 0;',
+    '  letter-spacing: 0;',
     '}',
     '@media (prefers-reduced-motion: reduce) {',
     `  ${SWITCH_HOOK} > [role='tablist']::after { transition: none; }`,
@@ -4388,21 +4408,28 @@ export default {
       // mount made Blink re-evaluate those over a large subtree (40ms per row
       // insert). The plugin marks the handful of elements once; the CSS matches
       // an attribute instead.
+      // The sidebar's strip is the one whose tablist holds the Sessions tab. The
+      // surface colour is not enough to find it: every zone header (the
+      // workspace tabs, Files, Terminal) is painted with the sidebar surface,
+      // and marking them all hid their Restore buttons and took the workspace
+      // tabs out of their own look.
       const markStrips = () => {
         const want = new Map()
         document.querySelectorAll("[role='tablist']").forEach(tl => {
           const p = tl.parentElement
-          if (!p || !p.classList.contains('bg-(--ui-sidebar-surface-background)')) return
-          const two = tl.children.length === 2 && tl.children[1].getAttribute('data-slot') === 'pane-tab'
-          want.set(p, (want.get(p) || false) || two)
+          if (!p || !tl.querySelector(":scope > [data-tree-tab='sessions']")) return
+          // Sessions | Bots, and Bots' own Scheduled jobs when it is open: the
+          // switch carries two or three halts. More falls back to plain tabs.
+          const n = [...tl.children].filter(c => c.getAttribute('data-slot') === 'pane-tab').length
+          want.set(p, n === 2 || n === 3 ? String(n) : '')
         })
         document.querySelectorAll('[data-atr-strip]').forEach(el => {
           if (!want.has(el)) { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') }
         })
-        want.forEach((two, el) => {
+        want.forEach((n, el) => {
           if (!el.hasAttribute('data-atr-strip')) el.setAttribute('data-atr-strip', '')
-          if (two && !el.hasAttribute('data-atr-switch')) el.setAttribute('data-atr-switch', '')
-          else if (!two && el.hasAttribute('data-atr-switch')) el.removeAttribute('data-atr-switch')
+          if (n && el.getAttribute('data-atr-switch') !== n) el.setAttribute('data-atr-switch', n)
+          else if (!n && el.hasAttribute('data-atr-switch')) el.removeAttribute('data-atr-switch')
         })
       }
 
