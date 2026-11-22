@@ -117,6 +117,17 @@ const SKIN_DEFAULTS = {
   sidebar: 0,
   card: 0.78,
   bubble: 0.78,
+  // Page panes (a plugin route, the Bots roster, a preview) paint no ground of
+  // their own, so the sheet gives them this one. 0.86 is the same weight the
+  // app's own full-page views wear, which is why a plugin page and Artifacts
+  // read as one window rather than two materials.
+  //
+  // The value is eyedropper honest: the shipped painting's brightest pixel
+  // under the main pane is rgb(201,200,182), and a 0.86 fill still lands the
+  // faintest ink tier at 4.46:1 there (4.83:1 over 90% of the pane). Below
+  // about 0.90 it is a panel you can see the painting through; above about
+  // 0.94 it is a slab. It starts at the tier the host itself uses.
+  page: 0.86,
   ground: '#16261e',
   deeper: '#0c1612',
   cardTint: '#1d3328',
@@ -155,7 +166,12 @@ const SKIN_SLIDERS = [
   // slider was never the number it used, and zero was not selectable at all.
   ['sidebar', 'Sidebar opacity', 0, 1, 0.01],
   ['card', 'Card opacity', 0.4, 1, 0.01],
-  ['bubble', 'Your message opacity', 0.4, 1, 0.01]
+  ['bubble', 'Your message opacity', 0.4, 1, 0.01],
+  // The floor is 0.5 rather than 0: a page carries dense small type with no
+  // reply panel solving a tone for it, so a clear page would put labels
+  // straight back on the picture, which is the bug this surface exists to fix.
+  // 1 is a solid sheet for anyone who wants the pages opaque.
+  ['page', 'Page opacity', 0.5, 1, 0.01]
 ]
 const SKIN_COLORS = [
   ['ground', 'Chat ground'],
@@ -458,8 +474,35 @@ const SESSION_TAB_CSS = [
   '  padding-inline: 4px 6px !important;',
   '  border: 0 !important; border-radius: 8px !important;',
   '  background: transparent !important; box-shadow: none !important;',
-  '  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;',
+  "  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;",
   '  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;',
+  '}',
+  // An UNSELECTED session tab still wears a fill, so its label never sits on
+  // the painting. Measured on the shipped picture, an idle tab's label landed
+  // at 3.0:1 against its lightest patch and only 0.56 luma of ink, because the
+  // tab had no ground AND was dimmed to 0.78 opacity; the two together are what
+  // made a row of session names read as ghosts.
+  //
+  // It is the thinner end of the ladder on purpose: idle 48%, hover 68%,
+  // active opaque.
+  //
+  // Alpha alone cannot carry this distinction, and that is worth writing down.
+  // The tint and the painting are both very dark, so over a dark patch
+  // `tint 58%` and `tint 32%` land within 0.001 luma of each other: fewer
+  // percent of "almost the same colour" is still almost the same colour. The
+  // separation therefore comes from the ACTIVE tab being lifted toward the ink
+  // (see the aria-selected rule), not from thinning this one. Thinning still
+  // matters on a light patch, where it is plainly visible, which is why the
+  // number moved too.
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']) {",
+  '  opacity: 1;',
+  '  color: var(--atr-ink-1, #ebdbb2) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 48%, transparent) !important;',
+  '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
+  '}',
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']):hover {",
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 68%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
@@ -473,11 +516,66 @@ const SESSION_TAB_CSS = [
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)[aria-selected='true'] {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  // The active tab wears the same matte material as the suggestion cards: one
-  // flat opaque fill, no white wash, no inset ring, no drop shadow. Lifted one
-  // step toward the ink so it still reads as raised on the bar.
-  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
-  '  box-shadow: none !important;',
+  // The active tab is the one surface in this row that must never be confused
+  // for the picture, so its fill is lifted strongly toward the ink: 28%, not
+  // the 10% it used to carry.
+  //
+  // 10% put it at 0.0318 luma. The painting under the tab row runs up to 0.045
+  // on its lighter patches, so the active tab was landing within 1.01:1 of the
+  // bare picture there — indistinguishable from no tab at all, which is exactly
+  // what made "which one is selected" hard to answer. 28% puts it at 0.0990,
+  // clear of every patch the row covers, and a solid step above the idle fill.
+  //
+  // This is also why thinning the idle tabs cannot do this job on its own: the
+  // tint and the painting are both dark, so fewer percent of the tint is still
+  // dark. The active tab has to be genuinely lighter, not the others darker.
+  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 72%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
+  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 22%, transparent) !important;',
+  '}',
+  // ── The fixed titlebar tools ───────────────────────────────────────────
+  // Settings, layout, HUD and the two pane toggles are `fixed z-70` and paint no
+  // ground of their own. Over the shipped painting their ink measured 1.19:1
+  // against the patch underneath, so they were invisible wherever the picture
+  // happened to be dark. Stock Hermes has them on a flat titlebar, which is why
+  // they always read there.
+  //
+  // The look to match is the STOCK one: plain icons on a ground, no chip, no
+  // pill. So rather than boxing the group, lift the band they sit on and give
+  // the glyphs a floor. `html.dark body::after` already paints a 54px scrim down
+  // the top of the window, but it is `z-index: 40` and this cluster is `z-70`,
+  // so the scrim passes *under* them and does them no good. This rule lifts just
+  // the titlebar row's share of it to the cluster's layer, which is the smallest
+  // change that makes the band behave like a stock titlebar.
+  //
+  // `:has(> :is(button, a))` keeps the backdrop off an empty cluster: a
+  // contributed page can park a slot here with nothing in it, and a flat band
+  // over an empty row would read as a stray stripe.
+  //
+  // Painted as a background on the cluster itself, not as an ::before with
+  // `z-index: -1`: the cluster is `position: fixed`, so a negative-z pseudo
+  // element paints BEHIND the whole stacking context and lands under the
+  // picture instead of over it (measured: 1.01:1, i.e. no band at all). A
+  // background on the element is always above what is behind it.
+  //
+  // The box is exactly the buttons, so nothing here can push the cluster into
+  // the native window controls: the app reserves `count * 24px` and the layout
+  // box is unchanged by a background.
+  "html.dark [data-titlebar-cluster='right']:has(> :is(button, a)) {",
+  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.34);`,
+  '  border-radius: 10px;',
+  '}',
+  // The icons are `text-muted-foreground/85` on the app's token chain, which
+  // Atrium has already pointed at its ink ramp; the /85 alpha is what pushed
+  // them under the floor. Full ink, as stock draws them.
+  "[data-titlebar-cluster='right'] > :is(button, a) {",
+  '  color: var(--atr-ink-1, #ebdbb2) !important;',
+  '}',
+  "[data-titlebar-cluster='right'] > :is(button, a):hover {",
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
+  '  background: rgba(var(--atr-hi), 0.10) !important;',
+  '}',
+  "[data-titlebar-cluster='right'] > :is(button, a) :is(svg, i, [class*='codicon']) {",
+  '  opacity: 1 !important;',
   '}',
   // the + button: a quiet rounded square in line with the pills
   "button[aria-label='New session tab'] {",
@@ -1368,7 +1466,12 @@ const SIDEBAR_CSS = [
   // observer, which fires on sidebar rows and tab strips, and in a pinned window the
   // app's own toggle kept painting in the same corner as the mode button (two
   // sidebar controls on top of each other). A rule on the element itself cannot miss.
-  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 0 !important; pointer-events: none !important; }",
+  //
+  // The exclusion list is explicit because `aria-label*='sidebar'` also matches
+  // "Swap sidebar sides" and "Show/Hide right sidebar", which are NOT the left
+  // column's toggle. Hiding those left the top-right cluster empty, which is the
+  // bug this replaces an over-broad substring match for.
+  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]):not([aria-label*='sidebar sides' i]) { opacity: 0 !important; pointer-events: none !important; }",
   // Below the host's 640px dock floor there is no Arc column / mode button.
   // The native titlebar toggle is the only persistent way to close AND reopen
   // its narrow overlay, including after the overlay has unmounted.
@@ -1407,6 +1510,55 @@ const SIDEBAR_CSS = [
   "  [data-atr-arc-col] { transition: none !important; }",
   '}',
 ]
+
+// ── Which zones paint their own ground ─────────────────────────────────────
+// A zone's container is cleared to transparent so the picture is the ground
+// everywhere. Only some panes back that with a surface of their own:
+//
+//   chat       the reply panels grade the ink against the picture (§2)
+//   sessions   the sidebar cards paint themselves
+//   files      the right sidebar's aside carries a surface token
+//   app pages  Artifacts, Messaging, Capabilities wear the chat token, which
+//              the sheet already fills as a floating card
+//   terminal   xterm paints its own canvas, and the pane's body does not even
+//              live in the zone (it is a keep-alive host), so it is named by
+//              pane id rather than looked for
+//
+// Everything else is a page that draws no ground: a plugin route (Security,
+// Memory Wiki), the Bots roster, a preview of a file or a patch. Their
+// headings, rows and code sat straight on the wallpaper and disappeared over a
+// light passage. `data-atr-page` is how the sheet gives them one.
+//
+// Two gates, both load-bearing:
+//   * a keep-alive pane host carries `data-tree-group` too, but it is a sibling
+//     laid OVER the zone rather than the zone itself; a fill there would paint
+//     glass over a neighbour. `data-pane-host` names it.
+//   * a surface inside a HIDDEN pane does not paint. An inactive tab stays
+//     mounted with `data-pane-hidden`, so the sessions column is still in the
+//     DOM while Bots is fronted. Counting it left the Bots roster on the
+//     wallpaper, which is exactly the bug this fixes.
+const PAGE_GROUND_MARKS = [
+  '[data-chat-surface]',
+  "[data-slot='sidebar']",
+  '[data-slot="aui_thread-content"]',
+  'aside[class*="bg-(--ui-sidebar-surface-background)"]',
+  'section[class*="bg-(--ui-chat-surface-background)"]:not([data-chat-surface])'
+]
+// Panes whose content paints its own surface, or whose zone must stay clear.
+const PAGE_GROUND_PANES = new Set(['terminal'])
+const marksPageGround = zone => {
+  if (!zone?.querySelector || zone.hasAttribute('data-pane-host')) return false
+  const active = zone.querySelector('[data-tree-tab][aria-selected="true"]')
+  if (active && PAGE_GROUND_PANES.has(active.getAttribute('data-tree-tab'))) return false
+  return !PAGE_GROUND_MARKS.some(sel => [...zone.querySelectorAll(sel)].some(el => !el.closest('[data-pane-hidden]')))
+}
+// The element the page fill goes on: the zone's own body box. The
+// `[data-zone-body]` wrapper is `display: contents` (it exists to carry the
+// zone's context menu), so the fill belongs on the first element inside it,
+// which is the flex body the pane renders into. Marking that element rather
+// than writing a selector for it keeps the fill off the keep-alive anchors,
+// which are absolutely positioned children of the same box.
+const pageBodyOf = zone => zone?.querySelector?.('[data-zone-body]')?.firstElementChild || null
 
 // `backdrop` paints the ground the app sits on (the painting or your picture);
 // `chrome` paints Atrium's own panels, type and controls. They are separate
@@ -2324,6 +2476,15 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // opaque on one surface and translucent on the next after dark.
     // Sidebar cards are the exception: they are the Sidebar opacity slider's
     // surface, so they read the card fill rather than the tint.
+    // Page panes: a plugin route, the Bots roster, a preview. Their own ink
+    // lands on the picture because the zone container is cleared, so the sheet
+    // gives the zone's body a fill. This is a tier of its own rather than
+    // --atr-glass, so Page opacity moves the pages and leaves the composer,
+    // the bubbles and the app's own pages alone.
+    //
+    // The default matches --atr-glass (86) so a page and the chat beside it
+    // start as one window; the slider is what lets them separate.
+    `  --atr-page-fill: color-mix(in srgb, var(--atr-tint) ${glassPct(100 * skinNumber(SKIN.page, 0.86))}, transparent);`,
     `  --atr-side-card: ${sideCard};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
     '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
@@ -2435,6 +2596,36 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     "section[class*='bg-(--ui-chat-surface-background)']:not([data-chat-surface]) :is(footer, section)[class*='bg-(--ui-chat-surface-background)'] {",
     '  background: transparent !important;',
+    '}',
+    // ── Panes that hold a page, not a conversation ─────────────────────────
+    // The zone container is cleared to transparent so the picture is the
+    // ground everywhere (see "Every pane paints a surface" above). That is
+    // right for the chat, whose ink the reply panels grade, and right for the
+    // sidebar, whose cards paint themselves. It is wrong for everything else:
+    // a plugin route (Security, Memory Wiki), the Bots roster, a preview of a
+    // file or a patch paints no ground at all, so its headings, rows and code
+    // sat straight on the wallpaper and disappeared over a light passage.
+    //
+    // The fill goes on the zone's BODY, not the zone: the body is the content
+    // area below the pane's tab strip, so the strip keeps its clear ground and
+    // the page becomes the same floating card the app's own pages get (inset,
+    // rounded, lifted).
+    //
+    // The material is its own token, `--atr-page-fill`, not `--atr-glass`.
+    // Glass is shared with the composer, the user bubbles and the app's own
+    // full-page views, so moving it would drag all of them along. This one
+    // belongs to Page opacity alone, and it starts at the same weight the
+    // app's pages wear so a plugin page and Artifacts look like one window.
+    //
+    // `data-atr-pagebody` is set by the sweep rather than written as a selector
+    // because the element is the host's own flex body: its classes and depth
+    // are internals, and a selector for them would also catch the keep-alive
+    // anchors, which are absolutely positioned children of the same box.
+    '[data-atr-pagebody] {',
+    '  background: var(--atr-page-fill) !important;',
+    '  border-radius: var(--atr-radius-lg) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
+    '  box-sizing: border-box !important;',
     '}',
     // Overlays (Settings, Command Center, Agents, Cron, Profiles…): a light
     // scrim so the painting stays present, and one raised glass card on it.
@@ -7042,7 +7233,7 @@ export default {
     // preset, each Custom look is that data after your edits, and no look has a
     // palette another lacks.
     function registerLive() {
-      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble'].map(k => SKIN[k]).join()
+      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble', 'page'].map(k => SKIN[k]).join()
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
@@ -7351,7 +7542,11 @@ export default {
       const abs = decodeURI(t.slice(7))
       return homeDir && abs.startsWith(homeDir + '/') ? '~' + abs.slice(homeDir.length) : abs
     }
-    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. Delete a key to get its default.'
+    // A skin key that needs its own sentence in the file. `page` is the one
+    // knob whose name does not say what it paints: it is the ground under the
+    // panes whose content draws none of its own (a plugin route, the Bots
+    // roster, a preview), not the pages the app ships itself.
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
@@ -7941,19 +8136,64 @@ export default {
         document.querySelectorAll('[' + name + ']').forEach(el => { if (!found.has(el)) el.removeAttribute(name) })
         found.forEach(el => flag(el, name, true))
       }
+
+      // A zone that paints nothing of its own. The chat grades its text with
+      // the reply panels, the sessions column paints its cards and the terminal
+      // paints xterm's canvas; every other pane (a plugin route, the Bots
+      // roster, a file preview) draws no ground at all, so its headings, rows
+      // and code sat straight on the wallpaper. Those get the page material,
+      // on the zone's body box so the tab strip above it stays clear.
+      //
+      // The clearing half is not optional. A zone's body box outlives its
+      // contents: it is the same element when you tab from Security back to the
+      // chat. Marking only the page case left the fill behind on every body a
+      // page had ever used, so after one visit the chat wore a card too. Keep
+      // the set of bodies this pass marked and clear everything else.
+      const markPageZones = () => {
+        const marked = new Set()
+        document.querySelectorAll('[data-tree-group]').forEach(zone => {
+          const page = marksPageGround(zone)
+          flag(zone, 'data-atr-page', page)
+          if (!page) return
+          const body = pageBodyOf(zone)
+          if (body) { flag(body, 'data-atr-pagebody', true); marked.add(body) }
+        })
+        document.querySelectorAll('[data-atr-pagebody]').forEach(el => { if (!marked.has(el)) el.removeAttribute('data-atr-pagebody') })
+      }
+
       const markHas = () => {
         const tc = document.querySelector("[data-slot='aui_thread-content']")
         if (tc) {
           flag(tc, 'data-atr-intro', !!tc.querySelector("[data-slot='aui_intro'], .wordmark, [class*='wordmark']"))
           flag(tc, 'data-atr-msgs', !!tc.querySelector("[data-slot*='message'], [data-slot='aui_turn-pair'], [data-slot='aui_message-group']"))
         }
+        markPageZones()
         const grid = document.querySelector("[class*='grid-cols-[13rem_minmax(0,1fr)]']")
         flag(document.documentElement, 'data-atr-settings', !!grid)
         const boxes = new Set()
         if (grid) for (let p = grid.parentElement, d = 0; p && d < 2; p = p.parentElement, d++) if (p.matches('div.rounded-xl')) boxes.add(p)
         sweep('data-atr-setbox', boxes)
         const fx = new Set()
-        document.querySelectorAll("div.fixed > button[aria-label*='sidebar' i]").forEach(b => fx.add(b.parentElement))
+        // The sidebar toggle's PARENT is what carries the mark, and BOTH titlebar
+        // clusters are `div.fixed`. Matching `aria-label*='sidebar'` is far too
+        // loose: the RIGHT cluster also holds
+        //
+        //   "Swap sidebar sides"   (the flip-panes button)
+        //   "Show right sidebar"   (the right-sidebar toggle)
+        //
+        // and either one matching meant the mark landed on the cluster carrying
+        // Settings, Layout, HUD and both of those buttons — which the arc-mode
+        // rule then hid with `div.fixed[data-atr-sbbtn] { opacity: 0 }`. That is
+        // why every app action vanished from the top right under Atrium while a
+        // stock theme still showed them.
+        //
+        // Match the LEFT column's toggle exactly instead of by substring. Its
+        // label is "Show sidebar" / "Hide sidebar" (en.ts); "Swap sidebar sides"
+        // and "…right sidebar" are different controls that merely talk about
+        // sidebars.
+        const SIDEBAR_TOGGLE = /^(show|hide) sidebar$/i
+        document.querySelectorAll('div.fixed > button')
+          .forEach(b => { if (SIDEBAR_TOGGLE.test(b.getAttribute('aria-label') || '')) fx.add(b.parentElement) })
         sweep('data-atr-sbbtn', fx)
         const nav = new Set()
         document.querySelectorAll("[data-tour^='sidebar-nav-']").forEach(n => { const b = n.closest("[data-slot='sidebar-menu-button']"); if (b) nav.add(b) })
@@ -7965,19 +8205,61 @@ export default {
         requestAnimationFrame(() => { pageQueued = false; if (pageDead) return; markStrips(); markHas(); syncPage() })
       }
       const pageObs = new MutationObserver(schedulePage)
-      // The tab strips, the sidebar rows and the settings grid are what these
-      // marks measure. Watching document.body put a full-document sweep on every
-      // chunk the transcript committed; the transcript itself is covered by the
-      // rescan hook (a session switch or a route change is what moves a mark).
-      const PAGE_TARGETS = ["[data-panel-header]", "[data-slot='sidebar-content']", "[class*='grid-cols-[13rem_minmax(0,1fr)]']"]
+      // What these marks measure. The tab strips, the sidebar rows and the
+      // settings grid were the original three, and they missed the case that
+      // mattered: a zone's body box is a SIBLING of its `[data-panel-header]`,
+      // not a descendant, so swapping the body's contents (a plugin page out,
+      // the chat in on New session) mutated nothing being watched. The mark
+      // then stayed on the zone until some unrelated sweep happened to run,
+      // which is why the fill sometimes lingered for one try and cleared on
+      // the next.
+      //
+      // Watching the body is cheap in the way that matters: it is one node per
+      // zone, and it is NOT the transcript's subtree, so streaming a reply
+      // still costs nothing here (the body's own children are the pane hosts,
+      // which do not change per token). The transcript keeps its separate
+      // rescan hook on a session switch.
+      const PAGE_TARGETS = [
+        '[data-panel-header]',
+        '[data-zone-body]',
+        "[data-slot='sidebar-content']",
+        "[class*='grid-cols-[13rem_minmax(0,1fr)]']"
+      ]
+      // How many zones the observer set currently covers. Declared before the
+      // attach function because that function writes it; a `let` below its own
+      // writer is a TDZ trap for the next edit.
+      let attachedZones = -1
       const attachPageObs = () => {
-        const targets = PAGE_TARGETS.map(sel => document.querySelector(sel)).filter(Boolean)
+        const targets = PAGE_TARGETS.flatMap(sel => [...document.querySelectorAll(sel)])
         pageObs.disconnect()
         for (const target of targets.length ? targets : [document.body]) {
           pageObs.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected', 'data-state', 'hidden'] })
         }
+        attachedZones = document.querySelectorAll('[data-zone-body]').length
+      }
+      // Opening a preview SPLITS a new zone into the tree, and nothing above
+      // re-attaches the observer for it: the split's children are a level the
+      // page observer never saw. A zone that is never observed is a zone whose
+      // mark can only change on an unrelated sweep, which is the same class of
+      // staleness as the body swap (and the same "press it again" symptom).
+      //
+      // So watch the tree's own structure and re-attach when the ZONE COUNT
+      // changes. The count is what matters: a split/merge/resize fires this
+      // often, and re-attaching on all of them would put the whole set of
+      // targets back together many times a second while a sash is dragged.
+      const structureObs = new MutationObserver(() => {
+        if (pageDead) return
+        if (document.querySelectorAll('[data-zone-body]').length === attachedZones) return
+        attachPageObs()
+        schedulePage()
+      })
+      const attachStructureObs = () => {
+        structureObs.disconnect()
+        const tree = document.querySelector('[data-tree-split]')?.parentElement || document.querySelector('[data-tree-group]')?.parentElement
+        if (tree) structureObs.observe(tree, { childList: true, subtree: true })
       }
       attachPageObs()
+      attachStructureObs()
       // Sidebar docking and split resizing change pane geometry without a
       // window resize or a mutation in the sidebar content.
       const pageSizeObs = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePage) : null
@@ -7988,7 +8270,7 @@ export default {
       }
       attachPageSizeObs()
       rescanHooks.push(attachPageSizeObs)
-      rescanHooks.push(() => { attachPageObs(); schedulePage() })
+      rescanHooks.push(() => { attachPageObs(); attachStructureObs(); schedulePage() })
       window.addEventListener('resize', schedulePage)
       markStrips()
       markHas()
@@ -8000,8 +8282,9 @@ export default {
         delete root.dataset.atrClip
         root.style.removeProperty('--atr-chat-clip')
         document.querySelectorAll('[data-atr-strip]').forEach(el => { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') })
-        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
+        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav', 'data-atr-page', 'data-atr-pagebody']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
         pageObs.disconnect()
+        structureObs.disconnect()
         pageSizeObs?.disconnect()
         window.removeEventListener('resize', schedulePage)
         delete root.dataset.atrChat
