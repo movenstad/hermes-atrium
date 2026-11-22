@@ -481,24 +481,24 @@ const SESSION_TAB_CSS = [
   // the painting. Measured on the shipped picture, an idle tab's label landed
   // at 3.0:1 against its lightest patch and only 0.56 luma of ink, because the
   // tab had no ground AND was dimmed to 0.78 opacity; the two together are what
-  // made a row of session names read as ghosts. The fill is the page material
-  // at a lighter mix, and the ink goes up to full so the dimming is carried by
-  // the fill instead of by the text.
+  // made a row of session names read as ghosts.
   //
-  // The active tab keeps its own matte block, a full 20 luma above this one, so
-  // the row still reads as "one of these is current" rather than as three
-  // identical chips. Measured: idle sits ~0.075 mean luma over the picture, the
-  // active one ~0.094, and the bare picture ~0.054 — so both float, and the
-  // active one floats highest.
+  // It is the thinner end of the ladder on purpose: idle 58%, hover 78%,
+  // active opaque. The label does not constrain this at all — the painting
+  // under the tab row is dark enough that the ink holds 10:1 even at 34%. What
+  // constrains it is that the CHIP has to stay a chip: at 34% the fill sits
+  // 1.05:1 from the bare picture and the tab dissolves into it. 58% keeps the
+  // shape (1.14:1) while letting noticeably more painting through than the
+  // active tab, which is what makes the current one unmistakable.
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 72%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 58%, transparent) !important;',
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 84%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 78%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
