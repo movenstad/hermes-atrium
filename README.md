@@ -3,11 +3,13 @@
 A desktop plugin for Hermes Agent. It puts a painting, or any picture you
 choose, behind the app. It lays tinted glass over it.
 
-Two looks, no more:
+One look, two ways: the Gruvbox preset, and three Custom slots of your own.
 
 - **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
   itself. A slider can trade the painting for your desktop wallpaper.
-- **Custom**: the same machinery driven by your own picture and colours.
+- **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
+  colours. Each slot keeps its own picture, palette and opacities, so three
+  setups can sit ready and be switched from the status bar.
 
 **No network access of any kind**. Nothing in
 this plugin leaves your computer.
@@ -64,11 +66,32 @@ The panel's tone is solved against the picture actually behind the reading
 column, not guessed, so the same numbers work on the shipped painting and on a
 photograph you drop in. **Reset panel** returns all five to the shipped values.
 
-## Custom look
+## Custom looks
 
-`~/.hermes/hermes-atrium-theme.json` *is* the Custom look. Every key is optional.
-Anything left out keeps its default. Edit it in any editor and the app follows
-within a couple of seconds. Moving a knob in Settings writes it back.
+There are three Custom looks. Each one is a complete record of the same knobs:
+its own picture, framing, colours, opacities, fit and panel dials. What you
+change under Custom 2 stays under Custom 2, and the status bar chip switches
+between them without touching anything else.
+
+Each look also has its own editable file beside `plugin.js`:
+
+| Look | File |
+| --- | --- |
+| Custom 1 | `~/.hermes/hermes-atrium-theme.json` |
+| Custom 2 | `~/.hermes/hermes-atrium-theme-2.json` |
+| Custom 3 | `~/.hermes/hermes-atrium-theme-3.json` |
+
+**Theme file** in Settings opens the one for the look you have selected, and
+creates it from that look's current values if it is not there yet. Every key is
+optional. Anything left out keeps its default. Edit it in any editor and the app
+follows within a couple of seconds. Moving a knob in Settings writes it back.
+
+Pictures you upload are kept in the app's local storage, which holds about 5 MB
+shared by everything, so one picture is fitted to roughly a third of that and
+the three looks share the room. A picture that will not fit is reported in the
+console rather than dropped without a word. A path to a file on disk
+(`~/Pictures/x.jpg`) has no such limit and is the better choice for a large
+photograph.
 
 ## What it also adds
 

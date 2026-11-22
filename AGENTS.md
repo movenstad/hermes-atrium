@@ -8,9 +8,9 @@ One file, `plugin.js`, is the whole plugin: plain ESM that the Hermes desktop ap
 loads at runtime from `<HERMES_HOME>/desktop-plugins/hermes-atrium/` and registers
 through its own contribution areas. There is no build step and no bundler.
 
-It ships two looks (Gruvbox and Custom), paints a picture from `assets/` behind
-the window, and solves a readable panel tone per reply. It makes no network
-requests.
+It ships a Gruvbox preset and three independent Custom slots, each with its own
+record and theme file, paints a picture from `assets/` behind the window, and
+solves a readable panel tone per reply. It makes no network requests.
 
 ## Ground rules
 
@@ -37,8 +37,11 @@ Each of these has already caused a silent failure here.
 
 3. **`ctx.storage` writes fail silently.** The host catches quota and permission
    errors and discards them, so an oversized value simply never persists. The
-   picture data URL is the one large value stored; it is capped at 2.5 MB of
-   base64 for that reason. Size anything else before you store it.
+   picture data URL is the one large value stored, and three looks can each hold
+   one, so it is capped at a share of the ~5 MB origin store rather than at a
+   fixed size (`pictureBudget` in plugin.js). A changed picture is read back once
+   to prove it landed, because the alternative is a look that shows a picture it
+   will not have next launch. Size anything else before you store it.
 
 4. **`assets/` is the only picture source.** The resolver looks inside this
    plugin's own `assets/` and nowhere else. Don't add a fallback to the plugin
@@ -55,6 +58,14 @@ Each of these has already caused a silent failure here.
 **Adding a setting.** Add the key to `STORE_KEYS`, an atom inside `register()`, a
 line in `persist()`, and a row in the settings page. Once released, never change
 a stored key string: users have data under it.
+
+**Adding a look.** A look is a saved skin, not a code path. Add its id to
+`LOOK_IDS`, its label to `LOOK_LABELS`, an entry to `SKIN_STORES` (its own record
+key, picture key and theme file name), and a preview to `APPEARANCE_LOOKS`. The
+gallery, the status chip, the theme-file button and the picture heal all read
+those, so nothing else needs a branch. Never rename `custom`: that id, its
+`skin`/`skinImage` keys and its `hermes-atrium-theme.json` file are what every
+install that already has a Custom look is holding.
 
 **Adding a class, property or attribute.** Internal names use the `atr-` prefix:
 `--atr-*` custom properties, `.atr-*` classes, `data-atr-*` attributes, `atr-*`
