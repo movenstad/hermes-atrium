@@ -3581,7 +3581,18 @@ const lookPreview = (image, fallback) => {
 // next pick, so they must keep counting as ours or the plugin would park itself
 // on the first launch after a rename.
 const LEGACY_THEMES = ['zephyr-sky', 'atrium']
-const isOurTheme = name => name === THEME_NAME || name === GROUND_THEME || LEGACY_THEMES.includes(name)
+// Hermes paints an accent override as a derived theme named
+// `<base>-accent-<hex>` (accentedTheme in the app's themes/context.tsx), and a
+// saved accent is installed under the same name. That is still our theme with
+// our accent on it. Counting it as foreign froze the app at launch: the plugin
+// parked and cleared the accent, the app repainted plain `hermes-atrium`, the
+// plugin woke and set the accent again, and the two traded the attribute
+// forever on the main thread.
+const themeBase = name => String(name || '').replace(/-accent-[0-9a-f]{3,8}$/i, '')
+const isOurTheme = name => {
+  const base = themeBase(name)
+  return base === THEME_NAME || base === GROUND_THEME || LEGACY_THEMES.includes(base)
+}
 
 // ── Snippet card ───────────────────────────────────────────────────────────
 // `::snippet{title="…" value="…" note="…" tone="accent"}`
@@ -7379,7 +7390,7 @@ export default {
           renderReplyGround()
           return
         }
-        if (picked === THEME_NAME) {
+        if (themeBase(picked) === THEME_NAME) {
           if (away) { wake(); appearance.set(look.get()) ; apply() }
         }
       }
