@@ -533,41 +533,40 @@ const SESSION_TAB_CSS = [
   '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 22%, transparent) !important;',
   '}',
   // ── The fixed titlebar tools ───────────────────────────────────────────
-  // Settings, layout and the two pane toggles are `fixed z-70`, always mounted
-  // on a normal route, and they paint no ground of their own. Over the shipped
-  // painting their ink measures 1.19:1 against the patch underneath: not
-  // invisible by design, just invisible wherever the picture happens to be
-  // light. That is the "they come and go" behaviour — nothing is unmounting,
-  // the glyphs are simply below the threshold of sight on some of the picture
-  // and above it on the rest.
+  // Settings, layout, HUD and the two pane toggles are `fixed z-70` and paint no
+  // ground of their own. Over the shipped painting their ink measured 1.19:1
+  // against the patch underneath, so they were invisible wherever the picture
+  // happened to be dark. Stock Hermes has them on a flat titlebar, which is why
+  // they always read there.
   //
-  // Give the cluster the page material and an ink floor. A single rounded pill
-  // behind the group, not a box per icon: four separate chips in the titlebar
-  // read as four buttons competing with the window controls.
+  // The look to match is the STOCK one: plain icons on a ground, no chip, no
+  // pill. So rather than boxing the group, lift the band they sit on and give
+  // the glyphs a floor. `html.dark body::after` already paints a 54px scrim down
+  // the top of the window, but it is `z-index: 40` and this cluster is `z-70`,
+  // so the scrim passes *under* them and does them no good. This rule lifts just
+  // the titlebar row's share of it to the cluster's layer, which is the smallest
+  // change that makes the band behave like a stock titlebar.
   //
-  // `:not([data-titlebar-cluster='left'])` is load-bearing. The left cluster
-  // holds the sidebar toggle, which the arc mode deliberately hides (and
-  // re-shows on hover at the left edge); filling its container would leave a
-  // floating empty pill where the button used to be.
-  "[data-titlebar-cluster='right']:has(> :is(button, a)) {",
-  // Measured on the shipped painting, a tint-only fill came out 1.12:1 off the
-  // picture and a tint + --atr-tint-hi mix only reached 1.14:1. Both are too
-  // close to call a surface: every dark tint in this skin is within a few
-  // thousandths of the painting's own darkness over the titlebar band.
+  // `:has(> :is(button, a))` keeps the backdrop off an empty cluster: a
+  // contributed page can park a slot here with nothing in it, and a flat band
+  // over an empty row would read as a stray stripe.
   //
-  // So step it toward the INK, the same way the active session tab does, and
-  // let the hairline finish the edge. This is the one place in the titlebar
-  // where a real surface is needed, and half-measures measured as nothing.
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 86%, rgb(var(--atr-hi, 251, 241, 199))) !important;',
-  '  border-radius: 8px;',
-  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 26%, transparent) !important;',
-  // No padding: the app reserves `count * var(--titlebar-control-size)` for this
-  // cluster, so growing the box by even 2px pushes it into the native window
-  // controls and shifts the panel header's own reservation.
+  // Painted as a background on the cluster itself, not as an ::before with
+  // `z-index: -1`: the cluster is `position: fixed`, so a negative-z pseudo
+  // element paints BEHIND the whole stacking context and lands under the
+  // picture instead of over it (measured: 1.01:1, i.e. no band at all). A
+  // background on the element is always above what is behind it.
+  //
+  // The box is exactly the buttons, so nothing here can push the cluster into
+  // the native window controls: the app reserves `count * 24px` and the layout
+  // box is unchanged by a background.
+  "html.dark [data-titlebar-cluster='right']:has(> :is(button, a)) {",
+  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.34);`,
+  '  border-radius: 10px;',
   '}',
-  // The icons are `text-muted-foreground/85` on the app's own token chain, which
-  // Atrium has already pointed at its ink ramp; the /85 alpha is what pushes
-  // them under the floor. Full ink, and the fill above carries the quietness.
+  // The icons are `text-muted-foreground/85` on the app's token chain, which
+  // Atrium has already pointed at its ink ramp; the /85 alpha is what pushed
+  // them under the floor. Full ink, as stock draws them.
   "[data-titlebar-cluster='right'] > :is(button, a) {",
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
   '}',
@@ -1467,7 +1466,12 @@ const SIDEBAR_CSS = [
   // observer, which fires on sidebar rows and tab strips, and in a pinned window the
   // app's own toggle kept painting in the same corner as the mode button (two
   // sidebar controls on top of each other). A rule on the element itself cannot miss.
-  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 0 !important; pointer-events: none !important; }",
+  //
+  // The exclusion list is explicit because `aria-label*='sidebar'` also matches
+  // "Swap sidebar sides" and "Show/Hide right sidebar", which are NOT the left
+  // column's toggle. Hiding those left the top-right cluster empty, which is the
+  // bug this replaces an over-broad substring match for.
+  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]):not([aria-label*='sidebar sides' i]) { opacity: 0 !important; pointer-events: none !important; }",
   // Below the host's 640px dock floor there is no Arc column / mode button.
   // The native titlebar toggle is the only persistent way to close AND reopen
   // its narrow overlay, including after the overlay has unmounted.
@@ -8171,18 +8175,25 @@ export default {
         sweep('data-atr-setbox', boxes)
         const fx = new Set()
         // The sidebar toggle's PARENT is what carries the mark, and BOTH titlebar
-        // clusters are `div.fixed`. The right-hand one holds "Hide right sidebar",
-        // which matches `aria-label*='sidebar'` just as the left one's "Hide
-        // sidebar" does — so the mark landed on the cluster holding Settings,
-        // Layout, Chat and the right-sidebar toggle, and the arc-mode rule
-        // `div.fixed[data-atr-sbbtn] { opacity: 0 }` hid all of them. That is the
-        // "the settings buttons come and go" report.
+        // clusters are `div.fixed`. Matching `aria-label*='sidebar'` is far too
+        // loose: the RIGHT cluster also holds
         //
-        // The BUTTON rule further up already excluded the right-sidebar toggle;
-        // this sweep was simply never given the same exclusion. Keep the two in
-        // step: "show/hide sidebar" is the left column, "…right sidebar" is not.
-        document.querySelectorAll("div.fixed > button[aria-label*='sidebar' i]:not([aria-label*='right sidebar' i])")
-          .forEach(b => fx.add(b.parentElement))
+        //   "Swap sidebar sides"   (the flip-panes button)
+        //   "Show right sidebar"   (the right-sidebar toggle)
+        //
+        // and either one matching meant the mark landed on the cluster carrying
+        // Settings, Layout, HUD and both of those buttons — which the arc-mode
+        // rule then hid with `div.fixed[data-atr-sbbtn] { opacity: 0 }`. That is
+        // why every app action vanished from the top right under Atrium while a
+        // stock theme still showed them.
+        //
+        // Match the LEFT column's toggle exactly instead of by substring. Its
+        // label is "Show sidebar" / "Hide sidebar" (en.ts); "Swap sidebar sides"
+        // and "…right sidebar" are different controls that merely talk about
+        // sidebars.
+        const SIDEBAR_TOGGLE = /^(show|hide) sidebar$/i
+        document.querySelectorAll('div.fixed > button')
+          .forEach(b => { if (SIDEBAR_TOGGLE.test(b.getAttribute('aria-label') || '')) fx.add(b.parentElement) })
         sweep('data-atr-sbbtn', fx)
         const nav = new Set()
         document.querySelectorAll("[data-tour^='sidebar-nav-']").forEach(n => { const b = n.closest("[data-slot='sidebar-menu-button']"); if (b) nav.add(b) })
