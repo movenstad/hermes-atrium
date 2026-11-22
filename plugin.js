@@ -483,22 +483,26 @@ const SESSION_TAB_CSS = [
   // tab had no ground AND was dimmed to 0.78 opacity; the two together are what
   // made a row of session names read as ghosts.
   //
-  // It is the thinner end of the ladder on purpose: idle 58%, hover 78%,
-  // active opaque. The label does not constrain this at all — the painting
-  // under the tab row is dark enough that the ink holds 10:1 even at 34%. What
-  // constrains it is that the CHIP has to stay a chip: at 34% the fill sits
-  // 1.05:1 from the bare picture and the tab dissolves into it. 58% keeps the
-  // shape (1.14:1) while letting noticeably more painting through than the
-  // active tab, which is what makes the current one unmistakable.
+  // It is the thinner end of the ladder on purpose: idle 48%, hover 68%,
+  // active opaque.
+  //
+  // Alpha alone cannot carry this distinction, and that is worth writing down.
+  // The tint and the painting are both very dark, so over a dark patch
+  // `tint 58%` and `tint 32%` land within 0.001 luma of each other: fewer
+  // percent of "almost the same colour" is still almost the same colour. The
+  // separation therefore comes from the ACTIVE tab being lifted toward the ink
+  // (see the aria-selected rule), not from thinning this one. Thinning still
+  // matters on a light patch, where it is plainly visible, which is why the
+  // number moved too.
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 58%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 48%, transparent) !important;',
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 78%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 68%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
@@ -512,11 +516,21 @@ const SESSION_TAB_CSS = [
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)[aria-selected='true'] {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  // The active tab wears the same matte material as the suggestion cards: one
-  // flat opaque fill, no white wash, no inset ring, no drop shadow. Lifted one
-  // step toward the ink so it still reads as raised on the bar.
-  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
-  '  box-shadow: none !important;',
+  // The active tab is the one surface in this row that must never be confused
+  // for the picture, so its fill is lifted strongly toward the ink: 28%, not
+  // the 10% it used to carry.
+  //
+  // 10% put it at 0.0318 luma. The painting under the tab row runs up to 0.045
+  // on its lighter patches, so the active tab was landing within 1.01:1 of the
+  // bare picture there — indistinguishable from no tab at all, which is exactly
+  // what made "which one is selected" hard to answer. 28% puts it at 0.0990,
+  // clear of every patch the row covers, and a solid step above the idle fill.
+  //
+  // This is also why thinning the idle tabs cannot do this job on its own: the
+  // tint and the painting are both dark, so fewer percent of the tint is still
+  // dark. The active tab has to be genuinely lighter, not the others darker.
+  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 72%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
+  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 22%, transparent) !important;',
   '}',
   // ── The fixed titlebar tools ───────────────────────────────────────────
   // Settings, layout and the two pane toggles are `fixed z-70`, always mounted
