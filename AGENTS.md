@@ -145,10 +145,9 @@ panel thinner.
 
 ## Known sharp edges
 
-- `plugin.js` is about 9,300 lines. Read the `§` map at the top, then grep for
+- `plugin.js` is about 5,100 lines. Read the `§` map at the top, then grep for
   the section tag rather than reading linearly.
-- Four `setInterval` loops run for the life of the plugin: the status dock and
-  shelf layout (1s), the running-turn timers (1s), the status-stack fillets (1s),
-  and a 2s poll of `hermes-atrium-theme.json`. Don't add per-frame work to them.
+- One `setInterval` loop runs for the life of the plugin: a 2s poll of
+  `hermes-atrium-theme.json`. Don't add per-frame work to it.
 - The style sheet is emitted as text and rebuilt when a look changes. Treat it as
   a string, not a live style.
