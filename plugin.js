@@ -220,12 +220,14 @@ const isCustomLook = id => id !== 'gruvbox'
 // these pictures then falls back to the shipped painting instead of painting
 // nothing.
 //
-// The palettes are measured rather than picked by eye. Each was solved against
-// its own picture with the same maths the reply-panel solver runs, and each
-// clears WCAG AA where prose actually sits: ink on the solved reply panel is
-// 9.4:1 on Watersky, 12.3:1 on Goldensky and 9.7:1 on Nightsky at the shipped
-// panel dials, and every faint tier lands at or above where Gruvbox's own does
-// on the same surface (quiet 5.0/4.4/4.9:1, faintest 3.7/3.4/3.6:1).
+// The palettes are measured rather than picked by eye, against each picture's
+// own pixels, through the same compositing the reply-panel solver runs. At the
+// shipped panel dials, ink on the solved reply panel reaches 9.4:1 on Watersky,
+// 12.3:1 on Goldensky and 9.7:1 on Nightsky, and no faint tier is quieter than
+// Gruvbox's own on the chrome ground (the closest is Goldensky's faintest at
+// 3.70:1 against Gruvbox's 3.66:1). `npm --prefix dev run measure` reproduces
+// every one of those numbers and fails the run if a change drops below them, so
+// treat this comment as the summary and that script as the source.
 //
 // The scrims are heavier than Gruvbox's 0.31 because two of these pictures are
 // bright: Watersky is a 190-250 luma wash of blue concrete, and behind the
@@ -255,7 +257,7 @@ const LOOK_PRESETS = {
       scrim: 0.26, chrome: 0.78, card: 0.82, bubble: 0.78, page: 0.87,
       ground: '#2e2022', deeper: '#150d0f', cardTint: '#3e2d2e', bubbleTint: '#4e3737',
       edge: '#75564f', accent: '#eeae8a',
-      ink: '#faf1ea', ink2: '#e9d8cd', ink3: '#d6c0b3', quiet: '#c0a496', ink4: '#a58f85',
+      ink: '#faf1ea', ink2: '#e9d8cd', ink3: '#d6c0b3', quiet: '#c4aa9c', ink4: '#aa968c',
       link: '#c3b6dd', code: '#eabf92', quote: '#d2b0cb'
     }
   },
