@@ -6,10 +6,11 @@
  * the same contribution areas the built-in UI uses. Nothing here forks the app,
  * so an update cannot revert it.
  *
- * Two looks, one editor: **Gruvbox** is a preset (the shipped painting, palette
- * and opacities) and **Custom** is the same set of knobs kept as you leave
- * them, optionally driven by hermes-atrium-theme.json. There is no weather, no
- * feed and no network access of any kind: nothing leaves the computer, ever.
+ * Four looks, one editor: **Gruvbox** is a preset (the shipped painting, palette
+ * and opacities) and **Custom 1**, **Custom 2** and **Custom 3** are three
+ * independent records of the same knobs, kept as you leave them, each optionally
+ * driven by its own hermes-atrium-theme*.json. There is no weather, no feed and
+ * no network access of any kind: nothing leaves the computer, ever.
  *
  * Each feature rides the cheapest existing mechanism:
  *   appearance        -> contributed themes (one stable "Hermes Atrium" entry whose
@@ -39,10 +40,11 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 const THEMES_AREA = 'themes'
 const DIRECTIVE_AREA = 'transcript.directives'
 
-// Stored key strings are permanent: users have data under them. `gruvboxSkin`
-// and `gruvboxSkinImage` are the Gruvbox preset's own record, so both looks
-// keep an independent picture and palette.
-const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
+// Stored key strings are permanent: users have data under them. Each look has
+// its own record, so every look keeps an independent picture and palette.
+// `skin`/`skinImage` are Custom 1's, and they can never move: they are the keys
+// the first Custom preset has always written. Custom 2 and 3 are numbered.
+const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
 
 // write an attribute only when its value changes: an identical write still queues a
 // mutation record, and every observer wakes up for it
@@ -93,10 +95,10 @@ const PAINTING_FILE = 'backwater.jpg'
 const DESTRUCTIVE = '#fb4934'
 
 // ── The skin, as data ───────────────────────────────────────────────────────
-// ONE set of knobs for both looks. A look is a named preset of this data: the
-// values below are what Gruvbox ships, and Custom starts from the same place
-// and keeps whatever you change. There is no second material and no desktop
-// tint, so a control that exists for one look exists for both.
+// ONE set of knobs for every look. A look is a named preset of this data: the
+// values below are what Gruvbox ships, and each Custom look starts from the same
+// place and keeps whatever you change. There is no second material and no
+// desktop tint, so a control that exists for one look exists for all of them.
 const SKIN_DEFAULTS = {
   image: PAINTING_URL,
   fit: 'cover',
@@ -125,7 +127,7 @@ const SKIN_DEFAULTS = {
   ink2: '#ebdbb2',
   // The prose and label colours were hard-coded gruvbox tokens, which meant a
   // Custom picture still got gruvbox's blue links and purple code. They are
-  // skin values now, so both looks can be palette-complete.
+  // skin values now, so every look can be palette-complete.
   //
   // ink3 and ink4 are the two faintest text tiers, and they are named rather
   // than derived: deriving them from ink2 and quiet produced colours a shade
@@ -172,6 +174,18 @@ const SKIN_COLORS = [
   ['quote', 'Quotes']
 ]
 let SKIN = { ...SKIN_DEFAULTS }
+
+// ── The looks ──────────────────────────────────────────────────────────────
+// One list, read by the settings gallery, the status chip, the sheet header and
+// the editable files. Gruvbox is the shipped preset; each Custom look is a
+// record of the same knobs. `custom` keeps the id, the stored keys and the file
+// name the first Custom preset has always had, so an install that upgrades keeps
+// its picture and palette without a migration.
+const LOOK_IDS = ['gruvbox', 'custom', 'custom2', 'custom3']
+const CUSTOM_LOOKS = LOOK_IDS.filter(id => id !== 'gruvbox')
+const LOOK_LABELS = { gruvbox: 'Gruvbox', custom: 'Custom 1', custom2: 'Custom 2', custom3: 'Custom 3' }
+const lookLabel = id => LOOK_LABELS[id] || LOOK_LABELS.custom
+const isCustomLook = id => id !== 'gruvbox'
 
 // The skin comes from a hand-edited file and goes into the stylesheet as text, so
 // one stray `;` or `}` would break every rule after it. Colours must be hex and
@@ -235,7 +249,7 @@ const materialVars = () => {
 }
 
 // The skin, as the host theme's tokens (menus, dialogs, inputs). ONE set for
-// both looks, because both looks read the same skin: Gruvbox is only the name
+// every look, because every look reads the same skin: Gruvbox is only the name
 // of the preset the skin starts from. Deriving these from SKIN is also what
 // makes a Custom palette reach the app's own menus, which used to stay gruvbox
 // green under any picture.
@@ -917,11 +931,11 @@ const gruvboxTextCss = () => [
   '}'
 ]
 
-// Read by sheetCss, which stays a pure function of the switches. The two looks
+// Read by sheetCss, which stays a pure function of the switches. The looks
 // differ only in which preset the skin holds, so the sheet needs to know which
 // one is on screen for its comment header and nothing else.
 let LOOK_MODE = 'gruvbox'
-const setLookMode = mode => { LOOK_MODE = mode === 'custom' ? 'custom' : 'gruvbox' }
+const setLookMode = mode => { LOOK_MODE = LOOK_IDS.includes(mode) ? mode : 'gruvbox' }
 
 const WORK_ICONS = {
   brain: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M216,72a48,48,0,0,0-88-26.49A48,48,0,0,0,40,72v1.39a56,56,0,0,0,0,101.22V176a48,48,0,0,0,88,26.49A48,48,0,0,0,216,176v-1.39A56.09,56.09,0,0,0,248,124,56.11,56.11,0,0,0,216,72ZM120,208a32,32,0,0,1-32-32,48,48,0,0,1,32-45.26Zm0-93.26A48,48,0,0,1,88,69.26,32,32,0,0,1,120,40Zm16-74.74A32,32,0,0,1,168,69.26a48,48,0,0,1-32,45.48Zm0,93.26A48,48,0,0,1,168,176a32,32,0,0,1-32,32Z"/></svg>',
@@ -1399,9 +1413,8 @@ const SIDEBAR_CSS = [
 // switches in Settings, so a plain Hermes chrome can keep the picture, and the
 // glass can stay without a backdrop behind it.
 //
-// Only two looks exist now: Gruvbox (the shipped preset) and Custom (the same
-// knobs, kept as you leave them). Both are the skin: one set of colours and
-// opacities, so nothing here reads the clock or anything live, and nothing here
+// Each look is the same skin: one set of colours and opacities, kept in a record
+// per look. Nothing here reads the clock or anything live, and nothing here
 // branches on which look is on screen except the comment at the top.
 const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = false } = {}) => {
   // There is no day/night split any more: the look is one palette.
@@ -2701,8 +2714,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     const details = defined[defined.length - 1] || ''
     return [defined.slice(0, -1).join('\n'), details]
   }
-  const header = LOOK_MODE === 'custom'
-    ? `/* Hermes Atrium · custom. Your own picture, colours and opacities. */`
+  const header = isCustomLook(LOOK_MODE)
+    ? `/* Hermes Atrium · ${lookLabel(LOOK_MODE).toLowerCase()}. Your own picture, colours and opacities. */`
     : `/* Hermes Atrium · gruvbox preset. ${PAINTING_FILE} or your own picture, cover-fitted. */`
   return [header, ...sections.filter(Boolean)].join('\n')
 }
@@ -3214,7 +3227,7 @@ const ensurePreviewMeasureShim = () => {
 
 // ══ §6 PAINTING, THEMES & ACCENT ═══════════════════════════════════════════
 
-// The sheet is one of two looks and never changes on its own: paint it when a
+// The sheet is one of the looks and never changes on its own: paint it when a
 // switch moves, when the skin changes, or when the picture finishes loading.
 const SHEET_IDS = ['atr-chrome-base', 'atr-chrome-details']
 
@@ -3244,10 +3257,12 @@ const clearSheet = () => {
 
 // One stable host entry; the look itself lives in Atrium settings.
 const THEME_NAME = 'hermes-atrium'
-const APPEARANCE_LOOKS = [
-  { id: 'gruvbox', label: 'Gruvbox', description: 'The shipped painting & palette', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' },
-  { id: 'custom', label: 'Custom', description: 'Your own picture & colours', preview: 'var(--ui-widget-surface-background)' }
-]
+// The gallery reads the same list the chip does, so a look can never show up in
+// one and be missing from the other. Only Gruvbox needs a drawn preview: every
+// Custom tile shows its own picture, and falls back to an empty material.
+const APPEARANCE_LOOKS = LOOK_IDS.map(id => id === 'gruvbox'
+  ? { id, label: lookLabel(id), description: 'The shipped painting & palette', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' }
+  : { id, label: lookLabel(id), description: 'Your own picture & colours', preview: 'var(--ui-widget-surface-background)' })
 // Every theme name Hermes Atrium owns; anything else is the user's own pick.
 // The legacy names are the ones this plugin published before it was renamed
 // (`zephyr-sky` pre-Atrium, `atrium` in the first Atrium build). An install
@@ -3589,7 +3604,7 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
 
 function PhaseChip({ appearance, onSelect }) {
   const selected = useValue(appearance)
-  const choices = [['gruvbox', 'Gruvbox'], ['custom', 'Custom'], ['hermes', 'Hermes appearance']]
+  const choices = [...LOOK_IDS.map(id => [id, lookLabel(id)]), ['hermes', 'Hermes appearance']]
   return jsxs(Select, { value: selected, onValueChange: onSelect, children: [
     jsx(SelectTrigger, { 'aria-label': 'Hermes Hermes Atrium appearance', className: 'h-7 w-auto text-xs', children: jsx(SelectValue, {}) }),
     jsx(SelectContent, { children: choices.map(([id, label]) => jsx(SelectItem, { value: id, children: label }, id)) })
@@ -4070,7 +4085,11 @@ export default {
     // read, so the look falls back to the Gruvbox preset's own picture and
     // colours. Leave the data in place rather than deleting a user's palette:
     // a later install that understands it again would find it intact.
-    const appearance = atom(away ? 'hermes' : stored(STORE_KEYS.look) === 'custom' ? 'custom' : 'gruvbox')
+    // The stored look is whichever look was last chosen. An unknown value (a
+    // downgrade, a hand-edited key) falls back to Gruvbox rather than leaving
+    // the chip and the sheet with no look at all.
+    const storedLook = () => (LOOK_IDS.includes(stored(STORE_KEYS.look)) ? stored(STORE_KEYS.look) : 'gruvbox')
+    const appearance = atom(away ? 'hermes' : storedLook())
     const appearanceAssets = atom(0)
     const wake = () => { away = false; ctx.storage.set('away', false) }
     const tint = atom(stored(STORE_KEYS.tint) === true)
@@ -4080,12 +4099,10 @@ export default {
     const backdropOn = atom(stored(STORE_KEYS.sky) !== false)
     const chromeOn = atom(stored(STORE_KEYS.chrome) !== false)
     const replyGround = atom(stored(STORE_KEYS.replyGround) !== false)
-    // 'gruvbox' and 'custom' are the same skin with independent values:
-    // Gruvbox starts at the shipped preset, Custom starts there too and can be
-    // driven by hermes-atrium-theme.json. Neither has a knob the other lacks.
-    const LOOKS = ['gruvbox', 'custom']
-    const lookStore = stored(STORE_KEYS.look)
-    const look = atom(LOOKS.includes(lookStore) ? lookStore : 'gruvbox')
+    // gruvbox and every Custom look are the same skin with independent values:
+    // Gruvbox starts at the shipped preset, each Custom starts there too and can
+    // be driven by its own theme file. No look has a knob another lacks.
+    const look = atom(storedLook())
     setLookMode(look.get())
     // The panel's own dials (solid / max / tone / edge / pad), live in
     // Settings -> Hermes Atrium -> Chat & motion. `panel` (the module-level copy every
@@ -7021,16 +7038,16 @@ export default {
     // ── themes: one stable host entry ──────────────────────────────────────
     // Hermes Atrium publishes a single theme name and re-registers it with the
     // skin's current colours, so the pick in Appearance never changes as the
-    // look does. Both looks publish from the same skin: Gruvbox is the shipped
-    // preset, Custom is that data after your edits, and neither has a palette
-    // the other lacks.
+    // look does. Every look publishes from the same skin: Gruvbox is the shipped
+    // preset, each Custom look is that data after your edits, and no look has a
+    // palette another lacks.
     function registerLive() {
       const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble'].map(k => SKIN[k]).join()
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
         name: THEME_NAME, label: 'Hermes Atrium',
-        description: 'Choose Gruvbox or Custom in Settings → Hermes Atrium.',
+        description: 'Choose Gruvbox or a Custom look in Settings → Hermes Atrium.',
         colors: skinGrounds()
       } })
     }
@@ -7135,37 +7152,68 @@ export default {
     }
 
     // ── the skin as state: one record per look ───────────────────────────────
-    // Gruvbox and Custom hold the same knobs and the same controls; only the
-    // values differ, and each keeps its own. A look is therefore a saved skin,
-    // not a code path: pick Gruvbox and you edit the Gruvbox record, pick
-    // Custom and you edit the Custom one. `SKIN_DEFAULTS` is what both start
-    // from, so a fresh install paints the shipped painting under the shipped
-    // palette whichever look you pick.
+    // Every look holds the same knobs and the same controls; only the values
+    // differ, and each keeps its own. A look is therefore a saved skin, not a
+    // code path: pick Gruvbox and you edit the Gruvbox record, pick Custom 2 and
+    // you edit Custom 2's. `SKIN_DEFAULTS` is what all of them start from, so a
+    // fresh install paints the shipped painting under the shipped palette
+    // whichever look you pick.
     //
     // The image lives under its own key per look because a full-resolution
-    // picture can be megabytes; the rest is one small object.
+    // picture can be megabytes; the rest is one small object. `custom` keeps the
+    // key strings and the file name the first Custom preset published, so an
+    // upgrade finds its picture and its palette where it left them.
+    // What is known to be under each look's picture key right now. Kept in
+    // memory so a slider drag never has to parse a multi-megabyte value back out
+    // of storage to find out whether the picture changed.
+    const STORED_PICTURE = {}
     const SKIN_STORES = {
       gruvbox: { object: STORE_KEYS.gruvboxSkin, image: STORE_KEYS.gruvboxSkinImage },
-      custom: { object: STORE_KEYS.skin, image: STORE_KEYS.skinImage }
+      custom: { object: STORE_KEYS.skin, image: STORE_KEYS.skinImage, file: 'hermes-atrium-theme.json' },
+      custom2: { object: STORE_KEYS.skin2, image: STORE_KEYS.skinImage2, file: 'hermes-atrium-theme-2.json' },
+      custom3: { object: STORE_KEYS.skin3, image: STORE_KEYS.skinImage3, file: 'hermes-atrium-theme-3.json' }
     }
     const readLookSkin = which => {
       const keys = SKIN_STORES[which] || SKIN_STORES.custom
       const raw = stored(keys.object)
       const out = raw && typeof raw === 'object' ? { ...SKIN_DEFAULTS, ...raw } : { ...SKIN_DEFAULTS }
       const picture = stored(keys.image)
-      if (typeof picture === 'string' && picture.length > 32) out.image = picture
+      if (typeof picture === 'string' && picture.length > 32) {
+        out.image = picture
+        STORED_PICTURE[which] = picture
+      }
       return out
     }
+    // The picture is the one large value this plugin stores, so it is written in
+    // one place per look: its own key. The record holds only the small knobs,
+    // and that key is only rewritten when the picture itself changed, so dragging
+    // a slider never re-stores a megabyte.
+    //
+    // The host discards a failed write without a sound (quota, permissions).
+    // A store that cannot take this picture cannot take it stored twice either,
+    // so on failure the picture already under the key is left exactly where it
+    // is and the new one is only on screen until the next launch. That is a
+    // warning in the console, never a silent rollback: the alternative is a look
+    // that quietly shows a picture it will not have next time.
     const writeLookSkin = (which, next) => {
       const keys = SKIN_STORES[which] || SKIN_STORES.custom
-      ctx.storage.set(keys.object, next)
-      ctx.storage.set(keys.image, next.image)
+      const record = { ...next }
+      delete record.image
+      if (next.image && STORED_PICTURE[which] !== next.image) {
+        ctx.storage.set(keys.image, next.image)
+        if (ctx.storage.get(keys.image, undefined) === next.image) {
+          STORED_PICTURE[which] = next.image
+        } else {
+          console.warn(`[hermes-atrium] ${lookLabel(which)}'s new picture does not fit in this plugin's storage; it shows now but will not survive a restart until a smaller one is chosen`)
+        }
+      }
+      ctx.storage.set(keys.object, record)
     }
-    // Both looks are ordinary skins: there is no built-in palette that Custom
-    // cannot reach, and no Custom knob that Gruvbox lacks. Hold both records in
-    // memory so an edit is in hand the moment a slider moves, and write through
-    // to each look's own keys.
-    const LOOK_SKINS = { gruvbox: readLookSkin('gruvbox'), custom: readLookSkin('custom') }
+    // Every look is an ordinary skin: there is no built-in palette that a Custom
+    // one cannot reach, and no Custom knob that Gruvbox lacks. Hold all the
+    // records in memory so an edit is in hand the moment a slider moves, and
+    // write through to each look's own keys.
+    const LOOK_SKINS = Object.fromEntries(LOOK_IDS.map(id => [id, readLookSkin(id)]))
     const skinOf = which => LOOK_SKINS[which] || LOOK_SKINS.custom
     setSkin(skinOf(look.get()))
     pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
@@ -7173,7 +7221,7 @@ export default {
     ensurePictureStyle()
     const skin = atom({ ...skinOf(look.get()) })
     const selectAppearance = next => {
-      if (!['gruvbox', 'custom', 'hermes'].includes(next)) return
+      if (next !== 'hermes' && !LOOK_IDS.includes(next)) return
       if (next === 'hermes') {
         away = true
         ctx.storage.set('away', true)
@@ -7193,8 +7241,8 @@ export default {
       look.set(next)
       appearance.set(next)
       setLookMode(look.get())
-      // Switch to the other look's own record, not to a shared one: the whole
-      // point of two presets is that each remembers what you did to it.
+      // Switch to the chosen look's own record, not to a shared one: the whole
+      // point of separate presets is that each remembers what you did to it.
       const chosen = skinOf(next)
       skin.set({ ...chosen })
       setSkin(chosen)
@@ -7202,6 +7250,10 @@ export default {
       persist()
       registerLive()
       apply()
+      // A file for this look may have changed while another was on screen: the
+      // poll only follows the visible one. Re-read it now, quietly, so the first
+      // paint is the file's values and not a stale record.
+      if (isCustomLook(next)) readConfigOne(next, true)
     }
 
 
@@ -7236,8 +7288,8 @@ export default {
     })
 
     // A knob writes to the record of the look you are looking at. That is the
-    // whole difference between the two looks now: which record the controls
-    // edit. Nothing here switches looks behind your back.
+    // whole difference between the looks now: which record the controls edit.
+    // Nothing here switches looks behind your back.
     const pushSkin = patch => {
       const which = look.get()
       const next = { ...skin.get(), ...patch }
@@ -7246,9 +7298,9 @@ export default {
       skin.set(next)
       setSkin(next)
       writeLookSkin(which, next)
-      // The theme file stays the Custom look's own file, so editing it under
-      // Gruvbox must not rewrite what Custom holds.
-      if (which === 'custom' && !fromFile) writeConfig(next)
+      // Each Custom look owns its own file, so editing one must not rewrite what
+      // another holds.
+      if (isCustomLook(which) && !fromFile) writeConfig(which, next)
       if (patch.image !== undefined) ensurePictureStyle()
       // The host theme's colours are skin values, so a palette change has to
       // re-publish them and not just repaint the sheet.
@@ -7262,17 +7314,22 @@ export default {
       skin.set(next)
       setSkin(next)
       writeLookSkin(which, next)
-      if (which === 'custom') writeConfig(next)
+      if (isCustomLook(which)) writeConfig(which, next)
       ensurePictureStyle()
       registerLive()
       apply()
     }
-    // ── files: the painting, and ~/.hermes/hermes-atrium-theme.json ─────────────
-    // The theme file IS the Custom look. Every key is optional; anything left
-    // out keeps its default. Edit it in any editor and the app follows within
-    // a couple of seconds; moving a knob in Settings writes it back.
+    // ── files: the painting, and one hermes-atrium-theme*.json per Custom look ─
+    // A theme file IS a Custom look. Custom 1 keeps the name the first Custom
+    // preset published (`hermes-atrium-theme.json`); Custom 2 and 3 get numbered
+    // files beside it. Every key is optional; anything left out keeps its
+    // default. Edit one in any editor and the app follows within a couple of
+    // seconds; moving a knob in Settings writes it back.
     const desk = typeof window !== 'undefined' ? window.hermesDesktop : null
-    let configPath = null
+    // Where each Custom look's file lives, filled in once the plugin directory
+    // resolves. Keyed by look id, so a look without a resolved path simply has
+    // no file to read or write.
+    const CONFIG_PATHS = {}
     let homeDir = ''
     // Windows hands us `C:\Users\...`; a file URL needs `file:///C:/Users/...`.
     const fileUrl = p => {
@@ -7281,7 +7338,6 @@ export default {
       if (!s.startsWith('/')) s = '/' + s
       return 'file://' + encodeURI(s)
     }
-    let lastConfigText = null
     const pathToUrl = v => {
       const t = String(v || '').trim()
       if (!t || /^(file|https?|data|blob):/i.test(t)) return t
@@ -7301,44 +7357,78 @@ export default {
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
       return JSON.stringify(out, null, 2) + '\n'
     }
-    const writeConfig = sk => {
-      if (!configPath || !desk?.writeTextFile) return
+    // What was last read or written, per file. A poll compares the text it gets
+    // against this, so an untouched file costs one read and no repaint.
+    const LAST_CONFIG_TEXT = {}
+    // Every knob move rewrites the look's file, and the poll reads that same
+    // file. The two race in both directions: a read can start before a knob
+    // moves, or return while the write it wrote is still landing and so hand
+    // back the older text. Either way the file loses to the knob, because the
+    // knob is the newer intent. So a read is discarded if any write on that look
+    // started while it was in flight, and if a write is still in flight at all.
+    const FILE_WRITES = {}   // which -> { started, pending }
+    const fileWrites = which => (FILE_WRITES[which] ||= { started: 0, pending: 0 })
+    const writeConfig = (which, sk) => {
+      const path = CONFIG_PATHS[which]
+      const state = fileWrites(which)
+      state.started += 1
+      if (!path || !desk?.writeTextFile) return
       const text = configText(sk)
-      if (text === lastConfigText) return
-      lastConfigText = text
-      desk.writeTextFile(configPath, text).catch?.(() => {})
+      if (text === LAST_CONFIG_TEXT[which]) return
+      LAST_CONFIG_TEXT[which] = text
+      state.pending += 1
+      desk.writeTextFile(path, text).then(
+        () => { state.pending -= 1 },
+        () => { state.pending -= 1 }
+      )
     }
-    const readConfig = async (switchTo = true) => {
-      if (!configPath || !desk?.readFileText) return
+    // One Custom look's file. `switchTo` is false at startup, where the records
+    // are seeded quietly and the screen is left alone.
+    //
+    // The poll reads only the Custom look on screen: that is the one whose edits
+    // have to land live, and the other looks' records are already in memory for
+    // the moment they are picked. Every file is read once at startup, so an edit
+    // made while the app was closed is in hand too.
+    const readConfigOne = async (which, switchTo) => {
+      const path = CONFIG_PATHS[which]
+      if (!path || !desk?.readFileText) return
+      const state = fileWrites(which)
+      const writesAtStart = state.started
       let res = null
-      try { res = await desk.readFileText(configPath) } catch { return }
+      try { res = await desk.readFileText(path) } catch { return }
+      // A knob moved, or a write is still landing, while this read was in flight:
+      // the text is older than what the app already has.
+      if (state.started !== writesAtStart || state.pending > 0) return
       const text = res && res.ok !== false && typeof res.text === 'string' ? res.text : null
-      if (text === null || text === lastConfigText) return
-      lastConfigText = text
+      if (text === null || text === LAST_CONFIG_TEXT[which]) return
+      LAST_CONFIG_TEXT[which] = text
       let data
-      try { data = JSON.parse(text) } catch (error) { console.warn('[hermes-atrium] hermes-atrium-theme.json is not valid JSON:', String(error)); return }
+      try { data = JSON.parse(text) } catch (error) { console.warn(`[hermes-atrium] ${SKIN_STORES[which].file} is not valid JSON:`, String(error)); return }
       if (!data || typeof data !== 'object') return
       const patch = {}
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
       if (patch.image === 'uploaded') delete patch.image
       else if (patch.image) patch.image = pathToUrl(patch.image)
-      const next = { ...SKIN_DEFAULTS, ...(patch.image ? {} : { image: LOOK_SKINS.custom.image || skin.get().image }), ...patch }
-      if (!switchTo) {
-        // startup: seed Custom quietly, without changing what is on screen
-        LOOK_SKINS.custom = next
-        if (look.get() === 'custom') { skin.set(next); setSkin(next) }
-        writeLookSkin('custom', next)
-        return
-      }
-      if (look.get() !== 'custom') {
-        // The file IS the Custom look. Editing it while Gruvbox is on screen
-        // updates Custom's record and leaves the Gruvbox preset alone.
-        LOOK_SKINS.custom = next
-        writeLookSkin('custom', next)
+      const next = { ...SKIN_DEFAULTS, ...(patch.image ? {} : { image: LOOK_SKINS[which].image || skin.get().image }), ...patch }
+      if (!switchTo || look.get() !== which) {
+        // Startup, or a look that is not on screen: seed the record and leave
+        // what is painted alone. A look that IS on screen at startup still gets
+        // its own values, because they are what should be painted.
+        LOOK_SKINS[which] = next
+        if (!switchTo && look.get() === which) { skin.set(next); setSkin(next) }
+        writeLookSkin(which, next)
         return
       }
       fromFile = true
       try { pushSkin(next) } finally { fromFile = false }
+    }
+    const readConfig = async (switchTo = true) => {
+      for (const which of CUSTOM_LOOKS) await readConfigOne(which, switchTo)
+    }
+    // The 2s poll: follow the file for the look you are looking at.
+    const pollConfig = () => {
+      const which = look.get()
+      if (isCustomLook(which)) readConfigOne(which, true)
     }
     let fromFile = false
     // ── Shipping pictures ───────────────────────────────────────────────────
@@ -7368,7 +7458,11 @@ export default {
       // The bridge reports the native separator, so build paths with it.
       const sep = root.includes('\\') ? '\\' : '/'
       homeDir = root.replace(/[\\/]\.hermes[\\/]desktop-plugins[\\/]?$/, '')
-      configPath = root.replace(/[\\/]desktop-plugins[\\/]?$/, '') + sep + 'hermes-atrium-theme.json'
+      // Each Custom look's file sits beside the plugin directory, named for the
+      // look: the first Custom preset's file keeps its published name.
+      for (const which of CUSTOM_LOOKS) {
+        CONFIG_PATHS[which] = root.replace(/[\\/]desktop-plugins[\\/]?$/, '') + sep + SKIN_STORES[which].file
+      }
       const names = async dir => {
         try { return ((await desk.readDir(dir)) || {}).entries || [] } catch { return [] }
       }
@@ -7433,9 +7527,10 @@ export default {
         // Write the heal back, not just paint it: leaving a dangling path in
         // storage means every later load has to work it out again, and anything
         // reading a look's picture key directly keeps seeing a file that is not
-        // there. Both looks are healed, because both point at `assets/`.
+        // there. Every look is healed, because every look can point at
+        // `assets/`.
         if (stale(SKIN.image)) setSkin({ ...SKIN, image: url })
-        for (const which of ['gruvbox', 'custom']) {
+        for (const which of LOOK_IDS) {
           const rec = LOOK_SKINS[which]
           if (!rec || !stale(rec.image)) continue
           const next = { ...rec, image: url }
@@ -7453,23 +7548,29 @@ export default {
       await readConfig(false)
     }
     resolvePluginFiles().catch(error => console.warn('[hermes-atrium] plugin files:', String(error)))
-    // hermes-atrium-theme.json is read through the desktop bridge, so a poll is an IPC
+    // The theme files are read through the desktop bridge, so a poll is an IPC
     // plus a file read, not a property access. 2s while you are looking at the
     // window (an edit lands live), 30s while you are not (an edit is followed by
-    // coming back here anyway).
+    // coming back here anyway). Only the look on screen is polled; an untouched
+    // file costs one read and no repaint.
     let configTicks = 0
     const configTimer = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return
       configTicks += 1
       if (configTicks % 15 !== 0 && !document.hasFocus?.()) return
-      readConfig(true)
+      pollConfig()
     }, 2000)
-    const openConfig = async () => {
-      if (!configPath) return
+    // Reveal the file for a Custom look, creating it from what that look holds
+    // now if it is not there yet. A look on screen gets its record; another
+    // Custom look gets its own saved values, never what is painted right now.
+    const openConfig = async which => {
+      if (!isCustomLook(which)) which = isCustomLook(look.get()) ? look.get() : 'custom'
+      const path = CONFIG_PATHS[which]
+      if (!path) return
       let exists = false
-      try { const r = await desk.readFileText(configPath); exists = Boolean(r && r.ok !== false) } catch {}
-      if (!exists) { lastConfigText = null; writeConfig(skin.get()); await new Promise(r => setTimeout(r, 200)) }
-      desk.revealPath?.(configPath)
+      try { const r = await desk.readFileText(path); exists = Boolean(r && r.ok !== false) } catch {}
+      if (!exists) { LAST_CONFIG_TEXT[which] = null; writeConfig(which, skinOf(which)); await new Promise(r => setTimeout(r, 200)) }
+      desk.revealPath?.(path)
     }
     const readAsDataUrl = file => new Promise(resolve => {
       const reader = new FileReader()
@@ -7483,6 +7584,27 @@ export default {
     // until it does. The stored string is base64 (33% larger than the JPEG
     // bytes) inside a JSON string in localStorage, which fails silently when a
     // quota is hit, so a picture that merely "fit" could still go missing.
+    //
+    // Chromium allows about 5 million UTF-16 code units per origin, and every
+    // key this app and this plugin store shares that one budget. One picture
+    // used to be the only large value here; now a user can keep three, so no
+    // single picture may take the whole store. Each upload is fitted to a share
+    // of what is left after the other looks' pictures.
+    //
+    // Measured against the shipped 4096x2428 photograph: the re-encoder lands at
+    // roughly 70% of whatever ceiling it is given, so the ceiling is a hard cap
+    // rather than the size it aims for. Three pictures filled in turn cost about
+    // 3.5 million of the store, leaving around 30% for every other key on the
+    // origin (the app's own keys share it too).
+    const STORE_SIZE = 5_000_000
+    const PICTURE_SHARE = 0.25    // one look may take a quarter of the store
+    const PICTURE_FLOOR = 600_000 // below this a photograph is visibly mush
+    const STORE_RESERVE = 600_000 // room for the app's own keys and this plugin's
+    const pictureBudget = which => {
+      let used = 0
+      for (const id of LOOK_IDS) if (id !== which) used += (STORED_PICTURE[id] || '').length
+      return Math.max(PICTURE_FLOOR, Math.min(STORE_SIZE * PICTURE_SHARE, STORE_SIZE - used - STORE_RESERVE))
+    }
     const shrinkDataUrl = (dataUrl, budget, max = 2560, quality = 0.92) => new Promise(resolve => {
       const img = new Image()
       img.onload = () => {
@@ -7514,9 +7636,10 @@ export default {
       if (!file) return
       const raw = await readAsDataUrl(file)
       if (!raw) return
-      // 2.5 MB of base64 leaves room for the surrounding JSON and the rest of
-      // this plugin's keys while staying well inside a 5 MB localStorage.
-      const fitted = raw.length > 2_500_000 ? await shrinkDataUrl(raw, 2_500_000) : raw
+      // Fit the picture to what this look can have, not to a fixed size: three
+      // looks share one store.
+      const budget = pictureBudget(look.get())
+      const fitted = raw.length > budget ? await shrinkDataUrl(raw, budget) : raw
       pushSkin({ image: fitted })
     }
 
@@ -8048,19 +8171,19 @@ export default {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
           style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          title: 'Return this look to the shipped picture, colours and opacities. The other look is untouched.',
+          title: 'Return this look to the shipped picture, colours and opacities. The other looks are untouched.',
           onClick: () => resetSkin(),
           children: 'Reset'
         }),
-        // Only the Custom look has a theme file; under Gruvbox the button would
-        // write a record that is not on screen, which is the confusion this
-        // redesign is meant to end.
-        look.get() === 'custom' ? jsx('button', {
+        // Every Custom look has a theme file of its own; under Gruvbox the
+        // button would open a file that is not on screen, which is the
+        // confusion this redesign is meant to end.
+        isCustomLook(look.get()) ? jsx('button', {
           type: 'button',
           className: 'rounded-md px-2 py-1 text-[0.75rem]',
           style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          title: '~/.hermes/hermes-atrium-theme.json: every colour, opacity and filter of the Custom look, as one editable file',
-          onClick: () => { openConfig() },
+          title: `~/.hermes/${SKIN_STORES[look.get()].file}: every colour, opacity and filter of ${lookLabel(look.get())}, as one editable file`,
+          onClick: () => { openConfig(look.get()) },
           children: 'Theme file'
         }) : null
       ]})
@@ -8108,14 +8231,14 @@ export default {
         const lookNow = useValue(look)
         const list = useValue(pins)
 
-        // One sentence for both looks: they now differ only in which saved
-        // skin they show, so the status says which one and where its picture
-        // comes from, not which code path is running.
+        // One sentence for every look: they differ only in which saved skin they
+        // show, so the status says which one and where its picture comes from,
+        // not which code path is running.
         const ownPicture = typeof activeSkin.image === 'string' && activeSkin.image.startsWith('data:')
         const pictureNote = ownPicture ? 'your own picture' : 'backwater.jpg · 4096 x 2428'
         const status = selectedLook === 'hermes'
           ? 'Hermes appearance · Hermes Atrium appearance paused'
-          : [lookNow === 'gruvbox' ? 'Gruvbox preset' : 'Custom', pictureNote, isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
+          : [lookNow === 'gruvbox' ? 'Gruvbox preset' : lookLabel(lookNow), pictureNote, isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
 
         const header = jsxs('div', {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
@@ -8176,9 +8299,9 @@ export default {
           }) : null
         ])
 
-        // The same editor for both looks, because both looks are now the same
+        // The same editor for every look, because every look is the same
         // thing: a saved skin. Every control below edits whichever look is
-        // selected, and the other look keeps its own values.
+        // selected, and the others keep their own values.
         //
         // The colour/glass block is a `section` with `collapse`, not a
         // hand-rolled <details>: that one helper is what gives the other menus
