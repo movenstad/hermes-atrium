@@ -117,6 +117,17 @@ const SKIN_DEFAULTS = {
   sidebar: 0,
   card: 0.78,
   bubble: 0.78,
+  // Page panes (a plugin route, the Bots roster, a preview) paint no ground of
+  // their own, so the sheet gives them this one. 0.86 is the same weight the
+  // app's own full-page views wear, which is why a plugin page and Artifacts
+  // read as one window rather than two materials.
+  //
+  // The value is eyedropper honest: the shipped painting's brightest pixel
+  // under the main pane is rgb(201,200,182), and a 0.86 fill still lands the
+  // faintest ink tier at 4.46:1 there (4.83:1 over 90% of the pane). Below
+  // about 0.90 it is a panel you can see the painting through; above about
+  // 0.94 it is a slab. It starts at the tier the host itself uses.
+  page: 0.86,
   ground: '#16261e',
   deeper: '#0c1612',
   cardTint: '#1d3328',
@@ -155,7 +166,12 @@ const SKIN_SLIDERS = [
   // slider was never the number it used, and zero was not selectable at all.
   ['sidebar', 'Sidebar opacity', 0, 1, 0.01],
   ['card', 'Card opacity', 0.4, 1, 0.01],
-  ['bubble', 'Your message opacity', 0.4, 1, 0.01]
+  ['bubble', 'Your message opacity', 0.4, 1, 0.01],
+  // The floor is 0.5 rather than 0: a page carries dense small type with no
+  // reply panel solving a tone for it, so a clear page would put labels
+  // straight back on the picture, which is the bug this surface exists to fix.
+  // 1 is a solid sheet for anyone who wants the pages opaque.
+  ['page', 'Page opacity', 0.5, 1, 0.01]
 ]
 const SKIN_COLORS = [
   ['ground', 'Chat ground'],
@@ -2373,6 +2389,15 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // opaque on one surface and translucent on the next after dark.
     // Sidebar cards are the exception: they are the Sidebar opacity slider's
     // surface, so they read the card fill rather than the tint.
+    // Page panes: a plugin route, the Bots roster, a preview. Their own ink
+    // lands on the picture because the zone container is cleared, so the sheet
+    // gives the zone's body a fill. This is a tier of its own rather than
+    // --atr-glass, so Page opacity moves the pages and leaves the composer,
+    // the bubbles and the app's own pages alone.
+    //
+    // The default matches --atr-glass (86) so a page and the chat beside it
+    // start as one window; the slider is what lets them separate.
+    `  --atr-page-fill: color-mix(in srgb, var(--atr-tint) ${glassPct(100 * skinNumber(SKIN.page, 0.86))}, transparent);`,
     `  --atr-side-card: ${sideCard};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
     '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
@@ -2499,19 +2524,18 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // the page becomes the same floating card the app's own pages get (inset,
     // rounded, lifted).
     //
-    // The material is `--atr-glass`, the tier the app's own full-page views
-    // wear, NOT `--atr-glass-strong`. Strong is for dialogs and tooltips, which
-    // have to hold a line of text above everything else; a pane is a place you
-    // sit in, and at 94% it read as a solid slab with no picture through it. A
-    // page and the chat beside it should look like the same window, so they
-    // wear the same fill, and Page opacity moves both.
+    // The material is its own token, `--atr-page-fill`, not `--atr-glass`.
+    // Glass is shared with the composer, the user bubbles and the app's own
+    // full-page views, so moving it would drag all of them along. This one
+    // belongs to Page opacity alone, and it starts at the same weight the
+    // app's pages wear so a plugin page and Artifacts look like one window.
     //
     // `data-atr-pagebody` is set by the sweep rather than written as a selector
     // because the element is the host's own flex body: its classes and depth
     // are internals, and a selector for them would also catch the keep-alive
     // anchors, which are absolutely positioned children of the same box.
     '[data-atr-pagebody] {',
-    '  background: var(--atr-glass) !important;',
+    '  background: var(--atr-page-fill) !important;',
     '  border-radius: var(--atr-radius-lg) !important;',
     '  box-shadow: var(--atr-lift) !important;',
     '  box-sizing: border-box !important;',
@@ -7122,7 +7146,7 @@ export default {
     // preset, each Custom look is that data after your edits, and no look has a
     // palette another lacks.
     function registerLive() {
-      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble'].map(k => SKIN[k]).join()
+      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble', 'page'].map(k => SKIN[k]).join()
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
@@ -7431,7 +7455,11 @@ export default {
       const abs = decodeURI(t.slice(7))
       return homeDir && abs.startsWith(homeDir + '/') ? '~' + abs.slice(homeDir.length) : abs
     }
-    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. Delete a key to get its default.'
+    // A skin key that needs its own sentence in the file. `page` is the one
+    // knob whose name does not say what it paints: it is the ground under the
+    // panes whose content draws none of its own (a plugin route, the Bots
+    // roster, a preview), not the pages the app ships itself.
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
