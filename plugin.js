@@ -2497,16 +2497,21 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // The fill goes on the zone's BODY, not the zone: the body is the content
     // area below the pane's tab strip, so the strip keeps its clear ground and
     // the page becomes the same floating card the app's own pages get (inset,
-    // rounded, lifted). The strong tier is deliberate: this is dense small
-    // type with no reply panel solving a tone for it, so it wants the same
-    // weight dialogs and sheets wear, a step solider than the sidebar cards.
+    // rounded, lifted).
+    //
+    // The material is `--atr-glass`, the tier the app's own full-page views
+    // wear, NOT `--atr-glass-strong`. Strong is for dialogs and tooltips, which
+    // have to hold a line of text above everything else; a pane is a place you
+    // sit in, and at 94% it read as a solid slab with no picture through it. A
+    // page and the chat beside it should look like the same window, so they
+    // wear the same fill, and Page opacity moves both.
     //
     // `data-atr-pagebody` is set by the sweep rather than written as a selector
     // because the element is the host's own flex body: its classes and depth
     // are internals, and a selector for them would also catch the keep-alive
     // anchors, which are absolutely positioned children of the same box.
     '[data-atr-pagebody] {',
-    '  background: var(--atr-glass-strong) !important;',
+    '  background: var(--atr-glass) !important;',
     '  border-radius: var(--atr-radius-lg) !important;',
     '  box-shadow: var(--atr-lift) !important;',
     '  box-sizing: border-box !important;',
@@ -8023,12 +8028,22 @@ export default {
       // roster, a file preview) draws no ground at all, so its headings, rows
       // and code sat straight on the wallpaper. Those get the page material,
       // on the zone's body box so the tab strip above it stays clear.
+      //
+      // The clearing half is not optional. A zone's body box outlives its
+      // contents: it is the same element when you tab from Security back to the
+      // chat. Marking only the page case left the fill behind on every body a
+      // page had ever used, so after one visit the chat wore a card too. Keep
+      // the set of bodies this pass marked and clear everything else.
       const markPageZones = () => {
+        const marked = new Set()
         document.querySelectorAll('[data-tree-group]').forEach(zone => {
           const page = marksPageGround(zone)
           flag(zone, 'data-atr-page', page)
-          flag(page ? pageBodyOf(zone) : null, 'data-atr-pagebody', page)
+          if (!page) return
+          const body = pageBodyOf(zone)
+          if (body) { flag(body, 'data-atr-pagebody', true); marked.add(body) }
         })
+        document.querySelectorAll('[data-atr-pagebody]').forEach(el => { if (!marked.has(el)) el.removeAttribute('data-atr-pagebody') })
       }
 
       const markHas = () => {
