@@ -9,8 +9,10 @@ loads at runtime from `<HERMES_HOME>/desktop-plugins/hermes-atrium/` and registe
 through its own contribution areas. There is no build step and no bundler.
 
 It ships a Gruvbox preset and three independent Custom slots, each with its own
-record and theme file, paints a picture from `assets/` behind the window, and
-solves a readable panel tone per reply. It makes no network requests.
+record and theme file. The Custom slots are born as designed looks of their own
+(Watersky, Goldensky, Nightsky, seeded from `LOOK_PRESETS`), so a fresh install
+has four finished appearances. It paints a picture from `assets/` behind the
+window, and solves a readable panel tone per reply. It makes no network requests.
 
 ## Ground rules
 
@@ -45,7 +47,13 @@ Each of these has already caused a silent failure here.
 
 4. **`assets/` is the only picture source.** The resolver looks inside this
    plugin's own `assets/` and nowhere else. Don't add a fallback to the plugin
-   root, to a sibling plugin, or to a URL.
+   root, to a sibling plugin, or to a URL. A look names a shipped picture as the
+   marker `assets/<file>`, which `resolvePluginFiles` turns into a file URL once
+   it has scanned the folder (see `ASSET_IMAGES`). The indirection exists because
+   a look's record is built before the desktop bridge has answered, so an
+   absolute path cannot exist yet, and because an unresolved marker must fall
+   back to the shipped painting rather than paint nothing. Never store a resolved
+   path where a marker will do: a path goes stale when the folder moves.
 
 5. **Renaming the plugin id or theme name is a migration.** The app remembers the
    last chosen theme. If the plugin stops recognising that name at launch it
@@ -67,15 +75,37 @@ those, so nothing else needs a branch. Never rename `custom`: that id, its
 `skin`/`skinImage` keys and its `hermes-atrium-theme.json` file are what every
 install that already has a Custom look is holding.
 
+A Custom slot is born from `LOOK_PRESETS` (via `presetSkin`), not from
+`SKIN_DEFAULTS`, and Reset returns it to its own preset rather than to the
+shipped painting. Two rules follow. A stored record still holding nothing but the
+shipped Gruvbox defaults counts as untouched (`isShippedDefaults`), because that
+is what the previous build wrote the moment any knob moved; without the rule an
+upgrade would keep three gruvbox-coloured slots. And an uploaded picture lives
+under the slot's own picture key while the record keeps the `assets/<file>`
+marker, so `writeLookSkin` must clear that key when a slot goes back to its
+preset, or the old upload wins on the next read.
+
 **Adding a class, property or attribute.** Internal names use the `atr-` prefix:
 `--atr-*` custom properties, `.atr-*` classes, `data-atr-*` attributes, `atr-*`
 ids. Check the prefix is unused by the host before introducing a new one.
 
 **Adding a picture.** Drop it in `assets/`. `backwater.jpg` is the default and
 wins by name; any other image is used only when it is absent, and the fallback
-picks in sorted order so the choice cannot drift between launches. Only
-`backwater.jpg` is committed, the rest are gitignored for testing. The file that
-paints it is chosen at runtime, so don't hard-code a filename elsewhere.
+picks in sorted order so the choice cannot drift between launches.
+
+Four pictures are committed: `backwater.jpg` plus the three the Custom presets
+name (`watersky.jpg`, `goldensky.jpg`, `nightsky.jpg`). The rest are gitignored
+for testing, so a new shipped picture needs a `!assets/<file>` line in
+`.gitignore` and a credit in the README. Keep the shipped ones as sized JPEGs:
+the originals were 8 to 22 MB PNGs, and a repository that carries four of them
+at full resolution is one nobody wants to clone. A preset's picture is named by
+its slot, so it must not be picked by sort order.
+
+**Changing a preset's palette.** Measure it, don't pick it by eye. The panel
+solver composites the scrim, the glass and the reply panel over the picture's
+own pixels, so a palette that looks fine on a swatch can still land under AA
+behind the reading column. The numbers to keep at or above Gruvbox's own are ink
+on the solved panel, and each faint tier on the chrome ground.
 
 **Changing the reply panel.** The dials solve a tone against samples of the
 picture behind the reading column. Keep two properties, both testable: the ink
@@ -108,7 +138,7 @@ panel thinner.
 
 ## Known sharp edges
 
-- `plugin.js` is about 8,800 lines. Read the `§` map at the top, then grep for
+- `plugin.js` is about 9,300 lines. Read the `§` map at the top, then grep for
   the section tag rather than reading linearly.
 - Four `setInterval` loops run for the life of the plugin: the status dock and
   shelf layout (1s), the running-turn timers (1s), the status-stack fillets (1s),
