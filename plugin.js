@@ -474,8 +474,31 @@ const SESSION_TAB_CSS = [
   '  padding-inline: 4px 6px !important;',
   '  border: 0 !important; border-radius: 8px !important;',
   '  background: transparent !important; box-shadow: none !important;',
-  '  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;',
+  "  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;",
   '  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;',
+  '}',
+  // An UNSELECTED session tab still wears a fill, so its label never sits on
+  // the painting. Measured on the shipped picture, an idle tab's label landed
+  // at 3.0:1 against its lightest patch and only 0.56 luma of ink, because the
+  // tab had no ground AND was dimmed to 0.78 opacity; the two together are what
+  // made a row of session names read as ghosts. The fill is the page material
+  // at a lighter mix, and the ink goes up to full so the dimming is carried by
+  // the fill instead of by the text.
+  //
+  // The active tab keeps its own matte block, a full 20 luma above this one, so
+  // the row still reads as "one of these is current" rather than as three
+  // identical chips. Measured: idle sits ~0.075 mean luma over the picture, the
+  // active one ~0.094, and the bare picture ~0.054 — so both float, and the
+  // active one floats highest.
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']) {",
+  '  opacity: 1;',
+  '  color: var(--atr-ink-1, #ebdbb2) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 72%, transparent) !important;',
+  '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
+  '}',
+  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']):hover {",
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 84%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
@@ -494,6 +517,52 @@ const SESSION_TAB_CSS = [
   // step toward the ink so it still reads as raised on the bar.
   '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
   '  box-shadow: none !important;',
+  '}',
+  // ── The fixed titlebar tools ───────────────────────────────────────────
+  // Settings, layout and the two pane toggles are `fixed z-70`, always mounted
+  // on a normal route, and they paint no ground of their own. Over the shipped
+  // painting their ink measures 1.19:1 against the patch underneath: not
+  // invisible by design, just invisible wherever the picture happens to be
+  // light. That is the "they come and go" behaviour — nothing is unmounting,
+  // the glyphs are simply below the threshold of sight on some of the picture
+  // and above it on the rest.
+  //
+  // Give the cluster the page material and an ink floor. A single rounded pill
+  // behind the group, not a box per icon: four separate chips in the titlebar
+  // read as four buttons competing with the window controls.
+  //
+  // `:not([data-titlebar-cluster='left'])` is load-bearing. The left cluster
+  // holds the sidebar toggle, which the arc mode deliberately hides (and
+  // re-shows on hover at the left edge); filling its container would leave a
+  // floating empty pill where the button used to be.
+  "[data-titlebar-cluster='right']:has(> :is(button, a)) {",
+  // The tint alone is not enough here: this sits over the darkest band of the
+  // painting, where an 88% fill of the same dark tint lands within 0.004 luma
+  // of the bare picture and the pill simply is not there. Mix in the skin's
+  // raised tint (`--atr-tint-hi`, the step the sidebar cards use to lift off
+  // the ground) so the group reads as a surface rather than a coincidence.
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 78%, var(--atr-tint-hi, #2b4636)) !important;',
+  '  border-radius: 8px;',
+  // A visible hairline, not the subtle inset one: the group's edge is the
+  // thing that tells the eye "these four icons belong together", and a 4%
+  // wash disappears into a busy picture.
+  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 20%, transparent) !important;',
+  // No padding: the app reserves `count * var(--titlebar-control-size)` for this
+  // cluster, so growing the box by even 2px pushes it into the native window
+  // controls and shifts the panel header's own reservation.
+  '}',
+  // The icons are `text-muted-foreground/85` on the app's own token chain, which
+  // Atrium has already pointed at its ink ramp; the /85 alpha is what pushes
+  // them under the floor. Full ink, and the fill above carries the quietness.
+  "[data-titlebar-cluster='right'] > :is(button, a) {",
+  '  color: var(--atr-ink-1, #ebdbb2) !important;',
+  '}',
+  "[data-titlebar-cluster='right'] > :is(button, a):hover {",
+  '  color: var(--atr-ink-0, #fbf1c7) !important;',
+  '  background: rgba(var(--atr-hi), 0.10) !important;',
+  '}',
+  "[data-titlebar-cluster='right'] > :is(button, a) :is(svg, i, [class*='codicon']) {",
+  '  opacity: 1 !important;',
   '}',
   // the + button: a quiet rounded square in line with the pills
   "button[aria-label='New session tab'] {",
