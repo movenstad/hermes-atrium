@@ -1,0 +1,13 @@
+{
+  "name": "hermes-atrium-dev",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only tools and their one dependency. Not shipped with the plugin.",
+  "scripts": {
+    "measure": "node measure-palettes.mjs",
+    "test": "node test-plugin.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

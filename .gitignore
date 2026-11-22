@@ -9,3 +9,10 @@ assets/*
 !assets/watersky.jpg
 !assets/goldensky.jpg
 !assets/nightsky.jpg
+
+# Dev tooling. The two scripts are committed as an aid to whoever changes a
+# preset palette or the look machinery; everything they generate is not, and
+# neither is their one dependency.
+dev/.work/
+dev/node_modules/
+dev/package-lock.json

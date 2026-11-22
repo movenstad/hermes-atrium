@@ -104,8 +104,12 @@ its slot, so it must not be picked by sort order.
 **Changing a preset's palette.** Measure it, don't pick it by eye. The panel
 solver composites the scrim, the glass and the reply panel over the picture's
 own pixels, so a palette that looks fine on a swatch can still land under AA
-behind the reading column. The numbers to keep at or above Gruvbox's own are ink
-on the solved panel, and each faint tier on the chrome ground.
+behind the reading column. `dev/measure-palettes.mjs` runs that same chain and
+prints the worst contrast every surface reaches; it fails on body text under AA
+and on a faint tier quieter than Gruvbox's own. It reads the palettes out of
+`plugin.js`, so it measures what ships rather than a copy. When you change one of
+`pictureBackdrop`, `replyPanelTone` or `replyMaterial` in `plugin.js`, change its
+mirror there too.
 
 **Changing the reply panel.** The dials solve a tone against samples of the
 picture behind the reading column. Keep two properties, both testable: the ink
@@ -127,6 +131,9 @@ panel thinner.
 ## Before you call it done
 
 - `npm run check` runs `node --check` on `plugin.js`.
+- `npm --prefix dev run test` loads the plugin in Chromium and checks that every
+  look paints its own picture, that a knob persists, and that an upgrade keeps
+  real edits. It also writes screenshots to `dev/.work/shots/`.
 - Load it and read the console. A healthy load is not silent: it logs
   `[hermes-atrium] painting: <folder>/assets/<file>`. Missing that line means the
   file bridge or the picture did not resolve, which is the failure mode behind
