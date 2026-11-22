@@ -20,13 +20,12 @@
  *                        colours follow the chosen look) + CSS over the app
  *   reply panels      -> five live dials that solve a panel tone against the
  *                        picture behind the reading column (§2)
- *   snippet cards     -> a `::snippet{...}` transcript directive (copy/pin)
- *   calmer chat       -> CSS over the app's own surfaces, plus small observers
- *                        for folding finished work, tabs and the status panel
+ *   snippet cards     -> a `::snippet{...}` transcript directive (copy)
+ *   calmer chat       -> CSS over the app's own surfaces
  *
  * CONTENTS (search for the tag, e.g. "══ §5"):
  *   §1  SETUP, SKIN, PAINTING & MATERIALS
- *   §2  REPLY PANELS (tone solver) & STATUS STACK FILLETS
+ *   §2  REPLY PANELS (tone solver)
  *   §3  SIDEBAR SWITCH HOOKS
  *   §4  APP CSS (sheetCss: layout, glass material, every surface)
  *   §5  APP MOTION (always-on interface animation)
@@ -35,7 +34,7 @@
  *   §8  PLUGIN REGISTRATION (register: settings, timers, observers)
  */
 
-import { atom, Button, Codicon, host, ListRow, requestTheme, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, setAccentOverride, ToggleRow, useValue } from '@hermes/plugin-sdk'
+import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, setAccentOverride, ToggleRow, useValue } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 // ══ §1 SETUP, SKIN, PAINTING & MATERIALS ═══════════════════════════════════
@@ -49,11 +48,6 @@ const DIRECTIVE_AREA = 'transcript.directives'
 // the first Custom preset has always written. Custom 2 and 3 are numbered.
 const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
 
-// write an attribute only when its value changes: an identical write still queues a
-// mutation record, and every observer wakes up for it
-const put = (el, name, value) => { if (el && el.getAttribute(name) !== value) el.setAttribute(name, value) }
-const putData = (el, key, value) => { if (el && el.dataset[key] !== value) el.dataset[key] = value }
-const putText = (el, value) => { if (el && el.textContent !== value) el.textContent = value }
 // ── Gruvbox ──────────────────────────────────────────────────────────────────
 // Dressed from gruvbox's own element table, not from "brown and orange". Every
 // role below maps onto a named highlight group in morhetz/gruvbox (dark, medium
@@ -570,13 +564,13 @@ const pictureBackdrop = (bounds, filtered = true) => {
 
 // Session tabs (the session rows in the tree — `data-tree-tab`, workspace or
 // session-tile): wide pills, the active one a flat matte block, the same
-// material the suggestion cards wear. The pane tabs (Sessions / Bots) are NOT
+// matte material the sidebar cards wear. The pane tabs (Sessions / Bots) are NOT
 // these; they keep their own look.
 const SESSION_TAB_CSS = [
   // Top tabs: soft pills, sentence case, no rules between them. The active tab
   // is a flat matte block of the same material as the cards; the rest stay
   // quiet until hovered.
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) {",
   '  position: relative;',
   '  height: 26px !important; min-height: 26px !important; margin: 4px 1px 0 !important;',
   '  padding-inline: 4px 6px !important;',
@@ -602,27 +596,27 @@ const SESSION_TAB_CSS = [
   // (see the aria-selected rule), not from thinning this one. Thinning still
   // matters on a light patch, where it is plainly visible, which is why the
   // number moved too.
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']) {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
   '  background: color-mix(in srgb, var(--atr-tint, #16261e) 48%, transparent) !important;',
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):not([aria-selected='true']):hover {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
   '  background: color-mix(in srgb, var(--atr-tint, #16261e) 68%, transparent) !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)::before { display: none !important; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .uppercase {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *)::before { display: none !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .uppercase {",
   '  text-transform: none !important; letter-spacing: 0 !important;',
   '  font-size: 12px !important; font-weight: 500 !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) { opacity: 1; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):hover {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):is(:hover, [aria-selected='true']) { opacity: 1; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):hover {",
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
   '  background: rgba(var(--atr-hi), 0.06) !important;',
   '}',
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *)[aria-selected='true'] {",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *)[aria-selected='true'] {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
   // The active tab is the one surface in this row that must never be confused
   // for the picture, so its fill is lifted strongly toward the ink: 28%, not
@@ -695,19 +689,19 @@ const SESSION_TAB_CSS = [
   "button[aria-label='New session tab']:active { transform: scale(0.94); }",
   "button[aria-label='New session tab'] :is(svg, i) { width: 14px !important; height: 14px !important; font-size: 14px !important; }",
   // a tab's close button: hidden until the tab is hovered or active
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button:hover { opacity: 1; background: rgba(var(--atr-hi), 0.10) !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button:hover { opacity: 1; background: rgba(var(--atr-hi), 0.10) !important; }",
   // Wider tabs: the app caps them at 12rem and sizes them to the title. Give
   // every tab a generous fixed span (Chrome-style), shrinking only when crowded.
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) { flex: 0 1 220px !important; width: 220px !important; min-width: 120px !important; max-width: 260px !important; height: 28px !important; padding-inline: 10px 6px !important; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .truncate { flex: 1 1 auto !important; min-width: 0 !important; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button[aria-label='Close'] { width: 18px !important; height: 18px !important; margin-left: 6px !important; flex: none !important; align-self: center !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) { flex: 0 1 220px !important; width: 220px !important; min-width: 120px !important; max-width: 260px !important; height: 28px !important; padding-inline: 10px 6px !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .truncate { flex: 1 1 auto !important; min-width: 0 !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button[aria-label='Close'] { width: 18px !important; height: 18px !important; margin-left: 6px !important; flex: none !important; align-self: center !important; }",
   // the app hides the close slot (opacity 0, no pointer) until hover; show it on the active tab too
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *):is(:hover, [aria-selected='true']) span:has(> button[aria-label='Close']) { opacity: 1 !important; pointer-events: auto !important; z-index: 2; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) .pane-tab-content { padding-right: 22px !important; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) span:has(> button[aria-label='Close']) { align-items: center !important; padding-right: 6px; }",
-  "[role='tab'][data-tree-tab]:not([data-atr-arc-col] *) button[aria-label='Close'] .codicon { opacity: 1 !important; visibility: visible !important; font-size: 12px !important; color: var(--atr-ink-2, #ebdbb2) !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *):is(:hover, [aria-selected='true']) span:has(> button[aria-label='Close']) { opacity: 1 !important; pointer-events: auto !important; z-index: 2; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .pane-tab-content { padding-right: 22px !important; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) span:has(> button[aria-label='Close']) { align-items: center !important; padding-right: 6px; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button[aria-label='Close'] .codicon { opacity: 1 !important; visibility: visible !important; font-size: 12px !important; color: var(--atr-ink-2, #ebdbb2) !important; }",
 ]
 
 // ── Refinement pass ────────────────────────────────────────────────────────
@@ -943,17 +937,7 @@ const polishCss = () => [
   "html body :is([class*='text-(--ui-accent)'], [class*='text-(--accent)'], [class*='text-primary']:not([class*='text-primary-foreground']), [class*='text-amber'], [class*='text-yellow'], [class*='text-orange'], [class*='text-(--theme-primary)'], .glyph-spinner, .glyph-spinner *) { color: var(--atr-ink-2, #cdc4b4) !important; }",
   "html body time { color: var(--atr-ink-3, #a8a092) !important; }",
   // unread badge and tab dots: no orange
-  "html body div.fixed[data-atr-sbbtn] [class*='bg-primary'] { background: var(--atr-ink-1, #e2dacb) !important; color: var(--atr-m-on) !important; }",
   "[role='tab'][data-tree-tab] [class*='rounded-full'][class*='bg-'] { background: var(--atr-ink-2, #cdc4b4) !important; }",
-  // Landing for an empty tab: the app only draws its intro for the very first
-  // draft, so a fresh tab was a blank smear. Same wordmark, same mood.
-  ':is(#atr-landing, .atr-landing-x) { position: fixed; z-index: 1; pointer-events: none; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; opacity: 0; transition: opacity 260ms ease; container-type: inline-size; overflow: hidden; }',
-  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) { display: flex; opacity: 1; }",
-  ':is(#atr-landing, .atr-landing-x) .atr-land-mark { font-family: Collapse, ui-serif, serif; font-size: clamp(26px, 11cqw, 112px); font-weight: 700; letter-spacing: 0.02em; line-height: 1; color: rgba(var(--atr-hi), 0.92); mix-blend-mode: plus-lighter; white-space: nowrap; }',
-  ':is(#atr-landing, .atr-landing-x) .atr-land-line { font-size: 15px; color: var(--atr-ink-2, #ebdbb2); max-width: 34rem; }',
-  '@keyframes atr-land-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
-  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) > * { animation: atr-land-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }",
-  "html[data-atr-landing='1'] :is(#atr-landing, .atr-landing-x) .atr-land-line { animation-delay: 80ms; }",
   // Settings is a floating sheet, solid enough that nothing reads through it
   "div.rounded-xl[data-atr-setbox] { background: var(--atr-glass-strong) !important; border-radius: var(--atr-radius-lg) !important; box-shadow: var(--atr-lift-float) !important; isolation: isolate; }",
   "[class*='grid-cols-[13rem_minmax(0,1fr)]'] > aside { background: rgba(0, 0, 0, 0.16) !important; }",
@@ -979,9 +963,6 @@ const polishCss = () => [
   '  background: color-mix(in srgb, var(--atr-tint) 74%, transparent) !important;',
   '  backdrop-filter: var(--atr-frost) !important;',
   '}',
-  // a session opened through the row's own menu: the menu is the mechanism, not
-  // something to watch, so it stays invisible while it is driven
-  "html[data-atr-ghost-menu='1'] :is([data-radix-popper-content-wrapper], [role='menu']) { opacity: 0 !important; pointer-events: none !important; }",
   // The composer and your own messages wear the gruvbox glass, the material
   // every other surface wears (--atr-glass): a plain white wash over the
   // painting reads as a different, lighter thing than the cards beside it.
@@ -1085,7 +1066,6 @@ const gruvboxTextCss = () => [
       scrim,
       `  backdrop-filter: blur(${blur}px) saturate(${skinNumber(SKIN.saturate, 1.35)}) brightness(${skinNumber(SKIN.brightness, 0.84)});`,
       '}',
-      "html[data-atr-chat='1'][data-atr-clip='1']::after { clip-path: var(--atr-chat-clip); }",
     ]
   })(),
   `::selection { background: ${SKIN.edge} !important; color: ${SKIN.ink} !important; }`,
@@ -1143,15 +1123,7 @@ const gruvboxTextCss = () => [
 let LOOK_MODE = 'gruvbox'
 const setLookMode = mode => { LOOK_MODE = LOOK_IDS.includes(mode) ? mode : 'gruvbox' }
 
-const WORK_ICONS = {
-  brain: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M216,72a48,48,0,0,0-88-26.49A48,48,0,0,0,40,72v1.39a56,56,0,0,0,0,101.22V176a48,48,0,0,0,88,26.49A48,48,0,0,0,216,176v-1.39A56.09,56.09,0,0,0,248,124,56.11,56.11,0,0,0,216,72ZM120,208a32,32,0,0,1-32-32,48,48,0,0,1,32-45.26Zm0-93.26A48,48,0,0,1,88,69.26,32,32,0,0,1,120,40Zm16-74.74A32,32,0,0,1,168,69.26a48,48,0,0,1-32,45.48Zm0,93.26A48,48,0,0,1,168,176a32,32,0,0,1-32,32Z"/></svg>',
-  terminal: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm-91,94.25-40,32a8,8,0,1,1-10-12.5L107.19,128,75,102.25a8,8,0,1,1,10-12.5l40,32a8,8,0,0,1,0,12.5ZM176,168H136a8,8,0,0,1,0-16h40a8,8,0,0,1,0,16Z"/></svg>',
-  search: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M229.66,218.34l-50.06-50.07a88,88,0,1,0-11.32,11.31l50.06,50.07a8,8,0,0,0,11.32-11.31ZM112,184a72,72,0,1,1,72-72A72.08,72.08,0,0,1,112,184Z"/></svg>',
-  tool: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M232,96a72,72,0,0,1-100.94,66L79,222.22c-.12.14-.26.29-.39.42a32,32,0,0,1-45.26-45.26c.14-.13.28-.27.43-.39L94,124.94a72.07,72.07,0,0,1,83.54-98.78,8,8,0,0,1,3.93,13.19L144,80l5.66,26.35L176,112l40.65-37.52a8,8,0,0,1,13.19,3.93A72.6,72.6,0,0,1,232,96Z"/></svg>',
-  file: '<svg width="14" height="14" viewBox="0 0 256 256" fill="#ffffff"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM152,88V44l44,44Z"/></svg>'
-}
-
-// ══ §2 REPLY PANELS (tone solver) & STATUS STACK FILLETS ═══════════════════
+// ══ §2 REPLY PANELS (tone solver) ═══════════════════════════════════════
 
 // ── Reply panels ───────────────────────────────────────────────────────────
 // WHERE the backdrop is painted matters. A `body::before` layer sits in normal
@@ -1167,9 +1139,6 @@ const WORK_ICONS = {
 // CSS composites encoded sRGB channels; WCAG linearises the result, not the
 // inputs. Solving that same pair avoids a guessed day/night opacity threshold.
 const clamp01 = x => Math.max(0, Math.min(1, x))
-// One reading of the OS motion preference for every animated path in the plugin.
-const reducedMotion = () =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 const replyLuminance = rgb => rgb.reduce((sum, v, i) => {
   const s = clamp01(v / 255)
   return sum + (s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][i]
@@ -1306,7 +1275,7 @@ const replyGroundCss = material => {
     // Content primitives lose their fill; the reply is their sole ground.
     // Card containers keep one material step, while pre/code inside a card
     // cannot paint a second framed well (including Gruvbox/Shiki overrides).
-    shell + " :is(.aui-md, pre, pre code, table, thead, tbody, tr, th, td, blockquote, .atr-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open])) {",
+    shell + " :is(.aui-md, pre, pre code, table, thead, tbody, tr, th, td, blockquote, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open])) {",
     '  background: transparent !important; box-shadow: none !important;',
     '}',
     shell + ' :is(pre, pre code, blockquote) { border-color: transparent !important; outline: 0 !important; }',
@@ -1326,7 +1295,7 @@ const replyGroundCss = material => {
     '}',
     // Fold/thinking/tool labels and actions share the body ground. Without
     // this, tertiary ink still disappeared even after the prose passed AA.
-    shell + " :is(.atr-work-summary, [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open]), [data-slot*='actions'], [data-slot*='feedback'], time) {",
+    shell + " :is([data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-slot='tool-block']:not([data-tool-open]), [data-slot*='actions'], [data-slot*='feedback'], time) {",
     '  color: inherit !important; text-shadow: none !important;',
     '}',
     // The app normally places actions beside content; keep that cluster on
@@ -1338,8 +1307,14 @@ const replyGroundCss = material => {
   ].join('\n')
 }
 
-// Read only theme/viewport state, never individual messages. Hermes themes can
-// supply dark ink too, so inactive Hermes Atrium appearance shares the same solver.
+// Read only theme state, never the app's markup or individual messages. Hermes
+// themes can supply dark ink too, so inactive Hermes Atrium appearance shares
+// the same solver. What the reading column wears under a Hermes theme is read
+// off a probe of the plugin's own, painted with the host's own text and
+// chat-surface tokens over the page ground. The column is not measured: the
+// picture is sampled over the centred reading width (pictureBackdrop's own
+// fallback region), which is where a reply sits whether or not the margins
+// are spacious.
 const replyCssRgb = value => {
   if (SKIN_HEX.test(String(value).trim())) return hexRgb(String(value).trim())
   const numbers = String(value).match(/[\d.]+/g)?.map(Number)
@@ -1348,99 +1323,29 @@ const replyCssRgb = value => {
   if (/^color\(srgb\s/i.test(String(value).trim()) && numbers?.length >= 3) return numbers.slice(0, 3).map(v => v * 255)
   return numbers?.length >= 3 ? numbers.slice(0, 3) : null
 }
+const REPLY_PROBE_ID = 'atr-reply-probe'
 const replyHostGround = () => {
-  const fallback = { ink: [255, 255, 255], tint: ZF_NIGHT, samples: [ZF_NIGHT], bounds: { left: 0, top: 0, right: 1, bottom: 1 } }
-  if (typeof getComputedStyle !== 'function') return fallback
-  const thread = document.querySelector("[data-slot='aui_thread-content']") || document.body
-  if (!thread) return fallback
-  const cs = getComputedStyle(thread)
-  const ink = replyCssRgb(cs.color) || fallback.ink
+  const fallback = { ink: [255, 255, 255], tint: ZF_NIGHT, samples: [ZF_NIGHT], bounds: null }
+  if (typeof getComputedStyle !== 'function' || typeof document === 'undefined' || !document.body) return fallback
+  let probe = document.getElementById(REPLY_PROBE_ID)
+  if (!probe) {
+    probe = document.createElement('div')
+    probe.id = REPLY_PROBE_ID
+    probe.setAttribute('aria-hidden', 'true')
+    probe.style.cssText = 'position: fixed; left: -10px; top: 0; width: 1px; height: 1px; visibility: hidden; pointer-events: none;'
+      + ' color: var(--ui-text-primary, CanvasText); background-color: var(--ui-chat-surface-background, transparent);'
+    document.body.appendChild(probe)
+  }
+  const ink = replyCssRgb(getComputedStyle(probe).color) || fallback.ink
   let ground = document.documentElement.classList?.contains?.('dark') ? ZF_NIGHT : [255, 255, 255]
-  const ancestors = []
-  for (let el = thread; el; el = el.parentElement) ancestors.unshift(el)
-  for (const el of ancestors) {
+  for (const el of [document.documentElement, document.body, probe]) {
     const color = getComputedStyle(el).backgroundColor
     const rgb = replyCssRgb(color)
     const values = String(color).match(/[\d.]+/g)?.map(Number)
     if (rgb) ground = replyComposite(ground, rgb, values?.[3] ?? 1)
   }
-  const rect = thread.getBoundingClientRect?.()
-  const width = Math.max(1, window.innerWidth)
-  const bounds = rect?.width > 0 ? {
-    left: clamp01(rect.left / width), right: clamp01(rect.right / width),
-    top: 0, bottom: 1,
-  } : fallback.bounds
-  return { ink, tint: replyLuminance(ink) > 0.18 ? ZF_NIGHT : [250, 251, 253], samples: [ground], bounds }
+  return { ink, tint: replyLuminance(ink) > 0.18 ? ZF_NIGHT : [250, 251, 253], samples: [ground], bounds: null }
 }
-// ── Status stack fillets ───────────────────────────────────────────────────
-
-// ── Status stack ⟷ composer seam ─────────────────────────────────────────
-// The status stack sits on the composer, a little narrower, with square bottom
-// corners, while the composer's top corners are round. fitStatusStack gives
-// the stack concave bottom corners: each side of the card sweeps out in a
-// fillet that lands tangent on the composer's own corner arc, so the two
-// outlines run together as one S-curve. The geometry is measured (inset,
-// composer radius, border width, fill colour), so it follows any theme or
-// font size; it is drawn by two pseudo-elements on the stack's wrapper.
-const STACK_FLARE_ATTR = 'data-atr-flare'
-const fitStatusStack = () => {
-  if (typeof document === 'undefined') return
-  const stack = document.querySelector("[data-slot='composer-status-stack']")
-  const card = stack?.querySelector(":scope > [class*='rounded-t-']") || stack?.firstElementChild
-  const surf = document.querySelector("[data-slot='composer-surface'], [class~='group/composer-surface']")
-  const off = () => { if (stack?.hasAttribute(STACK_FLARE_ATTR)) stack.removeAttribute(STACK_FLARE_ATTR) }
-  if (!stack || !card || !surf) return off()
-  const cr = card.getBoundingClientRect()
-  const sr = surf.getBoundingClientRect()
-  const wr = stack.getBoundingClientRect()
-  const m = cr.left - sr.left                 // how far the card is inset
-  const gap = sr.top - cr.bottom
-  if (cr.height < 4 || m < 1.5 || Math.abs(gap) > 2.5 || Math.abs((sr.right - cr.right) - m) > 1.5) return off()
-  const cs = getComputedStyle(card)
-  const R = Math.max(0.5, parseFloat(getComputedStyle(surf).borderTopLeftRadius) || 0)
-  const b = parseFloat(cs.borderLeftWidth) || 0
-  // the fillet: radius s, tangent to the card's side (outside its border line)
-  // and to the composer's corner circle (centre R,R; frame: composer top-left)
-  const s = Math.min(12, Math.max(3, m * 0.85))
-  const cx2 = m + b - s
-  const dx = R - cx2
-  const reach = (s + R) * (s + R) - dx * dx
-  if (dx <= 0 || reach <= 0) return off()
-  const cy2 = R - Math.sqrt(reach)             // composer top is y = 0 in this frame
-  const ty = cy2 + (R - cy2) * s / (s + R)       // tangent point with the composer arc
-  const boxL = cx2, boxT = cy2, boxW = m + b - cx2, boxH = Math.max(1, ty - cy2)
-  const fill = cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ? cs.backgroundColor : 'var(--composer-fill)'
-  const px = v => v.toFixed(2) + 'px'
-  const vars = {
-    '--fl-x': px(sr.left - wr.left + boxL),
-    '--fl-xr': px(wr.right - sr.right + boxL),
-    '--fl-top': px(cr.bottom - wr.top + gap + boxT),
-    '--fl-w': px(boxW),
-    '--fl-h': px(boxH),
-    '--fl-c2': px(cx2 - boxL) + ' ' + px(cy2 - boxT),
-    '--fl-c1': px(R - boxL) + ' ' + px(R - boxT),
-    '--fl-s': px(s),
-    '--fl-si': px(Math.max(0, s - b)),
-    '--fl-R': px(R),
-    '--fl-fill': fill,
-    '--fl-line': b > 0 ? cs.borderLeftColor : 'transparent'
-  }
-  for (const [k, v] of Object.entries(vars)) if (stack.style.getPropertyValue(k) !== v) stack.style.setProperty(k, v)
-  if (!stack.hasAttribute(STACK_FLARE_ATTR)) stack.setAttribute(STACK_FLARE_ATTR, '')
-}
-const STACK_FLARE_CSS = [
-  `[data-slot='composer-status-stack'][${STACK_FLARE_ATTR}] { position: relative; overflow: visible !important; }`,
-  `[data-slot='composer-status-stack'][${STACK_FLARE_ATTR}]::before,`,
-  `[data-slot='composer-status-stack'][${STACK_FLARE_ATTR}]::after {`,
-  "  content: ''; position: absolute; z-index: 5; pointer-events: none;",
-  '  top: var(--fl-top); width: var(--fl-w); height: var(--fl-h);',
-  '  background: radial-gradient(circle at var(--fl-c2), transparent var(--fl-si), var(--fl-line) var(--fl-si), var(--fl-line) var(--fl-s), var(--fl-fill) calc(var(--fl-s) + 0.35px));',
-  '  -webkit-mask: radial-gradient(circle at var(--fl-c1), transparent var(--fl-R), #000 calc(var(--fl-R) + 0.6px));',
-  '  mask: radial-gradient(circle at var(--fl-c1), transparent var(--fl-R), #000 calc(var(--fl-R) + 0.6px));',
-  '}',
-  `[data-slot='composer-status-stack'][${STACK_FLARE_ATTR}]::before { left: var(--fl-x); }`,
-  `[data-slot='composer-status-stack'][${STACK_FLARE_ATTR}]::after { right: var(--fl-xr); transform: scaleX(-1); }`
-].join('\n')
 
 // ══ §3 SIDEBAR SWITCH HOOKS ════════════════════════════════════════════════
 
@@ -1450,7 +1355,6 @@ const STRIP_HOOK = '[data-atr-strip]'
 
 // Only a two-way strip becomes a switch — SESSIONS | BOTS. A three-way strip
 // falls back to the app's own tabs rather than getting a pill that cannot land.
-const PIN_MASK_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E")`
 const MENU_SURFACES = ":is([data-slot='dropdown-menu-content'], [data-slot='dropdown-menu-sub-content'], [data-slot='context-menu-content'], [data-slot='context-menu-sub-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='menubar-content'], [data-slot='dialog-content'] [data-slot='command'])"
 const MENU_ROWS = ":is([role='menuitem'], [role='option'], [role='menuitemcheckbox'], [role='menuitemradio'], [cmdk-item], [data-slot='command-item'])"
 const SWITCH_HOOK = '[data-atr-strip][data-atr-switch]'
@@ -1465,158 +1369,11 @@ const SWITCH_HOOK = '[data-atr-strip][data-atr-switch]'
 // The mode morph: the sidebar column and the main pane are captured and glide
 // to their new boxes on Cmd+S. Emitted only when the platform has view
 // transitions, because the rules do nothing otherwise.
-const MORPH_CSS = [
-  "::view-transition-group(atr-side), ::view-transition-group(atr-main), ::view-transition-group(atr-home) { animation-duration: 300ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }",
-  "::view-transition-old(atr-home), ::view-transition-new(atr-home) { animation-duration: 300ms; }",
-  "::view-transition-old(atr-main), ::view-transition-new(atr-main) { width: 100%; height: 100%; object-fit: none; object-position: center top; animation-duration: 300ms; }",
-  "::view-transition-old(atr-side), ::view-transition-new(atr-side) { animation-duration: 220ms; }",
-  "::view-transition-old(root), ::view-transition-new(root) { animation: none; }"
-]
-
 const SIDEBAR_CSS = [
   // The host replaces the desktop rail with a native overlay below its narrow
-  // breakpoint. It is not data-atr-arc-col, and must mask the transcript even
-  // when the theme deliberately makes pinned sidebar surfaces transparent.
+  // breakpoint, and it must mask the transcript even when the theme
+  // deliberately makes pinned sidebar surfaces transparent.
   "html:root body [data-narrow-overlay] { background: var(--atr-m-solid, var(--ui-bg-chrome)) !important; background-image: none !important; }",
-  // ── The floating sidebar ──────────────────────────────────────────────────────────────
-  // The sidebar column never unmounts. "Collapsed" takes it out of the flow
-  // (position: fixed, so the chat never reflows) and parks it off-screen; a
-  // hover slides it back. Only translate and opacity animate: compositor work,
-  // no React, no layout.
-  "html[data-atr-arc='1'] [data-atr-arc-col] {",
-  '  position: fixed !important; left: 10px !important; top: 10px !important; bottom: 10px !important;',
-  '  width: 272px !important; height: auto !important; min-width: 0 !important; max-width: none !important;',
-  '  flex: none !important; z-index: 60 !important;',
-  '  border-radius: 16px !important; overflow: hidden !important;',
-  '  background: var(--atr-m-solid) !important; background-image: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;',
-  '  box-shadow: var(--atr-lift-float) !important;',
-  '  translate: calc(-100% - 28px) 0; opacity: 0; pointer-events: none;',
-  '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease;',
-  '  will-change: translate, opacity; contain: layout paint;',
-  '}',
-  "html[data-atr-arc='1'][data-atr-arc-open='1'] [data-atr-arc-col] {",
-  '  translate: 0 0; opacity: 1; pointer-events: auto;',
-  '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease;',
-  '}',
-  // In floating mode the card's own surfaces are see-through, so the column is
-  // one piece of glass. Pinned does not flatten them: with no outer card, the
-  // inner surfaces have to paint themselves or the list would be a hole.
-  "html[data-atr-arc='1'] [data-atr-arc-col] > div, html[data-atr-arc='1'] [data-atr-arc-col] [data-slot='sidebar'] {",
-  '  background: transparent !important; border: 0 !important;',
-  '}',
-  // room at the bottom of the column for snippets + status
-  // The snippet card and the status-dock head are the app's own fixed layers:
-  // it places them from the column's own box, on its own schedule. Left alone
-  // they stay put while the card slides, then jump when the app re-measures.
-  // They ride the same slide on the same curve instead, and their re-measure
-  // glides rather than snapping.
-  "html[data-atr-arc-ready='1'] body #atr-snips {",
-  '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease,',
-  '    left 300ms cubic-bezier(0.22, 1, 0.36, 1), top 300ms cubic-bezier(0.22, 1, 0.36, 1);',
-  '}',
-  "html[data-atr-arc-ready='1'] body #atr-statusdock-head {",
-  '  transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease,',
-  '    left 300ms cubic-bezier(0.22, 1, 0.36, 1), top 300ms cubic-bezier(0.22, 1, 0.36, 1),',
-  '    height var(--atr-sd-dur) var(--atr-sd-ease), color var(--atr-t-2, 150ms) var(--atr-ease, ease),',
-  '    box-shadow var(--atr-t-2, 150ms) var(--atr-ease, ease);',
-  '}',
-  // They paint in the card's own plane. Behind it (the app's z-40 against the
-  // card's z-60) they only showed once the slide had finished, which read as
-  // arriving late, while the card was already there.
-  "html[data-atr-arc='1'] body :is(#atr-snips, #atr-statusdock-head) { z-index: 61 !important; }",
-  // Their x is the card's own, not the app's next measurement: with the column
-  // parked, the app's own re-measure lands late (its heartbeat is a second) and
-  // the two arrive after the card. Fixed to the card, they ride it exactly.
-  "html[data-atr-arc='1'] body :is(#atr-snips, #atr-statusdock-head) {",
-  '  left: var(--atr-rail-x, 20px) !important;',
-  '  width: var(--atr-rail-w, 252px) !important;',
-  '}',
-  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body :is(#atr-snips, #atr-statusdock-head) {",
-  '  translate: calc(-100% - 28px) 0; opacity: 0; pointer-events: none;',
-  '}',
-  "html[data-atr-arc='1'][data-atr-arc-open='1'] body :is(#atr-snips, #atr-statusdock-head) {",
-  '  translate: 0 0; opacity: 1; pointer-events: auto;',
-  '}',
-  // The open status card's body is the app's real footer, pinned under the
-  // head. It belongs to the same card, so it rides the same slide: left
-  // behind, it stayed on screen over the chat after the sidebar tucked away.
-  // Its transition list is the dock's (!important); the translate leg there
-  // reads these two tokens.
-  "html[data-atr-arc='1'] body footer[data-slot='statusbar'][data-atr-dock-side] {",
-  '  left: var(--atr-rail-x, 20px) !important; width: var(--atr-rail-w, 252px) !important; z-index: 61 !important;',
-  '  --atr-arc-dur: 300ms; --atr-arc-ease: cubic-bezier(0.22, 1, 0.36, 1);',
-  '}',
-  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body footer[data-slot='statusbar'][data-atr-dock-side] {",
-  '  translate: calc(-100% - 28px) 0; opacity: 0 !important; pointer-events: none !important;',
-  '  --atr-arc-dur: 150ms; --atr-arc-ease: cubic-bezier(0.4, 0, 1, 1);',
-  '}',
-  // the tucked state has to leave too, at the closing speed
-  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body #atr-snips {",
-  '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease,',
-  '    left 150ms cubic-bezier(0.4, 0, 1, 1), top 150ms cubic-bezier(0.4, 0, 1, 1);',
-  '}',
-  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) body #atr-statusdock-head {",
-  '  transition: translate 150ms cubic-bezier(0.4, 0, 1, 1), opacity 110ms ease,',
-  '    left 150ms cubic-bezier(0.4, 0, 1, 1), top 150ms cubic-bezier(0.4, 0, 1, 1),',
-  '    height var(--atr-sd-dur) var(--atr-sd-ease);',
-  '}',
-  // the chat keeps the toggle's corner clear once the sidebar is out of the flow
-  "html[data-atr-arc='1'] [data-tree-split] > div:not([data-atr-arc-col]) [data-window-top] {",
-  // the mode button lives inside the card here, so the tabs can take the corner
-  '  --panel-titlebar-left: 12px !important;',
-  '}',
-  // menus, tooltips and dialogs opened from inside the card must sit above it
-  "[data-radix-popper-content-wrapper], [role='menu'], [role='listbox'], [role='tooltip'], [data-slot$='-content'][data-state='open'][style*='--radix'] { z-index: 70 !important; }",
-  "[data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='sheet-overlay'], [data-slot='sheet-content'], [data-slot='alert-dialog-overlay'], [data-slot='alert-dialog-content'] { z-index: 72 !important; }",
-  // the sidebar toggle hides while the sidebar is out; the card is the control then
-  "html[data-atr-arc-ready='1'] div.fixed[data-atr-sbbtn] { opacity: 0 !important; pointer-events: none !important; }",
-  // Keyed on the BUTTON as well as the marked wrapper: the mark comes from the page
-  // observer, which fires on sidebar rows and tab strips, and in a pinned window the
-  // app's own toggle kept painting in the same corner as the mode button (two
-  // sidebar controls on top of each other). A rule on the element itself cannot miss.
-  //
-  // The exclusion list is explicit because `aria-label*='sidebar'` also matches
-  // "Swap sidebar sides" and "Show/Hide right sidebar", which are NOT the left
-  // column's toggle. Hiding those left the top-right cluster empty, which is the
-  // bug this replaces an over-broad substring match for.
-  "html[data-atr-arc-ready='1'] :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]):not([aria-label*='sidebar sides' i]) { opacity: 0 !important; pointer-events: none !important; }",
-  // Below the host's 640px dock floor there is no Arc column / mode button.
-  // The native titlebar toggle is the only persistent way to close AND reopen
-  // its narrow overlay, including after the overlay has unmounted.
-  '@media (max-width: 639.98px) {',
-  "  html[data-atr-arc-ready='1'] body div.fixed[data-atr-sbbtn] { opacity: 1 !important; pointer-events: auto !important; }",
-  "  html[data-atr-arc-ready='1'] body div.fixed[data-atr-sbbtn] button { pointer-events: auto !important; }",
-  "  html[data-atr-arc-ready='1'] body :is(div.fixed, [data-titlebar-cluster='left']) > button[aria-label*='sidebar' i]:not(#atr-mode-btn):not([aria-label*='right sidebar' i]) { opacity: 1 !important; pointer-events: auto !important; }",
-  '}',
-  // Pinned: no card. The column keeps the app's own gravity and inset, but
-  // paints nothing: the surfaces inside it are the sidebar, not a Hermes Atrium panel.
-  // Floating mode below is the one piece of glass.
-  "html:not([data-atr-arc='1']) [data-atr-arc-col] {",
-  '  margin: 10px 0 10px 10px !important; height: calc(100vh - 20px) !important; align-self: flex-start;',
-  '}',
-  // sidebar mode switch, sitting in the command-center row
-  "#atr-mode-btn { position: absolute; left: 8px; top: 4px; z-index: 5; display: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--atr-ink-2, #ebdbb2); cursor: pointer; -webkit-app-region: no-drag; transition: background-color 120ms ease, color 120ms ease, transform 120ms ease; }",
-  "[data-atr-arc-col] > #atr-mode-btn { display: inline-grid; position: absolute !important; left: 10px !important; top: 3px !important; width: 24px !important; height: 24px !important; margin: 0 !important; transform: none; }",
-  "html:not([data-atr-arc='1']) [data-atr-arc-col] { position: relative !important; }",
-  "html[data-atr-settings] #atr-mode-btn { display: none; }",
-  "#atr-mode-btn svg { width: 16px; height: 16px; }",
-  // sidebar: the button belongs to the card, top-left inside it, and rides
-  // the same slide; pinned keeps it in the window corner
-  "html[data-atr-arc='1'] #atr-mode-btn { left: 20px; top: 12px; translate: -300px 0; opacity: 0; pointer-events: none; transition: translate 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, background-color 120ms ease, color 120ms ease; }",
-  "html[data-atr-arc='1'][data-atr-arc-open='1'] #atr-mode-btn { translate: 0 0; opacity: 1; pointer-events: auto; transition: translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease, background-color 120ms ease, color 120ms ease; }",
-  "#atr-mode-btn:hover, #atr-mode-btn:focus-visible { background: rgba(var(--atr-hi), 0.10); color: var(--atr-ink-0, #fbf1c7); outline: none !important; }",
-  "#atr-mode-btn:active { transform: scale(0.92); }",
-  // left-edge hot zone, invisible. An 8px strip was a fiddly target: at 18px the
-  // edge grab reads as deliberate instead of accidental.
-  '#atr-rail-hot { position: fixed; left: 0; top: 40px; bottom: 0; width: 18px; z-index: 59; display: none; background: transparent; }',
-  "html[data-atr-arc='1']:not([data-atr-arc-open='1']) #atr-rail-hot { display: block; }",
-
-
-  // The card slides on its own: the app keeps its status bar, its snippet card
-  // and the command center exactly where they were.
-  '@media (prefers-reduced-motion: reduce) {',
-  "  [data-atr-arc-col] { transition: none !important; }",
-  '}',
 ]
 
 // ── Which zones paint their own ground ─────────────────────────────────────
@@ -2381,20 +2138,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // keeping composer-bounds and thread full-width so the quick-jump timeline is never compressed,
     // and make the input bar short and centered to match the spacious layout.
     // When messages exist, constrain thread content to a comfortable reading column.
-    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content']:not([data-atr-intro]) {",
-    '  --composer-width: min(46rem, calc(100% - 7rem));',
-    '  max-width: min(46rem, calc(100% - 7rem)) !important;',
-    '  margin-left: auto !important;',
-    '  margin-right: auto !important;',
-    // no inner padding: the column's edges ARE the composer's edges, so the
-    // chat and the input box line up (user bubbles already sit flush, and the
-    // reply text keeps Hermes's own small indent, like the composer's pad)
-    '  padding-left: 0 !important;',
-    '  padding-right: 0 !important;',
-    '  box-sizing: border-box !important;',
-    '}',
-    // When thread has messages, also constrain message groups
-    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-msgs] {",
+    "html[data-atr-margins='spacious']:not([data-atr-draft]) [data-slot='aui_thread-content'] {",
     '  --composer-width: min(46rem, calc(100% - 7rem));',
     '  max-width: min(46rem, calc(100% - 7rem)) !important;',
     '  margin-left: auto !important;',
@@ -2409,8 +2153,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // In spacious margins mode, when chat is empty (intro / wordmark shown),
     // thread content and intro remain full-width (100%), so the HERMES AGENT
     // display lettering spans the full canvas, exactly as in non-spacious mode.
-    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-intro],",
-    "[data-slot='aui_thread-content'][data-atr-intro] {",
+    "html[data-atr-draft] [data-slot='aui_thread-content'] {",
     '  --composer-width: 100% !important;',
     '  max-width: 100% !important;',
     '  width: 100% !important;',
@@ -2418,8 +2161,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  padding-right: 1.5rem !important;',
     '  box-sizing: border-box !important;',
     '}',
-    "html[data-atr-margins='spacious'] [data-slot='aui_thread-content'][data-atr-intro] > *,",
-    "[data-slot='aui_thread-content'][data-atr-intro] > * {",
+    "html[data-atr-draft] [data-slot='aui_thread-content'] > * {",
     '  width: 100% !important;',
     '  max-width: 100% !important;',
     '}',
@@ -2480,9 +2222,6 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  right: 0.5rem !important;',
     '  z-index: 40 !important;',
     '}',
-    // Work progress collapse on finished turns lives in the always-on motion
-    // sheet (§5b), not here: folding is an interface behaviour, not part of a
-    // look, so it must survive the background being off. Search for "THE WORK FOLD".
   ] : [], chrome ? [
     // Night is a TONE of the same material now: the tint itself turns neutral
     // as the light goes (see atrMaterial), so there is no separate opaque
@@ -2557,7 +2296,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='tool-block'][data-tool-open] :is(pre, code) { color: var(--atr-ink-1) !important; }",
     "[data-slot='tool-block'][data-tool-open] div:has(> code) { background: var(--atr-well) !important; border-color: var(--atr-edge) !important; }",
     "[data-slot='tool-block'][data-tool-open] [class*='tracking-[0.08em]'] { color: var(--atr-ink-2) !important; }",
-    ...(isNight ? [] : ["[data-slot='tool-block']:not([data-tool-open]), .atr-work-summary { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
+    ...(isNight ? [] : ["[data-slot='tool-block']:not([data-tool-open]) { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
   ] : [], chrome ? [
     // ── Atrium material ─────────────────────────────────────────────────────
     // One glass for every surface, tinted by the look itself: the skin's ground
@@ -2651,16 +2390,16 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // active page with a class, not data-active, so they kept the app's grey
     // fill. They take the same time-of-day accent as the session rows, and
     // their icons pick it up on hover and when active.
-    "[data-slot='sidebar-menu-button'][data-atr-nav][class*='bg-(--ui-control-active-background)'] {",
+    "[data-slot='sidebar-menu-button']:has([data-tour^='sidebar-nav-'])[class*='bg-(--ui-control-active-background)'] {",
     '  background-color: color-mix(in srgb, var(--atr-accent) 14%, transparent) !important;',
     '  border-color: color-mix(in srgb, var(--atr-accent) 22%, transparent) !important;',
     '  color: var(--atr-ink-0) !important;',
     '}',
-    "[data-slot='sidebar-menu-button'][data-atr-nav] > svg,",
-    "[data-slot='sidebar-menu-button'][data-atr-nav] > i {",
+    "[data-slot='sidebar-menu-button']:has([data-tour^='sidebar-nav-']) > svg,",
+    "[data-slot='sidebar-menu-button']:has([data-tour^='sidebar-nav-']) > i {",
     '  transition: color 120ms ease;',
     '}',
-    "[data-slot='sidebar-menu-button'][data-atr-nav]:is(:hover, [class*='bg-(--ui-control-active-background)']) > :is(svg, i, [class*='codicon']) {",
+    "[data-slot='sidebar-menu-button']:has([data-tour^='sidebar-nav-']):is(:hover, [class*='bg-(--ui-control-active-background)']) > :is(svg, i, [class*='codicon']) {",
     '  color: var(--atr-ink-0) !important;',
     '}',
     ":is([data-slot='composer-surface'], [class~='group/composer-surface'], .composer-fallback-surface) {",
@@ -2995,7 +2734,6 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Scrollbars everywhere: thin and tinted, never the platform grey slab.
     '* { scrollbar-color: rgba(255, 255, 255, 0.14) transparent; scrollbar-width: thin; }',
     ...SIDEBAR_CSS,
-    ...MORPH_CSS,
   ] : []].map(lines => lines.join('\n'))
   // Two style elements by contract: `paintSheet` installs exactly the two
   // entries in SHEET_IDS and silently drops anything past that. The array above
@@ -3019,7 +2757,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   return [header, ...sections.filter(Boolean)].join('\n')
 }
 
-// ══ §5 APP MOTION (fold + interface animation, independent of the look) ════
+// ══ §5 APP MOTION (interface animation, independent of the look) ═════════
 
 // Interface motion is not part of the painted sheet: it must survive both the
 // Background switch and Hermes Atrium styling being off, so it lives in its own
@@ -3034,7 +2772,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
 const MOTION_CSS = [
   // ── Tokens ──────────────────────────────────────────────────────────────
   // Three beats: t-1 for exits and presses, t-2 for hovers and small
-  // entrances, t-3 for the moments worth watching (the fold, dialogs).
+  // entrances, t-3 for the moments worth watching (dialogs).
   // The pacing is deliberately unhurried: at 90ms an exit read as a hard cut,
   // so the floor is ~140ms everywhere and nothing exceeds 280ms.
   ':root {',
@@ -3061,168 +2799,16 @@ const MOTION_CSS = [
   '    --atr-t-3: 1ms;',
   '  }',
   '}',
-  // ── THE WORK FOLD (opening and closing the reasoning chain) ─────────────
-  // A pure dissolve: compositor-only opacity, no drift. Motion that fought
-  // the layout snap read as ghosting — the geometry now moves either before
-  // the fade (opening) or after it (closing), never during. `display` joins
-  // through allow-discrete so the box survives its own fade; the reveal
-  // declares its from-state with @starting-style. Engines without
-  // allow-discrete simply get the old instant snap.
-  //
-  // The duration split is what makes one transition read per direction: the
-  // collapsed destination carries fast (t-1, the close), the base state slow
-  // (t-3, the open). On close the shape only collapses when the fade ends,
-  // so the settle that keeps the transcript still is deferred to that moment
-  // (see pinWhileFolding in §9).
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] [data-conversation-scaffold],",
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
-  // Prose said between tool calls folds with them; only the reply that
-  // follows the last work block is exempt (marked by markInterimProse).
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md[data-atr-work-interim='true'],",
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']) {",
-  '  display: none !important;',
-  '  opacity: 0;',
-  // the fading work must not take a click meant for what is below it
-  '  pointer-events: none;',
-  '  transition-duration: var(--atr-t-1);',
-  '}',
-  "[data-slot='aui_assistant-message-content'] [data-conversation-scaffold],",
-  "[data-slot='aui_assistant-message-content'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
-  "[data-slot='aui_assistant-message-content'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
-  ".aui-md[data-atr-work-interim='true'] {",
-  '  transition: opacity var(--atr-t-3) var(--atr-ease), display var(--atr-t-3) allow-discrete;',
-  '}',
-  // Transitions never start from display:none on their own, so the reveal
-  // needs its from-state declared. It only ever fires when a fold opens.
-  '@starting-style {',
-  "  [data-slot='aui_assistant-message-content'] [data-conversation-scaffold],",
-  "  [data-slot='aui_assistant-message-content'] > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]),",
-  "  [data-slot='aui_assistant-message-content'] > *:not(.atr-work-summary):not(.aui-md):not([data-slot*='actions']):not([data-slot*='feedback']):not([data-slot*='composer']),",
-  "  .aui-md[data-atr-work-interim='true'] {",
-  '    opacity: 0;',
-  '  }',
-  '}',
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] {",
-  '  row-gap: 0.25rem !important;',
-  '  gap: 0.25rem !important;',
-  '}',
-  // Tight natural margin between work summary and model response text
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > .aui-md,",
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md {",
-  '  margin-top: 0.25rem !important;',
-  '  padding-top: 0 !important;',
-  '}',
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] > .aui-md > *:first-child,",
-  "html[data-atr-collapse-work='on'] [data-atr-work-collapsed='true'] .aui-md > *:first-child {",
-  '  margin-top: 0 !important;',
-  '  padding-top: 0 !important;',
-  '}',
-  ".atr-work-summary[data-live] .atr-work-summary-label {",
-  // no pulse animation: it would re-composite the glass window every frame;
-  // the once-a-second count is the sign of life
-  '  color: var(--atr-ink-1, currentColor);',
-  '}',
-  '.atr-work-summary {',
-  '  display: inline-flex;',
-  '  align-items: center;',
-  '  gap: 0.25rem;',
-  '  padding: 0.125rem 0 !important;',
-  '  margin: 0 0 0.15rem 0 !important;',
-  '  border: none !important;',
-  '  background: transparent !important;',
-  '  box-shadow: none !important;',
-  '  font-family: inherit;',
-  '  font-size: var(--conversation-tool-font-size, 0.75rem);',
-  '  line-height: var(--conversation-line-height, 1.4);',
-  '  color: var(--conversation-scaffold-text, var(--ui-text-tertiary, var(--atr-ink-3)));',
-  '  cursor: pointer;',
-  '  user-select: none;',
-  '  transition: color var(--atr-t-2) var(--atr-ease);',
-  '  vertical-align: middle;',
-  // A <button> centres its own text (user-agent default), so a label that
-  // wrapped to a second line centred that line under the first and the row
-  // read as two ragged halves. The button is the only box here, so one
-  // declaration on it puts every line flush left.
-  '  text-align: left;',
-  '}',
-  '.atr-work-summary:hover {',
-  '  color: var(--ui-text-primary, var(--atr-ink-0));',
-  '}',
-  '.atr-work-icon-stack {',
-  '  display: inline-flex;',
-  '  align-items: center;',
-  '  flex-direction: row;',
-  '  gap: 4px;',
-  '  margin-right: 0.35rem;',
-  '  vertical-align: middle;',
-  '}',
-  '.atr-work-icon-item {',
-  '  display: inline-flex;',
-  '  align-items: center;',
-  '  justify-content: center;',
-  '  width: 14px;',
-  '  height: 14px;',
-  '  margin: 0 !important;',
-  '  position: relative;',
-  '  color: #ffffff !important;',
-  '  fill: #ffffff !important;',
-  '  opacity: 1 !important;',
-  '  flex-shrink: 0;',
-  '  border: none !important;',
-  '  border-radius: 0 !important;',
-  '  background: transparent !important;',
-  '  box-shadow: none !important;',
-  '  filter: none !important;',
-  '}',
-  '.atr-work-icon-item svg {',
-  '  display: block;',
-  '  width: 14px;',
-  '  height: 14px;',
-  '  fill: #ffffff !important;',
-  '  color: #ffffff !important;',
-  '}',
-  '.atr-work-summary-caret {',
-  '  display: inline-block;',
-  '  margin-left: 0.2rem;',
-  '  font-size: 0.75rem;',
-  '  opacity: 0.5;',
-  '  transition: transform var(--atr-t-2) var(--atr-ease), opacity var(--atr-t-2) var(--atr-ease);',
-  '}',
-  '.atr-work-summary:hover .atr-work-summary-caret {',
-  '  opacity: 0.9;',
-  '}',
-  ".atr-work-summary[data-expanded='true'] .atr-work-summary-caret {",
-  '  transform: rotate(90deg);',
-  '}',
-  ".atr-work-summary[data-expanded='true'] {",
-  '  margin-bottom: 0.25rem !important;',
-  '}',
-  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atr-work-summary {',
-  '  color: var(--conversation-scaffold-text, var(--ui-text-tertiary, #64748b));',
-  '}',
-  'html:not([data-theme*="night"]):not([data-theme*="dark"]) .atr-work-summary:hover {',
-  '  color: var(--ui-text-primary, #0f172a);',
-  '}',
-  "html:not([data-atr-collapse-work='on']) .atr-work-summary {",
-  '  display: none !important;',
-  '}',
   // ── [motion:switch] ─────────────────────────────────────────────────────
   // Session switch: core holds data-session-switching on [data-chat-surface]
   // until rows are placed and scroll is restored. The transcript stays
-  // invisible for that window (the plugin folds and formats behind it) and
-  // the attribute lifting is the single fade-in. Only the attribute is read;
+  // invisible for that window and the attribute lifting is the single
+  // fade-in. Only the attribute is read;
   // core owns toggling it.
   "[data-chat-surface] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
   '  transition: opacity var(--atr-t-2) var(--atr-ease-out);',
   '}',
   "[data-chat-surface][data-session-switching] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
-  '  opacity: 0;',
-  '  transition: none;',
-  '}',
-  // The plugin's own settle curtain, held after core's marker lifts until the
-  // transcript stops changing (the backfill commits, highlighting and font
-  // swaps all land after core's two quiet frames). Same paint-only hide.
-  "[data-chat-surface][data-atr-settling] :is([data-slot='aui_thread-viewport'], [data-slot='thread']) {",
   '  opacity: 0;',
   '  transition: none;',
   '}',
@@ -3480,49 +3066,6 @@ const ensureMotionStyle = () => {
   document.head.appendChild(el)
 }
 
-// ── Inline preview measurement (the transcript's HTML widgets) ────────────
-
-// Hermes's `::preview{file="…"}` widget measures itself with
-// `Math.max(html.scrollHeight, body.scrollHeight)`. The ROOT element's
-// scrollHeight is the scrolling area, which is floored at the frame's own
-// height: a 133px card inside the default 280px frame reports 280, so the
-// transcript keeps a 147px empty band under the card and the frame can never
-// shrink again (the reported number equals the frame height from then on).
-// Hermes owns that script, but it lives in the `srcdoc` string, which is an
-// ordinary attribute. Rewriting it at insertion — before the frame starts
-// navigating — makes Hermes's own measurement read the body box instead.
-// The shim is guarded on the exact source line and does nothing if Hermes
-// changes it; a future host fix simply makes this a no-op.
-//
-const PREVIEW_MEASURE_OLD = 'var h=Math.max(d?d.scrollHeight:0,b?b.scrollHeight:0);'
-const PREVIEW_MEASURE_NEW = 'var h=b?Math.max(b.scrollHeight,Math.ceil(b.getBoundingClientRect().height)):(d?d.scrollHeight:0);'
-const PREVIEW_FRAME_SEL = 'iframe[sandbox~="allow-scripts"][srcdoc*="hermes-inline-preview-size"]'
-
-const ensurePreviewMeasureShim = () => {
-  if (typeof document === 'undefined' || typeof MutationObserver !== 'function' || !document.body) return () => {}
-  const fixFrame = el => {
-    if (!el || el.tagName !== 'IFRAME' || !el.matches?.(PREVIEW_FRAME_SEL)) return
-    const doc = el.getAttribute('srcdoc')
-    if (!doc || !doc.includes(PREVIEW_MEASURE_OLD)) return
-    el.setAttribute('srcdoc', doc.split(PREVIEW_MEASURE_OLD).join(PREVIEW_MEASURE_NEW))
-  }
-  const scan = root => {
-    if (!root) return
-    if (root.tagName === 'IFRAME') fixFrame(root)
-    root.querySelectorAll?.(PREVIEW_FRAME_SEL).forEach(fixFrame)
-  }
-  const observer = new MutationObserver(records => {
-    for (const record of records) {
-      if (record.type === 'attributes') { fixFrame(record.target); continue }
-      for (const node of record.addedNodes) if (node.nodeType === 1) scan(node)
-    }
-  })
-  // Frames already mounted when Atrium loads (a transcript restored from
-  // history) are patched once here; the observer covers every later mount.
-  scan(document.body)
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['srcdoc'] })
-  return () => observer.disconnect()
-}
 
 // ══ §6 PAINTING, THEMES & ACCENT ═══════════════════════════════════════════
 
@@ -3612,8 +3155,8 @@ const TONES = { accent: 'accent', plain: 'plain' }
 // Minimal pass. One calm
 // strip in the sidebar-card material: the title in Hermes's section-label face
 // (as PINNED / SESSIONS), the value large, the note and source quieter. The
-// actions are two icons that surface on hover/focus; a pinned card keeps its
-// pin lit. Accent shows only in the label colour. Classes plus one tiny
+// action is a copy icon that surfaces on hover/focus. Accent shows only in
+// the label colour. Classes plus one tiny
 // always-on stylesheet (SNIPPET_CSS), because hover cannot be inline.
 const SNIPPET_CSS = [
   '.atr-snip { position: relative; display: flex; flex-direction: column; gap: 0.2rem; max-width: 34rem; margin: 0.5rem 0;',
@@ -3624,11 +3167,10 @@ const SNIPPET_CSS = [
   '  font-size: 0.64rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
   ".atr-snip[data-tone='accent'] .atr-snip-title { color: var(--atr-ink-0); }",
   '.atr-snip-acts { margin-left: auto; display: flex; gap: 0.1rem; opacity: 0; transition: opacity 140ms ease; }',
-  '.atr-snip:is(:hover, :focus-within) .atr-snip-acts, .atr-snip-acts:has([data-on]) { opacity: 1; }',
+  '.atr-snip:is(:hover, :focus-within) .atr-snip-acts { opacity: 1; }',
   '.atr-snip-act { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; border-radius: var(--atr-r-1, 4px);',
   '  background: transparent; color: var(--atr-ink-3, var(--ui-text-tertiary)); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }',
   '.atr-snip-act:hover, .atr-snip-act:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
-  '.atr-snip-act[data-on] { color: var(--atr-accent, var(--ui-accent)); }',
   '.atr-snip-act .atr-snip-done { display: none; }',
   '.atr-snip-act[data-done] .atr-snip-idle { display: none; }',
   '.atr-snip-act[data-done] .atr-snip-done { display: inline-flex; color: var(--atr-ink-1); }',
@@ -3638,205 +3180,8 @@ const SNIPPET_CSS = [
   // no title: the actions ride the value line instead of an empty head
   '.atr-snip:not(:has(.atr-snip-title)) .atr-snip-head { position: absolute; top: 0.45rem; right: 0.5rem; }',
   '.atr-snip:not(:has(.atr-snip-title)) { padding-right: 3.4rem; }',
-  '.atr-snip { cursor: pointer; user-select: none; touch-action: none; transition: background-color 120ms ease; }',
-  '.atr-snip:hover { background: var(--atr-side-card-hi, var(--atr-side-card, var(--ui-widget-surface-background))); }',
-  // ── Shelf, sidebar Pins, preview, drag (all plugin-owned nodes in <body>) ──
-  '.atr-shelf { position: fixed; z-index: 30; left: var(--atr-sh-x); top: var(--atr-sh-y); width: var(--atr-sh-w); height: var(--atr-sh-h);',
-  '  display: flex; justify-content: center; align-items: stretch; gap: 0.5rem; box-sizing: border-box; border-radius: var(--atr-radius, 12px);',
-  '  transition: background-color 140ms ease, opacity 160ms ease; }',
-  '.atr-shelf[hidden] { display: none; }',
-  // drop zones while dragging: dashed outlines, no fill
-  ":root[data-atr-dragging] .atr-shelf { outline: 1px dashed color-mix(in srgb, var(--atr-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: 0.3rem; }",
-  ".atr-shelf[data-empty] { align-items: center; }",
-  ":root[data-atr-dragging] .atr-shelf[data-drop='over'] { outline-color: color-mix(in srgb, var(--atr-accent, #9cf) 80%, transparent); }",
-  ".atr-shelf[data-drop='over'] .atr-shelf-hint, .atr-shelf[data-preview] .atr-shelf-hint { display: none; }",
-  '.atr-shelf-hint { font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); pointer-events: none; }',
-  '.atr-tile { position: relative; flex: 0 1 11.5rem; min-width: 6.5rem; display: flex; flex-direction: column; justify-content: center; gap: 0.2rem;',
-  // fully clear at rest: the face floats on the painting; a light
-  // glass fill comes up only on hover, so the tile still reads as grabbable
-  '  --atr-tile-bg: transparent;',
-  '  --atr-tile-bg-hi: color-mix(in srgb, color-mix(in srgb, var(--atr-side-card, rgb(20,22,28)) 76%, #fff) 64%, transparent);',
-  '  padding: 0.45rem 0.85rem; box-sizing: border-box; border-radius: var(--atr-radius, 12px); background: var(--atr-tile-bg);',
-  '  cursor: pointer; user-select: none; touch-action: none; text-align: left; outline: none; transition: background-color 120ms ease, opacity 140ms ease; }',
-  '.atr-tile:hover, .atr-tile:focus-visible { background: var(--atr-tile-bg-hi); }',
-  '.atr-tile:focus-visible { box-shadow: inset 0 0 0 1px var(--atr-accent, rgba(255,255,255,.3)); }',
-  '.atr-tile[data-stale] { opacity: 0.6; }',
-  '.atr-tile-label { font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary));',
-  '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  ".atr-tile[data-kind='status'] .atr-tile-label { color: var(--atr-sd-lab-color, var(--atr-ink-3, var(--ui-text-tertiary))); }",
-  '.atr-tile-value { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-size: 0.9rem; color: var(--atr-ink-0, var(--ui-text-primary)); font-variant-numeric: tabular-nums; }',
-  '.atr-tile-value .truncate { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  // a status tile centres its content: the shelf pins sit in
-  // fixed-width tiles, so a short reading ("Backend ready") used to hang off
-  // the left edge with all the slack on the right. The clone is only as wide
-  // as its own content and shrinks to the tile, so centring both boxes moves
-  // the row to the middle without letting it overflow either edge.
-  ".atr-tile[data-kind='status'] .atr-tile-value { justify-content: center; }",
-  ".atr-tile[data-kind='status'] .atr-tile-face { justify-content: center; text-align: center; }",
-  // a snippet tile wraps its value (up to 3 lines) and the shelf grows to fit
-  '.atr-tile-text { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }',
-  '.atr-tile-value svg { width: 0.85rem; height: 0.85rem; flex: none; color: var(--atr-ink-2, var(--ui-text-secondary)); }',
-  // a status tile wears its row's own face: one line, centred, no label
-  '.atr-tile-face { display: flex !important; align-items: center; min-width: 0; max-width: 100%; height: auto !important; padding: 0 !important; margin: 0 !important;',
-  '  background: none !important; border: 0 !important; box-shadow: none !important; overflow: hidden; white-space: nowrap; font-size: 0.9rem; cursor: pointer; }',
-  // the row's own buttons inside a tile light up like they do in the bar
-  '.atr-tile-face button:hover, .atr-tile-face [role=button]:hover { color: var(--atr-ink-0, var(--ui-text-primary)); background: color-mix(in srgb, var(--atr-ink-0, var(--ui-text-primary)) 10%, transparent); border-radius: 0.3rem; }',
-  ".atr-tile-face button { cursor: pointer; }",
-  // resize grip: the tile's right edge
-  '.atr-tile-grip { position: absolute; top: 18%; bottom: 18%; right: 0; width: 0.55rem; cursor: ew-resize; touch-action: none; }',
-  ".atr-tile-grip::after { content: ''; position: absolute; top: 25%; bottom: 25%; right: 0.2rem; width: 2px; border-radius: 1px; background: var(--atr-ink-3, var(--ui-text-tertiary)); opacity: 0; transition: opacity 120ms ease; }",
-  '.atr-tile:hover .atr-tile-grip::after, .atr-tile[data-resizing] .atr-tile-grip::after { opacity: 0.7; }',
-  ':root[data-atr-dragging] .atr-tile-grip { display: none; }',
-  ':root[data-atr-resizing], :root[data-atr-resizing] * { cursor: ew-resize !important; user-select: none !important; }',
-  '.atr-tile-face > * { flex-shrink: 1; min-width: 0; }',
-  '.atr-tile-face > svg { flex: none; }',
-  // the thing being dragged, previewed where it would land
-  ".atr-tile[data-phantom] { opacity: 0.75; pointer-events: none; background: color-mix(in srgb, var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)) 70%, transparent);",
-  "  outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 70%, transparent); outline-offset: -1px; }",
-  ".atr-tile[data-lifted] { opacity: 0.3; }",
-  ":root[data-atr-dragging] .atr-tile, :root[data-atr-dragging] .atr-snip { cursor: grabbing; }",
-  // the snippet library: its own sidebar card, same material and faces as STATUS
-  '#atr-snips { position: fixed; z-index: 40; left: var(--atr-lib-x); top: var(--atr-lib-y); width: var(--atr-lib-w); height: var(--atr-lib-h);',
-  '  display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--atr-radius, 12px);',
-  '  background: var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); color: var(--atr-ink-1, var(--ui-text-primary)); user-select: none;',
-  '  transition: height var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)), top var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)); }',
-  '#atr-snips[hidden] { display: none; }',
-  "#atr-snips[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
-  ":root[data-atr-dragging='snip'] #atr-snips:not([data-drop]), :root[data-atr-dragging='tile'] #atr-snips:not([data-drop]) { outline: 1px dashed color-mix(in srgb, var(--atr-ink-3, var(--ui-text-tertiary)) 55%, transparent); outline-offset: -1px; }",
-  '#atr-snips .atr-lib-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: var(--atr-lib-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; cursor: pointer; outline: none;',
-  '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;',
-  '  color: var(--atr-sd-lab-color, var(--theme-primary, var(--atr-ink-2, var(--ui-text-secondary)))); transition: color 150ms ease; }',
-  '#atr-snips .atr-lib-head:hover, #atr-snips .atr-lib-head:focus-visible { color: var(--atr-ink-0, var(--ui-text-primary)); }',
-  '#atr-snips .atr-lib-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-  '#atr-snips .atr-lib-count { color: var(--atr-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
-  '#atr-snips .atr-lib-chev { margin-left: auto; transition: transform var(--atr-sd-dur, 280ms) var(--atr-sd-ease, ease); transform: rotate(-90deg); }',
-  '#atr-snips[data-open] .atr-lib-chev { transform: none; }',
-  '#atr-snips .atr-lib-rows { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.1rem; padding: 0 4px 0.35rem; overflow: hidden auto; scrollbar-width: none;',
-  '  opacity: 0; transition: opacity 180ms ease; }',
-  '#atr-snips[data-open] .atr-lib-rows { opacity: 1; transition: opacity 200ms ease 60ms; }',
-  '#atr-snips .atr-lib-row { flex: none; display: flex; align-items: center; gap: 0.5rem; min-height: var(--atr-sd-rowh, 1.75rem); padding: 0 0.5rem; box-sizing: border-box;',
-  '  border-radius: var(--atr-r-2, 8px); font-size: var(--atr-sd-font, 0.8125rem); color: var(--atr-ink-1, var(--ui-text-primary));',
-  '  cursor: pointer; touch-action: none; outline: none; white-space: nowrap; overflow: hidden; transition: background-color 120ms ease, opacity 120ms ease; }',
-  '#atr-snips .atr-lib-row:hover, #atr-snips .atr-lib-row:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); }',
-  '#atr-snips .atr-lib-row[data-phantom] { opacity: 0.7; outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 65%, transparent); outline-offset: -1px; }',
-  '#atr-snips .atr-lib-title { flex: none; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-snips .atr-lib-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
-  '#atr-snips .atr-lib-hint { flex: none; display: flex; align-items: center; min-height: var(--atr-sd-rowh, 1.75rem); padding: 0 0.5rem; font-size: var(--atr-sd-font, 0.8125rem); color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  "[data-atr-lib-room] { margin-top: calc(var(--atr-sd-room, 0px) + var(--atr-lib-room, 0px)) !important; transition: margin-top var(--atr-sd-dur, 280ms) var(--atr-sd-ease, cubic-bezier(.32,.72,0,1)); }",
-  // the library drawer: slides off the sidebar edge, no scrim, chat stays live
-  '#atr-snip-drawer { position: fixed; z-index: 45; left: var(--atr-dw-x, 0.75rem); top: var(--atr-dw-y, 3.5rem); width: min(24rem, calc(100vw - var(--atr-dw-x, 0.75rem) - 1rem));',
-  '  max-height: var(--atr-dw-maxh, 70vh); display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; border-radius: var(--atr-radius, 12px);',
-  '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); box-shadow: var(--atr-lift-float, 0 16px 40px rgba(0,0,0,.34));',
-  '  color: var(--atr-ink-1, var(--ui-text-primary)); animation: atr-dw-in 240ms cubic-bezier(.32,.72,0,1); outline: none; }',
-  '#atr-snip-drawer[data-leaving] { animation: atr-dw-out 160ms ease forwards; pointer-events: none; }',
-  '@keyframes atr-dw-in { from { opacity: 0; transform: translateX(-0.75rem); } }',
-  '@keyframes atr-dw-out { to { opacity: 0; transform: translateX(-0.5rem); } }',
-  '#atr-snip-drawer .atr-dw-head { flex: none; display: flex; align-items: center; gap: 0.5rem; height: 2rem; padding: 0 0.35rem 0 0.8rem;',
-  '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-sd-lab-color, var(--atr-ink-2, var(--ui-text-secondary))); }',
-  '#atr-snip-drawer .atr-dw-count { color: var(--atr-ink-3, var(--ui-text-tertiary)); letter-spacing: 0.04em; }',
-  '#atr-snip-drawer .atr-dw-keys { margin-left: auto; letter-spacing: 0.04em; text-transform: none; font-weight: 400; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-snip-drawer .atr-dw-icon { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border: 0; cursor: pointer; flex: none;',
-  '  border-radius: var(--atr-r-2, 8px); background: transparent; color: var(--atr-ink-3, var(--ui-text-tertiary)); transition: background-color 120ms ease, color 120ms ease; }',
-  '#atr-snip-drawer .atr-dw-icon:hover, #atr-snip-drawer .atr-dw-icon:focus-visible { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
-  '#atr-snip-drawer .atr-dw-icon[data-on] { color: var(--atr-accent, #9cf); }',
-  '#atr-snip-drawer .atr-dw-icon svg { width: 0.85rem; height: 0.85rem; }',
-  '#atr-snip-drawer .atr-dw-list { flex: 1; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; scrollbar-width: none; padding: 0 0.35rem 0.4rem;',
-  '  display: flex; flex-direction: column; gap: 0.1rem; -webkit-mask: linear-gradient(transparent, #000 0.5rem, #000 calc(100% - 0.75rem), transparent); mask: linear-gradient(transparent, #000 0.5rem, #000 calc(100% - 0.75rem), transparent); }',
-  '#atr-snip-drawer .atr-dw-item { flex: none; border-radius: var(--atr-r-2, 8px); cursor: pointer; transition: background-color 200ms ease, opacity 200ms ease; opacity: 0.62; }',
-  '#atr-snip-drawer .atr-dw-item:hover { opacity: 0.9; }',
-  '#atr-snip-drawer .atr-dw-item[data-focus] { opacity: 1; cursor: default; background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); }',
-  '#atr-snip-drawer .atr-dw-line { display: flex; align-items: baseline; gap: 0.5rem; min-height: 1.9rem; padding: 0.45rem 0.55rem 0; box-sizing: border-box; white-space: nowrap; overflow: hidden; }',
-  '#atr-snip-drawer .atr-dw-item:not([data-focus]) .atr-dw-line { padding-bottom: 0.45rem; align-items: center; }',
-  '#atr-snip-drawer .atr-dw-title { flex: none; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-snip-drawer .atr-dw-short { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 0.8125rem; color: var(--atr-ink-1, var(--ui-text-primary)); transition: opacity 160ms ease; }',
-  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-short { opacity: 0; }',
-  '#atr-snip-drawer .atr-dw-loose { font-size: 0.6rem; letter-spacing: 0.06em; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-snip-drawer .atr-dw-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 260ms cubic-bezier(.32,.72,0,1); }',
-  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-more { grid-template-rows: 1fr; }',
-  '#atr-snip-drawer .atr-dw-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 0.3rem; padding: 0 0.55rem; }',
-  '#atr-snip-drawer .atr-dw-item[data-focus] .atr-dw-inner { padding-bottom: 0.5rem; }',
-  '#atr-snip-drawer .atr-dw-full { font-size: 1rem; line-height: 1.45; color: var(--atr-ink-0, var(--ui-text-primary)); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; cursor: text;',
-  '  max-height: 12rem; overflow: auto; scrollbar-width: thin; font-variant-numeric: tabular-nums; }',
-  '#atr-snip-drawer .atr-dw-note { font-size: 0.8rem; line-height: 1.45; color: var(--atr-ink-2, var(--ui-text-secondary)); white-space: pre-wrap; user-select: text; }',
-  '#atr-snip-drawer .atr-dw-source { font-size: 0.6875rem; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-snip-drawer .atr-dw-foot { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem; }',
-  '#atr-snip-drawer .atr-dw-btn { height: 1.6rem; padding: 0 0.65rem; border: 0; cursor: pointer; font: inherit; font-size: 0.75rem;',
-  '  border-radius: var(--atr-r-2, 8px); background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-1, var(--ui-text-primary)); transition: background-color 120ms ease, color 120ms ease; }',
-  '#atr-snip-drawer .atr-dw-btn:hover, #atr-snip-drawer .atr-dw-btn:focus-visible { background: var(--atr-edge-strong, rgba(255,255,255,.11)); color: var(--atr-ink-0, var(--ui-text-primary)); outline: none; }',
-  '#atr-snip-drawer .atr-dw-primary { background: color-mix(in srgb, var(--atr-accent, #9cf) 22%, transparent); color: var(--atr-ink-0, var(--ui-text-primary)); }',
-  '#atr-snip-drawer .atr-dw-primary:hover, #atr-snip-drawer .atr-dw-primary:focus-visible { background: color-mix(in srgb, var(--atr-accent, #9cf) 32%, transparent); }',
-  '#atr-snip-drawer .atr-dw-btn:disabled { opacity: 0.6; cursor: default; }',
-  '#atr-snips .atr-lib-row[data-current] { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); }',
-  '@media (prefers-reduced-motion: reduce) { #atr-snip-drawer, #atr-snip-drawer[data-leaving] { animation: none; } #atr-snip-drawer .atr-dw-more { transition: none; } }',
-  // the drag ghost, for every source (the dock's own copy covers status rows)
-  '#atr-statusdock-ghost { position: fixed; z-index: 2147483000; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 0.45rem;',
-  '  padding: 0.3rem 0.65rem; border-radius: var(--atr-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 16rem; overflow: hidden;',
-  '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35); }',
-  '#atr-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-  '#atr-statusdock-ghost .atr-ghost-title { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--atr-ink-3, var(--ui-text-tertiary)); }',
-  '#atr-statusdock-ghost > span:last-child { overflow: hidden; text-overflow: ellipsis; }',
-  // over a drop zone the chip melts into the preview that grew out of it
-  '#atr-statusdock-ghost { transition: opacity 140ms ease, scale 160ms cubic-bezier(.32,.72,0,1); }',
-  '#atr-statusdock-ghost[data-docked] { opacity: 0; scale: 0.85; }',
-  '@media (prefers-reduced-motion: reduce) { #atr-statusdock-ghost { transition: none; } }'
 ].join('\n')
 
-// The new-tab shelf is plugin UI, not scenery. It keeps its own always-on
-// sheet so it survives Atrium being away (another theme, or a switch off): the fill
-// is the plugin's own sidebar-card material (`--atr-side-card`, the same glass
-// the snippet and tool cards wear) and the host's widget surface when no Atrium
-// look is active. Shape, edge and shadow follow the rest of the plugin: one
-// `--atr-edge` hairline, `--atr-radius-lg`, no white wash over the fill. No live
-// backdrop-filter: like every other large Atrium surface, the card sits on a
-// material, not on a blurred copy of the picture.
-const HOME_CSS = [
-  '#atr-home {',
-  '  --atr-home-ink-0: var(--atr-ink-0, var(--ui-text-primary, inherit));',
-  '  --atr-home-ink-2: var(--atr-ink-2, var(--ui-text-secondary, inherit));',
-  '  --atr-home-ink-3: var(--atr-ink-3, var(--ui-text-tertiary, inherit));',
-  '  --atr-home-hi: var(--atr-hi, 255, 255, 255);',
-  // The cards cast a 24-32px shadow. A plain hidden clip turns that into a hard
-  // edge at the shelf's right and bottom; clip, but 48px past the box, so the
-  // shadow can finish. Placement leaves 88px below the shelf for it.
-  '  position: fixed; z-index: 2; display: none; flex-direction: column; gap: 18px; pointer-events: none; overflow: clip; overflow-clip-margin: 48px;',
-  '}',
-  "#atr-home[data-on='1'] { display: flex; animation: atr-home-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }",
-  '@keyframes atr-home-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }',
-  '#atr-home h3 { margin: 0 0 14px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--atr-home-ink-0); opacity: 0.92; text-shadow: 0 1px 2px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.55); }',
-  // Over the picture the label needs the shadow. In a light host
-  // theme it sits on a flat page, where the same black halo reads as dirt.
-  'html:not(.dark) #atr-home h3 { text-shadow: none; }',
-  '#atr-home .atr-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }',
-  '@media (max-width: 640px) { #atr-home .atr-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }',
-  '#atr-home .atr-card { position: relative; pointer-events: auto; min-width: 0; }',
-  '#atr-home .atr-card-open { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; padding: 16px 38px 16px 16px; border-radius: var(--atr-radius, var(--atr-r-card, 12px)); cursor: pointer; transition: background-color 140ms ease, box-shadow 140ms ease; }',
-  // Matte: the plugin's own card material worn the way the sidebar, snippet and
-  // tool cards wear it. One flat fill, no ring, no drop shadow, no white wash -
-  // nothing that picks up the backdrop behind it, so it cannot read as reflective.
-  "#atr-home[data-cards='matte'] .atr-card-open { background: var(--atr-m-solid, rgb(17, 18, 24)); }",
-  "#atr-home[data-cards='matte'] .atr-card-open:hover { background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 90%, #fff); }",
-  // Glass: the sidebar-card glass, edged and lifted off the page.
-  "#atr-home[data-cards='glass'] .atr-card-open { background: var(--atr-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55))); box-shadow: 0 0 0 1px var(--atr-edge, rgba(255, 255, 255, 0.07)), 0 10px 26px rgba(0, 0, 0, 0.24); }",
-  "#atr-home[data-cards='glass'] .atr-card-open:hover { background: var(--atr-side-card-hi, var(--atr-side-card, var(--ui-widget-surface-background, rgba(20, 22, 28, 0.55)))); box-shadow: 0 0 0 1px color-mix(in srgb, var(--atr-hi, 255, 255, 255) 16%, transparent), 0 14px 32px rgba(0, 0, 0, 0.3); }",
-  '#atr-home .atr-card-open:focus-visible { box-shadow: 0 0 0 2px rgba(var(--atr-home-hi), 0.7); }',
-  '#atr-home .atr-card-title { font-size: 15.5px; font-weight: 600; letter-spacing: 0.005em; color: var(--atr-home-ink-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '#atr-home .atr-card-why { font-size: 12.5px; color: var(--atr-home-ink-2); opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
-  '#atr-home .atr-card-x { all: unset; position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 15px; line-height: 1; cursor: pointer; color: var(--atr-home-ink-3); opacity: 0; transition: opacity 120ms ease, background 120ms ease; }',
-  '#atr-home .atr-card:hover .atr-card-x, #atr-home .atr-card:focus-within .atr-card-x { opacity: 0.7; }',
-  '#atr-home .atr-card-x:hover { opacity: 1; background: rgba(var(--atr-home-hi), 0.14); }',
-    '@media (prefers-reduced-motion: reduce) { #atr-home[data-on="1"] { animation: none; } #atr-home .atr-card-open { transition: none; } }'
-].join('\n')
-
-const ensureHomeStyle = () => {
-  if (typeof document === 'undefined') return
-  // a hot-reloaded plugin finds its old sheet still in place; refresh it
-  const old = document.getElementById('atr-home-style')
-  if (old) { if (old.textContent !== HOME_CSS) old.textContent = HOME_CSS; return }
-  const el = document.createElement('style')
-  el.id = 'atr-home-style'
-  el.textContent = HOME_CSS
-  document.head.appendChild(el)
-}
 const ensureSnippetStyle = () => {
   if (typeof document === 'undefined' || document.getElementById('atr-snippet-style')) return
   const el = document.createElement('style')
@@ -3845,29 +3190,14 @@ const ensureSnippetStyle = () => {
   document.head.appendChild(el)
 }
 
-const SNIP_PIN = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
-const SNIP_PIN_SOLID = SNIP_PIN.replace('fill="none"', 'fill="currentColor"')
-
-function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
+function SnippetCard({ attrs, onCopy }) {
   const title = attrs.title || ''
   const value = attrs.value || ''
   const note = attrs.note || ''
   const source = attrs.source || ''
   const accent = TONES[attrs.tone] === 'accent'
-  const id = `${title}|${value}|${note}`.slice(0, 300)
-  const pinned = useValue(pins).some(p => p.id === id)
 
   const body = [title, value, note, source].filter(Boolean).join(' — ')
-
-  const act = (label, svg, run, extra) =>
-    jsx('button', Object.assign({
-      'aria-label': label,
-      className: 'atr-snip-act',
-      onClick: run,
-      title: label,
-      type: 'button',
-      dangerouslySetInnerHTML: { __html: svg }
-    }, extra))
 
   const copy = event => {
     onCopy(body)
@@ -3880,13 +3210,6 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
   return jsxs('div', {
     className: 'atr-snip',
     'data-tone': accent ? 'accent' : 'plain',
-    // a click opens the preview, a drag carries it to the Pins or the Shelf
-    onPointerDown: event => {
-      if (event.target.closest?.('button')) return
-      onGrab?.(event, { id, title, value, note, source, body })
-    },
-    title: 'Click to preview, drag to Snippets or the Shelf',
-    'data-atr-snippet': id,
     children: [
       jsxs('div', {
         className: 'atr-snip-head',
@@ -3905,9 +3228,7 @@ function SnippetCard({ attrs, pins, onPin, onCopy, onGrab }) {
                   jsx('span', { className: 'atr-snip-idle', children: jsx(Codicon, { name: 'copy', size: '0.85rem' }) }),
                   jsx('span', { className: 'atr-snip-done', children: jsx(Codicon, { name: 'check', size: '0.85rem' }) })
                 ]
-              }),
-              act(pinned ? 'Unpin' : 'Pin to Snippets', pinned ? SNIP_PIN_SOLID : SNIP_PIN,
-                () => onPin({ id, title, value, note, source, body }), pinned ? { 'data-on': '' } : null)
+              })
             ]
           })
         ]
@@ -3933,220 +3254,6 @@ function PhaseChip({ appearance, onSelect }) {
   ] })
 }
 
-/* ── recents/engine.js ──────────────────────────────────────── generated by scripts/build-recents.mjs, edit recents/engine.js instead */
-const RECENTS = (() => {
-/* Which sessions to put in front of you on a new tab.
-
-   Pure functions over plain data: no DOM, no Hermes, no clock of their own (every
-   function takes `now`). That keeps the rules testable and keeps the adapter in
-   plugin.js a thin layer that only records visits and draws the result.
-
-   The constants come from replaying real history: the score is ranked at the start
-   of each day using only earlier data, and the question is how often the session
-   actually opened that day was in the top six.
-     - a 3 day half-life put it there on 81% of days (plain recency: 65%); a 30 day
-       half-life with a lifetime-count multiplier, the Firefox shape, fell to 53%.
-       Heavy sessions come back within days, not months.
-     - no session with one or two user turns was ever reopened on a later day. */
-
-const DAY = 86400000
-const HALF_LIFE_DAYS = 3
-const VISIT_GAP_MS = 45 * 60 * 1000     // a pause longer than this starts a new visit
-const QUICK_MAX_MESSAGES = 6            // at most this many messages in total...
-const QUICK_MAX_TURNS = 3               // ...and you spoke at most this many times
-const QUICK_GRACE_MS = DAY              // a fresh quick chat stays where it is for a day
-const REGULAR_MIN_DAYS = 3              // distinct days opened before a session counts as a regular
-const REGULAR_WINDOW_DAYS = 45          // a regular unseen this long drops off
-const MAX_RECORDS = 500
-const MAX_VISITS = 40
-const MAX_DAYS = 120
-
-const dayOf = t => Math.floor(t / DAY)
-const finite = n => typeof n === 'number' && Number.isFinite(n)
-
-const emptyRecord = id => ({ id, visits: [], days: [], dismissed: 0, keep: false, never: false })
-
-/* ── recording ──────────────────────────────────────────────────────────── */
-
-/* A visit is {t: start, last: latest sign of life, turns: times you sent something,
-   seeded: true when it was inferred from the session list, not watched}. */
-const currentVisit = (rec, now) => {
-  const v = rec.visits[rec.visits.length - 1]
-  return v && now - v.last <= VISIT_GAP_MS && now >= v.t ? v : null
-}
-
-function recordFocus(rec, now) {
-  let v = currentVisit(rec, now)
-  if (!v) {
-    v = { t: now, last: now, turns: 0 }
-    rec.visits.push(v)
-    if (rec.visits.length > MAX_VISITS) rec.visits.splice(0, rec.visits.length - MAX_VISITS)
-  } else v.last = now
-  const d = dayOf(now)
-  if (!rec.days.includes(d)) {
-    rec.days.push(d)
-    rec.days.sort((a, b) => a - b)
-    if (rec.days.length > MAX_DAYS) rec.days.splice(0, rec.days.length - MAX_DAYS)
-  }
-  return rec
-}
-
-function recordTurn(rec, now) {
-  recordFocus(rec, now)
-  currentVisit(rec, now).turns++
-  return rec
-}
-
-/* A session never watched still has a last-active time: give it one inferred
-   visit so the first day is not empty. It does not count as a day opened (that
-   would pass for a return), and it is weighted down. */
-function seedFromSession(rec, session) {
-  if (rec.visits.length || !finite(session.last_active)) return rec
-  const t = session.last_active * 1000
-  rec.visits.push({ t, last: t, turns: (session.message_count || 0) >= 10 ? 4 : 1, seeded: true })
-  return rec
-}
-
-/* ── reading ────────────────────────────────────────────────────────────── */
-
-const lastTouch = (rec, session) => {
-  const v = rec && rec.visits[rec.visits.length - 1]
-  const fromSession = session && finite(session.last_active) ? session.last_active * 1000 : 0
-  return Math.max(v ? v.last : 0, fromSession)
-}
-
-const turnsOf = rec => (rec ? rec.visits.reduce((n, v) => n + (v.seeded ? 0 : v.turns), 0) : 0)
-const daysOf = rec => (rec ? rec.days.length : 0)
-
-/* Quick chat: a small errand. Only the shape of the conversation decides, never
-   how much the agent did: "clean up this directory" can run 40 tool calls and
-   still be an errand, and a C++ deep dive can be pure talk. */
-function isQuick(session, rec, now) {
-  if (session.pinned || (rec && (rec.keep || rec.never))) return false
-  if ((session.message_count || 0) > QUICK_MAX_MESSAGES) return false
-  if (turnsOf(rec) > QUICK_MAX_TURNS || daysOf(rec) >= 2) return false
-  return now - lastTouch(rec, session) > QUICK_GRACE_MS
-}
-
-const visitWeight = v => {
-  if (v.seeded) return v.turns >= 4 ? 0.6 : 0.25
-  return v.turns < 2 ? 0.2 : v.turns < 4 ? 0.6 : 1
-}
-
-function scoreRecent(rec, now) {
-  const lambda = Math.LN2 / (HALF_LIFE_DAYS * DAY)
-  let s = 0
-  for (const v of rec.visits) if (v.last <= now) s += visitWeight(v) * Math.exp(-lambda * (now - v.last))
-  return s
-}
-
-const median = xs => {
-  const a = [...xs].sort((x, y) => x - y)
-  const m = a.length >> 1
-  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
-}
-
-/* The usual gap, in days, between the days a session was opened. null with too
-   little history to say. */
-function cadence(rec) {
-  if (rec.days.length < REGULAR_MIN_DAYS) return null
-  const gaps = []
-  for (let i = 1; i < rec.days.length; i++) gaps.push(rec.days[i] - rec.days[i - 1])
-  return Math.max(1, Math.round(median(gaps)))
-}
-
-function ago(ms) {
-  const m = Math.max(0, Math.round(ms / 60000))
-  if (m < 2) return 'just now'
-  if (m < 60) return m + 'm ago'
-  const h = Math.round(m / 60)
-  if (h < 24) return h + 'h ago'
-  const d = Math.round(h / 24)
-  return d < 14 ? d + 'd ago' : Math.round(d / 7) + 'w ago'
-}
-
-const candidates = (sessions, records, now, exclude) =>
-  sessions.filter(s => s && s.id && !s.hidden && !s.archived && !exclude.has(s.id) && !s.is_internal_child)
-    .map(s => ({ s, rec: records[s.id] || null }))
-
-/* "Pick up where you left off": fast recency. Pinned sessions are already one
-   click away, quick chats are noise, and a dismissed one stays gone until you
-   open it again. */
-const PICK_UP_COUNT = 3   // one row of three on the new tab
-
-function pickUp(sessions, records, now, { exclude = new Set(), limit = PICK_UP_COUNT } = {}) {
-  const out = []
-  for (const { s, rec } of candidates(sessions, records, now, exclude)) {
-    if (!rec || s.pinned || rec.never || isQuick(s, rec, now)) continue
-    if (rec.dismissed && rec.dismissed >= lastTouch(rec, null)) continue
-    const score = scoreRecent(rec, now)
-    if (score < 0.05) continue
-    const touched = lastTouch(rec, s)
-    const lately = rec.days.filter(d => d > dayOf(now) - 30).length
-    out.push({ id: s.id, session: s, score, touched,
-      reason: lately >= 3 ? `Opened on ${lately} of the last 30 days` : 'Left off ' + ago(now - touched) })
-  }
-  out.sort((a, b) => b.score - a.score || b.touched - a.touched)
-  return out.slice(0, limit)
-}
-
-/* "Your regulars": the few you keep coming back to, however rarely. Ordered by
-   whether you are due, then by how many days you have opened them. They never
-   compete with recency, so this row does not churn. */
-function regulars(sessions, records, now, { exclude = new Set(), limit = 4 } = {}) {
-  const out = []
-  for (const { s, rec } of candidates(sessions, records, now, exclude)) {
-    if (!rec || rec.never) continue
-    const days = daysOf(rec)
-    if (!rec.keep && (days < REGULAR_MIN_DAYS || now - lastTouch(rec, s) > REGULAR_WINDOW_DAYS * DAY)) continue
-    const gap = cadence(rec)
-    const since = Math.floor((now - lastTouch(rec, s)) / DAY)
-    const due = gap !== null && gap >= 2 && since >= Math.round(gap * 0.7)
-    const reason = due ? `Usually every ~${gap} days, last ${since === 0 ? 'today' : since + ' days ago'}`
-      : rec.keep ? 'Kept by you' : `Opened on ${days} days`
-    out.push({ id: s.id, session: s, due, days, touched: lastTouch(rec, s), reason })
-  }
-  out.sort((a, b) => Number(b.due) - Number(a.due) || b.days - a.days || b.touched - a.touched)
-  return out.slice(0, limit)
-}
-
-/* ── storage ────────────────────────────────────────────────────────────── */
-
-/* Stored data is read back through this: a damaged or hand-edited value yields
-   fewer records, never an exception or a poisoned score. */
-function sanitize(raw) {
-  const out = {}
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
-  for (const id of Object.keys(raw)) {
-    const r = raw[id]
-    if (!r || typeof r !== 'object' || typeof id !== 'string' || id.length > 200 || id === '__proto__') continue
-    const rec = emptyRecord(id)
-    for (const v of Array.isArray(r.visits) ? r.visits.slice(-MAX_VISITS) : []) {
-      if (v && finite(v.t) && finite(v.last) && v.last >= v.t && finite(v.turns) && v.turns >= 0)
-        rec.visits.push({ t: v.t, last: v.last, turns: Math.min(v.turns, 1e4), ...(v.seeded ? { seeded: true } : {}) })
-    }
-    rec.days = (Array.isArray(r.days) ? r.days : []).filter(d => finite(d) && d > 0).slice(-MAX_DAYS).sort((a, b) => a - b)
-    rec.dismissed = finite(r.dismissed) ? r.dismissed : 0
-    rec.keep = r.keep === true
-    rec.never = r.never === true
-    out[id] = rec
-  }
-  return out
-}
-
-/* Keep the most recently touched MAX_RECORDS. */
-function prune(records) {
-  const ids = Object.keys(records)
-  if (ids.length <= MAX_RECORDS) return records
-  const last = id => (records[id].visits.at(-1) || { last: 0 }).last
-  ids.sort((a, b) => last(b) - last(a))
-  const out = {}
-  for (const id of ids.slice(0, MAX_RECORDS)) out[id] = records[id]
-  return out
-}
-return { DAY, HALF_LIFE_DAYS, VISIT_GAP_MS, QUICK_MAX_MESSAGES, QUICK_MAX_TURNS, QUICK_GRACE_MS, REGULAR_MIN_DAYS, REGULAR_WINDOW_DAYS, MAX_RECORDS, MAX_VISITS, MAX_DAYS, emptyRecord, recordFocus, recordTurn, seedFromSession, lastTouch, isQuick, scoreRecent, cadence, ago, PICK_UP_COUNT, pickUp, regulars, sanitize, prune }
-})()
-/* ── end recents/engine.js ── */
 
 // ══ §8 PLUGIN REGISTRATION (register: settings, timers, observers) ═════════
 
@@ -4223,117 +3330,27 @@ export default {
       }
     }
 
-    // ── Tabs: ⌘⌥←/→, and the labels of a collapsed pane ───────────────────
-    // ⌘⌥←/→ walks the session tabs. It is a contributed keybind, not a window
-    // listener: it shows in Settings > Keybinds, it can be rebound, and it
-    // collides with nothing the app already binds. A capture-phase listener
-    // stays as the fallback for an app build that predates contributed
-    // keybinds, and it stands down for a moment whenever the keybind fired so
-    // the two can never both step the strip.
-    if (typeof window !== 'undefined') {
-      // Session tabs, not the pane tabs: the rows in the tree that each hold one
-      // session (workspace + session-tile:<id>), which is what "the session
-      // tabs" means. Pane tabs are [data-slot='pane-tab'] and are excluded.
-      // Session tabs, not the pane tabs: the rows in the tree that each hold one
-      // session (workspace + session-tile:<id>). Pane tabs are [data-slot='pane-tab']
-      // and the sidebar's copies sit inside [data-atr-arc-col]; both are excluded.
-      const sessionTabs = () => Array.from(document.querySelectorAll("[role='tab'][data-tree-tab]"))
-        .filter(tab => tab.dataset.slot !== 'pane-tab' && !tab.closest('[data-atr-arc-col]') && tab.getClientRects().length > 0)
-      // With a split there is one strip per pane: use the strip above the thing you are working in.
-      const stripOf = tabs => {
-        const strips = new Map()
-        for (const tab of tabs) {
-          const strip = tab.closest("[role='tablist']") || tab.parentElement
-          strips.set(strip, [...(strips.get(strip) || []), tab])
-        }
-        const lists = [...strips.values()]
-        if (lists.length < 2) return lists[0] || []
-        const focus = document.activeElement
-        const box = focus && focus !== document.body ? focus.getBoundingClientRect() : null
-        const cx = box && box.width ? box.left + box.width / 2 : null
-        if (cx !== null) {
-          for (const list of lists) {
-            const rect = (list[0].closest("[role='tablist']") || list[0]).getBoundingClientRect()
-            if (cx >= rect.left && cx <= rect.right) return list
-          }
-        }
-        return lists.find(list => list.some(tab => tab.getAttribute('aria-selected') === 'true')) || lists[0]
-      }
-      // A tab selects on pointer down and up. A bare click() does nothing on the app build
-      // this was written against, and a full mouse sequence would start the tab's drag.
-      const pressTab = tab => {
-        const r = tab.getBoundingClientRect()
-        const at = { bubbles: true, cancelable: true, view: window, button: 0, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }
-        const pointer = { ...at, pointerId: 1, isPrimary: true, pointerType: 'mouse' }
-        tab.dispatchEvent(new PointerEvent('pointerdown', pointer))
-        tab.dispatchEvent(new PointerEvent('pointerup', pointer))
-      }
-      let lastKeybind = 0
-      const stepTab = dir => {
-        const tabs = stripOf(sessionTabs())
-        if (tabs.length < 2) return false
-        const at = tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true')
-        const next = tabs[((at < 0 ? 0 : at) + dir + tabs.length) % tabs.length]
-        pressTab(next)
-        next.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
-        return true
-      }
-      for (const [id, dir, label, combo] of [
-        ['hermes-atrium.tabPrev', -1, 'Previous session tab', 'mod+alt+left'],
-        ['hermes-atrium.tabNext', 1, 'Next session tab', 'mod+alt+right']
-      ]) {
-        ctx.register({
-          id,
-          area: 'keybinds',
-          data: { id, category: 'navigation', defaults: [combo], label, run: () => { lastKeybind = Date.now(); return stepTab(dir) } }
-        })
-      }
-      // The fallback for an app build without contributed keybinds. It also works with the
-      // cursor in the composer: ⌘⌥← has no text-editing meaning, and the composer is where
-      // the cursor usually is.
-      const onTabChord = event => {
-        if (Date.now() - lastKeybind < 250) return
-        if (!event.metaKey || !event.altKey || event.ctrlKey || event.shiftKey || event.isComposing) return
-        const dir = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-        if (!dir || !stepTab(dir)) return
-        event.preventDefault()
-        event.stopImmediatePropagation()
-      }
-      window.addEventListener('keydown', onTabChord, true)
-      ctx.onDispose?.(() => window.removeEventListener('keydown', onTabChord, true))
-    }
-
-    // A collapsed pane collapses to a sliver; the app clips rather than hides its
-    // tab labels, which leaves a word stacked one letter per line. Measure the
-    // tabs, mark the narrow ones, and let this sheet drop the word.
-    if (typeof document !== 'undefined' && typeof ResizeObserver !== 'undefined') {
+    // ── The labels of a collapsed pane ──────────────────────────────────────
+    // A minimized zone is drawn by the app as a narrow vertical rail: its tabs
+    // carry `data-vertical` and set their label in vertical writing, so the old
+    // failure (a word wrapped one letter per line in a sliver) no longer
+    // happens and nothing here has to measure tabs or watch the page. What is
+    // left is the look: the rail's tabs take the Atrium ink ramp instead of
+    // the host's grey gutter, quiet when idle and full ink for the selected
+    // tab, keyed on the app's own attributes.
+    if (typeof document !== 'undefined') {
       const PANE_RAIL_CSS = [
-        // Collapsed, the pane tabs are a few pixels wide. A wrapped "Sessions", one
-        // letter per line, is what that used to look like. Now the label goes away
-        // entirely and the tab becomes a small bar: dim when it is not the pane you
-        // are in, ink-bright when it is. Nothing to wrap, nothing to clip.
-        "[data-slot='pane-tab'][data-atr-rail='true'] {",
-        '  justify-content: center !important;',
-        '  align-items: center !important;',
-        '  padding: 0 !important;',
-        '  gap: 0 !important;',
-        '  overflow: hidden !important;',
-        '  white-space: nowrap !important;',
-        '  border: 0 !important;',
-        '  box-shadow: none !important;',
+        "[data-slot='pane-tab'][data-vertical] {",
         '  background: transparent !important;',
+        '  box-shadow: none !important;',
+        '  color: var(--atr-ink-3, var(--ui-text-tertiary)) !important;',
+        '  transition: color 120ms ease;',
         '}',
-        "[data-slot='pane-tab'][data-atr-rail='true'] > * {",
-        '  display: none !important;',
+        "[data-slot='pane-tab'][data-vertical]:hover {",
+        '  color: var(--atr-ink-1, var(--ui-text-secondary)) !important;',
         '}',
-        "[data-slot='pane-tab'][data-atr-rail='true']::before {",
-        "  content: ''; width: 3px; height: 16px; border-radius: 999px;",
-        '  background: var(--atr-ink-3, rgba(255, 255, 255, 0.32));',
-        '  transition: background-color 120ms ease, height 120ms ease;',
-        '}',
-        "[data-slot='pane-tab'][data-atr-rail='true']:is([aria-selected='true'], [data-active='true'])::before {",
-        '  height: 22px;',
-        '  background: var(--atr-ink-0, #fbf1c7);',
+        "[data-slot='pane-tab'][data-vertical]:is([aria-selected='true'], [data-active='true']) {",
+        '  color: var(--atr-ink-0, var(--ui-text-primary)) !important;',
         '}'
       ]
       document.getElementById('atr-pane-rail')?.remove()
@@ -4341,58 +3358,8 @@ export default {
       railStyle.id = 'atr-pane-rail'
       railStyle.textContent = PANE_RAIL_CSS.join('\n')
       document.head.appendChild(railStyle)
-      const seenTabs = new WeakSet()
-      const railObs = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          const tab = entry.target
-          const rail = entry.contentRect.width < 56 ? 'true' : 'false'
-          if (tab.dataset.atrRail !== rail) {
-            tab.dataset.atrRail = rail
-            // collapsed, the label is gone, so the hover title has to carry it
-            if (rail === 'true') {
-              const label = (tab.textContent || '').trim()
-              if (label && !tab.dataset.atrTitle) {
-                tab.dataset.atrTitle = label
-                tab.setAttribute('title', label)
-              }
-            } else if (tab.dataset.atrTitle) {
-              tab.removeAttribute('title')
-              delete tab.dataset.atrTitle
-            }
-          }
-        }
-      })
-      const paneTab = "[data-slot='pane-tab']"
-      const observeTab = tab => {
-        if (!tab.isConnected || seenTabs.has(tab)) return
-        seenTabs.add(tab)
-        railObs.observe(tab)
-      }
-      const unobserveTab = tab => {
-        if (tab.isConnected || !seenTabs.delete(tab)) return
-        railObs.unobserve(tab)
-      }
-      const visitTabs = (node, visit) => {
-        if (node.nodeType !== 1) return
-        if (node.matches(paneTab)) visit(node)
-        node.querySelectorAll(paneTab).forEach(visit)
-      }
-      document.querySelectorAll(paneTab).forEach(observeTab)
-      const tabObserver = new MutationObserver(records => {
-        for (const record of records) {
-          record.addedNodes.forEach(node => visitTabs(node, observeTab))
-          record.removedNodes.forEach(node => visitTabs(node, unobserveTab))
-        }
-      })
-      tabObserver.observe(document.documentElement, { childList: true, subtree: true })
-      ctx.onDispose?.(() => {
-        tabObserver.disconnect()
-        railObs.disconnect()
-        railStyle.remove()
-      })
+      ctx.onDispose?.(() => railStyle.remove())
     }
-
-    const pins = atom((() => { const v = stored(STORE_KEYS.pins); return Array.isArray(v) ? v.filter(p => p && typeof p.id === 'string') : [] })())
     const auto = atom(stored(STORE_KEYS.auto) !== false)
     // Picking another theme in Appearance must really switch to it:
     // while one is selected, Hermes Atrium draws no painting and asks for no theme. Picking
@@ -4447,16 +3414,9 @@ export default {
     // (which serialises panelSettings) do the repaint.
     try { panelUnsub = panelSettings.subscribe?.(() => syncPanel()) } catch {}
     const margins = atom(stored(STORE_KEYS.margins) === true)
-    const collapseWork = atom(stored(STORE_KEYS.collapseWork) !== false)
     const motion = atom(stored(STORE_KEYS.motion) !== false)
-    const statusDock = atom(stored(STORE_KEYS.statusDock) !== false)
-    const library = atom(stored(STORE_KEYS.library) !== false)
-    const homeOn = atom(stored(STORE_KEYS.home) !== false)
-    const homeCard = atom(stored(STORE_KEYS.homeCard) === 'glass' ? 'glass' : 'matte')
-    let homeApi = { reset() {} }
 
     const persist = () => {
-      ctx.storage.set(STORE_KEYS.pins, pins.get())
       ctx.storage.set(STORE_KEYS.auto, auto.get())
       ctx.storage.set(STORE_KEYS.tint, tint.get())
       ctx.storage.set(STORE_KEYS.sky, backdropOn.get())
@@ -4464,13 +3424,8 @@ export default {
       ctx.storage.set(STORE_KEYS.replyGround, replyGround.get())
       ctx.storage.set(STORE_KEYS.look, look.get())
       ctx.storage.set(STORE_KEYS.margins, margins.get())
-      ctx.storage.set(STORE_KEYS.collapseWork, collapseWork.get())
       ctx.storage.set(STORE_KEYS.motion, motion.get())
       ctx.storage.set(STORE_KEYS.panel, panelSettings.get())
-      ctx.storage.set(STORE_KEYS.statusDock, statusDock.get())
-      ctx.storage.set(STORE_KEYS.library, library.get())
-      ctx.storage.set(STORE_KEYS.home, homeOn.get())
-      ctx.storage.set(STORE_KEYS.homeCard, homeCard.get())
     }
 
     const applyMargins = on => {
@@ -4611,1563 +3566,14 @@ export default {
     }
 
 
-    // ── Status dock: Advanced's bottom bar, as a left panel in Simple ────────
-    // Simple mode unmounts the statusbar (footer[data-slot=statusbar]). The SDK
-    // has no door to $statusbarVisible, but Hermes's own `view.toggleStatusbar`
-    // keybind (mod+shift+s) writes a SESSION reveal while Simple shadows the
-    // bar: it shows now, the user's Simple preference is never written, and
-    // the reveal clears on any mode change. So in Simple we press that keybind
-    // once, then lift the real bar (live items, menus, polls and all) out of
-    // the flow into a collapsible glass panel on the left edge. In Advanced
-    // the bar is left exactly where Hermes puts it.
-    const DOCK_ATTR = 'data-atr-dock'
-    const DOCK_OPEN_ATTR = 'data-atr-dock-open'
-    const DOCK_SIDE_ATTR = 'data-atr-dock-side'
-    const DOCK_ROOM_ATTR = 'data-atr-dock-room'
-    const DOCK_POP_ATTR = 'data-atr-dock-pop'
-    const SIDE_MIN_SESSIONS = 6
-    const MODE_KEY = 'hermes.desktop.interfaceMode.v1'
-    const IS_MAC = typeof navigator !== 'undefined' &&
-      /mac/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '')
-    const dock = { mode: '', revealed: false, pressed: false, tries: 0, lastTry: 0, head: null, style: null,
-      side: null, room: null, sideOpen: false, manual: null, lastAuto: null, sideKey: '', ro: null, roWatched: [], popObs: null }
-    const interfaceMode = () => {
-      try {
-        const raw = window.localStorage?.getItem(MODE_KEY) || ''
-        return raw.includes('simple') ? 'simple' : 'advanced'
-      } catch { return 'advanced' }
-    }
-    const DOCK_CSS = [
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] {`,
-      '  position: fixed !important; z-index: 45; left: 0.5rem; top: 50%;',
-      '  width: 15rem; height: auto !important; max-height: min(34rem, 72vh);',
-      '  flex-direction: column !important; justify-content: flex-start !important; align-items: stretch !important; gap: 0.35rem !important;',
-      '  padding: 0.45rem !important; overflow: hidden auto;',
-      '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)) !important;',
-      '  border-radius: var(--atr-radius-lg, 16px);',
-      '  box-shadow: var(--atr-lift-float, 0 16px 40px rgba(0,0,0,.34));',
-      '  transform: translate(calc(-100% - 1rem), -50%); opacity: 0; visibility: hidden; pointer-events: none;',
-      '  transition: transform var(--atr-t-3, 220ms) var(--atr-ease, ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s linear var(--atr-t-3, 220ms);',
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_ATTR}][${DOCK_OPEN_ATTR}] {`,
-      '  transform: translate(0, -50%); opacity: 1; visibility: visible; pointer-events: auto;',
-      '  transition: transform var(--atr-t-3, 220ms) var(--atr-ease, ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s;',
-      '}',
-      // the bar's two halves become two stacked lists of full-width rows
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div {`,
-      '  flex-direction: column !important; align-items: stretch !important; overflow: visible !important; gap: 0.1rem !important;',
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div:empty { display: none; }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div + div:not(:empty) {`,
-      '  border-top: 1px solid var(--atr-edge, rgba(255,255,255,.07)); padding-top: 0.25rem; margin-top: 0.1rem;',
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * {`,
-      '  height: auto !important; min-height: var(--atr-sd-rowh, 1.75rem); width: 100%; justify-content: flex-start !important; box-sizing: border-box;',
-      '  padding: 0 0.5rem !important; border-radius: var(--atr-r-2, 8px) !important;',
-      '  transition: background-color var(--atr-t-2, 140ms) var(--atr-ease, ease), color var(--atr-t-2, 140ms) var(--atr-ease, ease);',
-      // same face as the session rows (read off them at layout time)
-      '  font-size: var(--atr-sd-font, 0.8125rem) !important; gap: 0.5rem !important; color: var(--atr-ink-1, var(--ui-text-primary)); background: transparent; border: 0;',
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * svg { width: 0.875rem !important; height: 0.875rem !important; flex: none; color: var(--atr-ink-2, var(--ui-text-secondary)); }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * .truncate { min-width: 0; }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > *:hover { background: var(--atr-hover, color-mix(in srgb, var(--ui-text-primary) 8%, transparent)) !important; color: var(--atr-ink-0, var(--ui-text-primary)); }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] > div > * > * { height: auto !important; }`,
-      `footer[data-slot='statusbar'][${DOCK_ATTR}] :is(.truncate) { white-space: nowrap; }`,
-      // ── in the sessions sidebar: a card between the sessions and the rail ──
-      // The card itself is our header button (it paints the glass and takes
-      // the click); the real footer floats over its lower part when open.
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] {`,
-      '  left: var(--atr-sd-x) !important; top: var(--atr-sd-y) !important; width: var(--atr-sd-w) !important;',
-      '  max-height: var(--atr-sd-max) !important; transform: none !important;',
-      '  background: transparent !important; box-shadow: none !important; border-radius: 0 0 var(--atr-radius, 12px) var(--atr-radius, 12px);',
-      // the same 4px gutter as the sessions card's rows
-      '  box-sizing: border-box !important; padding: 0 4px 0.35rem !important; z-index: 41;',
-      '  overflow: hidden auto !important; scrollbar-width: none;',
-      '  clip-path: inset(0 0 100% 0);',
-      // translate: the floating sidebar's slide (see SIDEBAR_CSS), 0ms otherwise
-      '  transition: clip-path var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 200ms) var(--atr-ease, ease) 40ms, visibility 0s linear var(--atr-sd-dur), translate var(--atr-arc-dur, 0ms) var(--atr-arc-ease, ease) !important;',
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}]::-webkit-scrollbar { display: none; }`,
-      // opening unrolls the rows from under the header, top to bottom
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}][${DOCK_OPEN_ATTR}] { transform: none !important; clip-path: inset(0 0 0 0); transition: clip-path var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 180ms) var(--atr-ease, ease), visibility 0s, translate var(--atr-arc-dur, 0ms) var(--atr-arc-ease, ease) !important; }`,
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] > div > * { transition: transform var(--atr-sd-dur) var(--atr-sd-ease), opacity var(--atr-t-2, 200ms) var(--atr-ease, ease), background-color var(--atr-t-2, 120ms) var(--atr-ease, ease); }`,
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}]:not([${DOCK_OPEN_ATTR}]) > div > * { transform: translateY(-0.4rem); opacity: 0; }`,
-      ':root { --atr-sd-dur: 280ms; --atr-sd-ease: cubic-bezier(.32,.72,0,1); }',
-      // the Motion switch reaches the dock's own duration token too
-      "html[data-atr-motion='off'] { --atr-sd-dur: 0ms; }",
-      `[${DOCK_ROOM_ATTR}] { margin-top: calc(var(--atr-sd-room, 0px) + var(--atr-lib-room, 0px)) !important; transition: margin-top var(--atr-sd-dur) var(--atr-sd-ease); }`,
-      '#atr-statusdock-head {',
-      '  position: fixed; z-index: 40; left: var(--atr-sd-x); top: var(--atr-sd-y-head); width: var(--atr-sd-w); height: var(--atr-sd-h);',
-      '  display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch;',
-      '  padding: 0; margin: 0; border: 0; text-align: left; cursor: pointer; color: var(--atr-ink-3, var(--ui-text-tertiary));',
-      '  font: inherit; background: var(--atr-side-card, color-mix(in srgb, var(--ui-bg-secondary) 86%, transparent)); border-radius: var(--atr-radius, 12px); overflow: hidden;',
-      '  transition: height var(--atr-sd-dur) var(--atr-sd-ease), color var(--atr-t-2, 150ms) var(--atr-ease, ease), box-shadow var(--atr-t-2, 150ms) var(--atr-ease, ease);',
-      '  user-select: none;',
-      '}',
-      '#atr-statusdock-head[hidden] { display: none; }',
-      // a status dragged over the title: the drop zone lights up
-      "#atr-statusdock-head[data-drop='over'] { outline: 1px dashed color-mix(in srgb, var(--atr-accent, #9cf) 75%, transparent); outline-offset: -1px; }",
-      '#atr-statusdock-head .atr-sd-label { flex: none; }',
-      "#atr-statusdock-head[data-pinned] .atr-sd-label { display: none; }",
-      '#atr-statusdock-head .atr-sd-pin {',
-      '  display: none; min-width: 0; flex: 0 1 auto; align-items: center; gap: 0.4rem; padding: 0; margin: 0;',
-      '  background: none; border: 0; color: var(--atr-ink-1, var(--ui-text-primary)); font-weight: 500;',
-      '  font-size: var(--atr-sd-font, 0.8125rem); letter-spacing: 0; text-transform: none; cursor: grab; white-space: nowrap; overflow: hidden;',
-      '}',
-      "#atr-statusdock-head[data-pinned] .atr-sd-pin { display: inline-flex; }",
-      '#atr-statusdock-head .atr-sd-pin > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }',
-      '#atr-statusdock-head .atr-sd-pin svg { width: 0.75rem; height: 0.75rem; }',
-      // the pinned row in the list carries a small accent dot
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] [data-atr-pinned]::after {`,
-      "  content: ''; flex: none; width: 0.75rem; height: 0.75rem; margin-left: auto; background: currentColor; opacity: 0.6;",
-      `  -webkit-mask: ${PIN_MASK_URL} center / contain no-repeat; mask: ${PIN_MASK_URL} center / contain no-repeat;`,
-      '}',
-      `footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}] > div > * { touch-action: none; }`,
-      '#atr-statusdock-ghost {',
-      '  position: fixed; z-index: 2147483000; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 0.4rem;',
-      '  padding: 0.3rem 0.65rem; border-radius: var(--atr-r-2, 8px); font-size: 0.75rem; white-space: nowrap; max-width: 14rem; overflow: hidden;',
-      '  background: var(--atr-glass-strong, color-mix(in srgb, var(--ui-bg-primary) 94%, transparent)); color: var(--atr-ink-0, var(--ui-text-primary)); box-shadow: 0 6px 18px rgba(0,0,0,.35);',
-      '}',
-      '#atr-statusdock-ghost svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-      '#atr-statusdock-head .atr-sd-row {',
-      '  display: flex; flex: none; align-items: center; gap: 0.5rem; height: var(--atr-sd-head, 1.85rem); padding: 0 0.7rem 0 0.75rem; min-width: 0;',
-      // the same face as the PINNED / SESSIONS labels, copied off them at layout
-      '  font-size: var(--atr-sd-lab-size, 0.64rem); font-weight: var(--atr-sd-lab-weight, 600); letter-spacing: var(--atr-sd-lab-track, 0.16em); text-transform: uppercase;',
-      '  color: var(--atr-sd-lab-color, var(--theme-primary, var(--atr-ink-2, var(--ui-text-secondary))));',
-      '}',
-      '#atr-statusdock-head:hover .atr-sd-row, #atr-statusdock-head:focus-visible .atr-sd-row { color: var(--atr-ink-0, var(--ui-text-primary)); }',
-      '#atr-statusdock-head:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--atr-accent, rgba(255,255,255,.3)); }',
-      '#atr-statusdock-head svg { width: 0.75rem; height: 0.75rem; flex: none; }',
-      '#atr-statusdock-head .atr-sd-pinico { display: none; }',
-      "#atr-statusdock-head[data-pinned] .atr-sd-eq { display: none; }",
-      "#atr-statusdock-head[data-pinned] .atr-sd-pinico { display: block; }",
-      '#atr-statusdock-head .atr-sd-chev { margin-left: auto; width: 0.7rem; height: 0.7rem; transition: transform var(--atr-sd-dur, 280ms) var(--atr-sd-ease, ease); }',
-      "#atr-statusdock-head[aria-expanded='true'] .atr-sd-chev { transform: rotate(180deg); }",
-      // menus opened from the docked bar open beside it, not above it
-      `[${DOCK_POP_ATTR}] {`,
-      '  transform: translate(var(--atr-pop-x, 0px), var(--atr-pop-y, 0px)) !important; left: 0 !important; top: 0 !important;',
-      '  --radix-popper-available-height: calc(100vh - 1rem) !important;',
-      '  --radix-popper-transform-origin: var(--atr-pop-origin, left top) !important;',
-      '}',
-      '@media (prefers-reduced-motion: reduce) {',
-      ':root { --atr-sd-dur: 0ms; }',
-      '  #atr-statusdock-head, #atr-statusdock-head .atr-sd-chev { transition: none !important; }',
-      `  footer[data-slot='statusbar'][${DOCK_ATTR}] { transition: none !important; }`,
-      '}'
-    ].join('\n')
-
-    // The status panel only exists inside the sessions sidebar. With no
-    // sidebar on screen the lifted bar stays hidden (no edge tab, no
-    // free-floating panel), and it comes back with the sidebar.
-    const ensureDockChrome = () => {
-      if (!dock.style) {
-        dock.style = document.createElement('style')
-        dock.style.id = 'atr-statusdock-style'
-        dock.style.textContent = DOCK_CSS
-        document.head.appendChild(dock.style)
-      }
-    }
-    const unside = () => {
-      // The 1s dock timer calls this every second while the panel is not
-      // sided; only a real un-side changes the geometry, so only then is the
-      // library's layout cache dropped (otherwise layoutLibrary() re-measures
-      // the sidebar — forced layout — once a second for nothing).
-      const wasSided = Boolean(dock.side || dock.room)
-      document.querySelectorAll(`[${DOCK_SIDE_ATTR}]`).forEach(el => {
-        el.removeAttribute(DOCK_SIDE_ATTR)
-        ;['--atr-sd-x', '--atr-sd-y', '--atr-sd-w', '--atr-sd-max'].forEach(v => el.style.removeProperty(v))
-      })
-      document.querySelectorAll(`[${DOCK_ROOM_ATTR}]`).forEach(el => { el.removeAttribute(DOCK_ROOM_ATTR); el.style.removeProperty('--atr-sd-room') })
-      if (dock.head) dock.head.hidden = true
-      document.querySelectorAll('[data-atr-pinned]').forEach(el => el.removeAttribute('data-atr-pinned'))
-      document.querySelectorAll("footer[data-slot='statusbar'] [data-atr-full]").forEach(el => {
-        if (el.dataset.atrCrop && el.firstChild?.nodeValue === el.dataset.atrCrop) el.firstChild.nodeValue = el.dataset.atrFull
-        delete el.dataset.atrCrop; delete el.dataset.atrFull; el.removeAttribute('title')
-      })
-      dock.side = null
-      dock.room = null
-      dock.sideKey = ''
-      if (wasSided) lib.key = ''
-    }
-    const undock = () => {
-      unside()
-      document.querySelectorAll(`[${DOCK_ATTR}]`).forEach(el => { el.removeAttribute(DOCK_ATTR); el.removeAttribute(DOCK_OPEN_ATTR) })
-    }
-
-    // ── In the sessions sidebar ────────────────────────────────────────────
-    // When the sessions sidebar is on screen the bar becomes a card at its
-    // foot, between the session list and the profile rail. We never move
-    // Hermes's DOM: the list's scroller gets a bottom margin (the card's
-    // room), our header button paints the card in that gap, and the real
-    // footer is pinned over the card's lower part. Open or shut follows the
-    // height: open only while the list still shows SIDE_MIN_SESSIONS rows
-    // (plus about two rows of section headings); a click overrides that
-    // until the fit itself flips.
-    const sidebarParts = () => {
-      const side = document.querySelector("[data-tour='sessions-sidebar']")
-      const room = side?.querySelector?.('[data-sessions-mode]')
-      if (!side || !room) return null
-      const r = side.getBoundingClientRect()
-      if (r.width < 160 || r.height < 240 || !room.getClientRects().length) return null
-      return { side, room, r }
-    }
-    // ── Pin one status to the title ───────────────────────────────────────
-    // Drag a row from the open card onto the STATUS title and it stays on the
-    // title, live, open or shut, until it is dragged off again. Rows are keyed
-    // by their lucide icon (text changes as the value does), else by their
-    // letters. Pointer-based rather than HTML5 drag: Radix opens a row's menu
-    // on pointerdown, so we hold the pointerdown until we know it is a tap,
-    // and replay it then.
-    const pinDrag = { el: null, key: '', x: 0, y: 0, id: -1, moving: false, ghost: null, endedAt: 0, replay: false }
-    const statusRows = bar => bar ? [...bar.querySelectorAll(':scope > div > *')] : []
-    // A row's own icon: not one inside a nested control (a radio's
-    // play/pause icon flips as you press it, which would lose the key).
-    const ROW_CONTROL = "button, a, [role='button'], [role='switch'], [role='slider']"
-    const ownIcon = el => {
-      for (const svg of el.querySelectorAll('svg')) {
-        const c = svg.closest(ROW_CONTROL)
-        if (c && c !== el && el.contains(c) && el.querySelectorAll(ROW_CONTROL).length > 1) continue
-        const lc = [...svg.classList].find(k => k.startsWith('lucide-'))
-        if (lc) return lc
-      }
-      return ''
-    }
-    // the first word of the row's first text, never of the whole row
-    const firstWord = el => {
-      const w = document.createTreeWalker(el, 4)
-      for (let n = w.nextNode(); n; n = w.nextNode()) {
-        const t = n.nodeValue.replace(/[^A-Za-z]+/g, ' ').trim()
-        if (t) return t.split(' ')[0].toLowerCase()
-      }
-      return ''
-    }
-    const statusKey = (el, rows) => {
-      const lc = ownIcon(el)
-      const base = lc || 'txt:' + firstWord(el)
-      // same icon twice: the second becomes base#2
-      let n = 0
-      if (lc) for (const r of rows) { if (r === el) break; if (ownIcon(r) === lc) n++ }
-      return n ? `${base}#${n + 1}` : base
-    }
-    // ── Smart crop ────────────────────────────────────────────────────────
-    // A status too long for its row is cut at the end of the last whole
-    // piece that fits (a word, or a segment before · | / , : ; -) with an
-    // ellipsis, never mid-word. Only the text node's value changes (React
-    // owns the span and rewrites that value on its next update, which we
-    // notice and re-crop); the full text stays in data-atr-full and the title.
-    let cropCanvas = null
-    const textWidth = (text, el) => {
-      cropCanvas = cropCanvas || document.createElement('canvas')
-      const c = cropCanvas.getContext('2d')
-      const cs = getComputedStyle(el)
-      c.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
-      const track = parseFloat(cs.letterSpacing) || 0
-      return c.measureText(text).width + track * text.length
-    }
-    const cropText = (text, budget, el) => {
-      if (textWidth(text, el) <= budget) return text
-      const cuts = []
-      for (let i = 1; i < text.length; i++) {
-        if (/\s/.test(text[i]) || /[·•|/,:;\-–—)]/.test(text[i - 1])) cuts.push(i)
-      }
-      for (let k = cuts.length - 1; k >= 0; k--) {
-        const head = text.slice(0, cuts[k]).replace(/[\s·•|/,:;\-–—(]+$/, '')
-        if (head && textWidth(head + '…', el) <= budget) return head + '…'
-      }
-      return null // one long word: leave it to the CSS ellipsis
-    }
-    const cropSpans = (spans, avail) => {
-      // spans: [{ el, node, full }] in row order; crop from the last one back
-      let rest = avail - spans.reduce((a, s) => a + textWidth(s.full, s.el), 0)
-      for (let i = spans.length - 1; i >= 0; i--) {
-        const s = spans[i]
-        const w = textWidth(s.full, s.el)
-        let out = s.full
-        if (rest < 0) {
-          const budget = Math.max(0, w + rest)
-          const c = cropText(s.full, budget, s.el)
-          out = c == null ? s.full : c
-          rest += w - (c == null ? w : textWidth(c, s.el))
-        }
-        if (s.node.nodeValue !== out) s.node.nodeValue = out
-        if (out !== s.full) { s.el.dataset.atrCrop = out; s.el.title = s.full } else if (s.el.dataset.atrCrop) { delete s.el.dataset.atrCrop; s.el.removeAttribute('title') }
-      }
-    }
-    const croppable = root => [...root.querySelectorAll('.truncate')].filter(el =>
-      el.childNodes.length === 1 && el.firstChild.nodeType === 3)
-    const spanInfo = el => {
-      const node = el.firstChild
-      // a value that isn't ours is React's new text
-      if (el.dataset.atrFull == null || node.nodeValue !== (el.dataset.atrCrop || el.dataset.atrFull)) el.dataset.atrFull = node.nodeValue
-      return { el, node, full: el.dataset.atrFull }
-    }
-    const innerWidth = el => {
-      const cs = getComputedStyle(el)
-      return el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
-    }
-    const fitLine = (box, spans, extra = 0) => {
-      if (!spans.length || !box.clientWidth) return
-      const cs = getComputedStyle(box)
-      const gap = parseFloat(cs.columnGap) || 0
-      const kids = [...box.children]
-      const others = kids.filter(k => !spans.some(s => s.el === k)).reduce((a, k) => a + k.getBoundingClientRect().width, 0)
-      const avail = innerWidth(box) - others - gap * Math.max(0, kids.length - 1) - extra - 1
-      cropSpans(spans, avail)
-    }
-    const cropRows = bar => {
-      for (const row of statusRows(bar)) {
-        const els = croppable(row)
-        if (!els.length) continue
-        const box = els[0].parentElement
-        // only the simple shape: the label spans sit in the row (or its one child)
-        if (box !== row && !(box.parentElement === row && row.children.length === 1)) continue
-        const pinW = row.hasAttribute('data-atr-pinned') ? 12 + 8 : 0
-        const spans = els.filter(e => e.parentElement === box).map(spanInfo)
-        if (box === row) fitLine(row, spans, pinW)
-        else fitLine(box, spans, pinW + (row.clientWidth - box.getBoundingClientRect().width > 0 ? 0 : 0))
-      }
-    }
-    const cropChip = () => {
-      const head = dock.head
-      const chip = head?.querySelector('.atr-sd-pin')
-      if (!chip || !head.hasAttribute('data-pinned')) return
-      const row = head.querySelector('.atr-sd-row')
-      const cs = getComputedStyle(row)
-      const gap = parseFloat(cs.columnGap) || 0
-      const fixed = [...row.children].filter(k => k !== chip && getComputedStyle(k).display !== 'none')
-      const room = innerWidth(row) - fixed.reduce((a, k) => a + k.getBoundingClientRect().width, 0) - gap * fixed.length - 6
-      chip.style.maxWidth = `${Math.max(0, Math.floor(room))}px`
-      const els = croppable(chip).filter(e => e.parentElement === chip)
-      els.forEach(e => { if (e.dataset.atrFull != null) { e.firstChild.nodeValue = e.dataset.atrFull; delete e.dataset.atrCrop } })
-      const spans = els.map(spanInfo)
-      const cg = parseFloat(getComputedStyle(chip).columnGap) || 0
-      const others = [...chip.children].filter(k => !els.includes(k)).reduce((a, k) => a + k.getBoundingClientRect().width + cg, 0)
-      cropSpans(spans, room - others - cg * Math.max(0, spans.length - 1) - 1)
-    }
-
-    const pinnedKey = () => { const k = stored(STORE_KEYS.statusPin); return typeof k === 'string' ? k : '' }
-    const setPinned = key => {
-      ctx.storage.set(STORE_KEYS.statusPin, key || '')
-      dock.pinSig = ''
-      refreshPin()
-    }
-    const refreshPin = () => {
-      const head = dock.head
-      const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_ATTR}]`)
-      if (!head) return
-      const key = pinnedKey()
-      const rows = statusRows(bar)
-      let src = null
-      for (const r of rows) {
-        const hit = key && statusKey(r, rows) === key
-        r.toggleAttribute('data-atr-pinned', Boolean(hit))
-        if (hit) src = r
-      }
-      head.toggleAttribute('data-pinned', Boolean(src))
-      try { cropRows(bar) } catch {}
-      const chip = head.querySelector('.atr-sd-pin')
-      if (!src) { if (chip.firstChild) chip.textContent = ''; dock.pinSig = ''; return }
-      const sig = src.innerHTML
-      if (sig !== dock.pinSig) {
-        dock.pinSig = sig
-        chip.replaceChildren(...[...src.childNodes].map(n => n.cloneNode(true)))
-        chip.querySelectorAll('[id], [title]').forEach(n => { n.removeAttribute('id'); n.removeAttribute('title') })
-      }
-      try { cropChip() } catch {}
-    }
-    const overHead = (x, y) => {
-      const h = dock.head
-      if (!h || h.hidden) return false
-      const r = h.getBoundingClientRect()
-      const rowH = parseFloat(h.style.getPropertyValue('--atr-sd-head')) || 30
-      return x >= r.left && x <= r.right && y >= r.top - 6 && y <= r.top + rowH + 6
-    }
-    const inRect = (el, x, y, pad = 0) => {
-      if (!el || el.hidden || !el.isConnected) return false
-      const r = el.getBoundingClientRect()
-      return r.width > 0 && r.height > 0 && x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad
-    }
-    // ── One drag for everything that moves ──────────────────────────────
-    // Sources: a status row, the pinned chip, a sidebar pin, a snippet card in
-    // the chat, a Shelf tile. Targets: the STATUS title, the sidebar Pins
-    // group, the two Shelf slots. A drop nowhere takes the thing off wherever
-    // it was (unpin, off the Shelf). A tap (no movement) does the thing's own
-    // click: a status row gets its pointerdown back, a snippet opens its
-    // preview, a status tile opens that status's menu beside the tile.
-    // Pointer-based rather than HTML5 drag: Radix opens a row's menu on
-    // pointerdown, so we hold the pointerdown until we know it is a tap.
-    const dropAt = (x, y) => {
-      const shelfHit = shelfSlotAt(x, y)
-      if (shelfHit) return Object.assign({ kind: 'shelf' }, shelfHit)
-      if (overHead(x, y)) return { kind: 'head' }
-      if (inRect(dock.head, x, y)) return { kind: 'card' } // the status card's body
-      if (inRect(lib.el, x, y, 4)) return { kind: 'lib' }
-      return null
-    }
-    const shelfFull = (src, hit) => shelf[hit.slot].length >= SHELF_MAX && !(src.type === 'tile' && src.slot === hit.slot)
-    const accepts = (src, hit) => {
-      if (!hit) return false
-      const t = src.type
-      const tile = t === 'tile' ? src.ref.kind : ''
-      if (hit.kind === 'shelf') return !shelfFull(src, hit)
-      if (hit.kind === 'head') return t === 'status' || tile === 'status'
-      if (hit.kind === 'card') return tile === 'status'
-      if (hit.kind === 'lib') return t === 'snip' || tile === 'snip'
-      return false
-    }
-    const dropEl = hit => !hit ? null : (hit.kind === 'head' || hit.kind === 'card') ? dock.head : hit.kind === 'lib' ? lib.el : hit.kind === 'shelf' ? shelfEls[hit.slot] : null
-    let litEl = null
-    const light = el => {
-      if (litEl === el) return
-      litEl?.removeAttribute('data-drop')
-      litEl = el
-      el?.setAttribute('data-drop', 'over')
-    }
-    const applyDrop = (src, hit) => {
-      const k = hit?.kind || ''
-      if (hit && !accepts(src, hit) && !(src.type === 'pin' || src.type === 'chip')) return
-      switch (src.type) {
-        case 'status':
-          if (k === 'head') setPinned(src.key)
-          else if (k === 'shelf') shelfPut({ kind: 'status', key: src.key, last: src.text }, hit)
-          break
-        case 'chip':
-          if (k === 'shelf' && accepts(src, hit)) shelfPut({ kind: 'status', key: pinnedKey(), last: src.text }, hit)
-          else if (!hit || k === 'card' || k === 'lib') setPinned('')
-          break
-        case 'pin':
-          if (k === 'shelf' && accepts(src, hit)) shelfPut({ kind: 'snip', entry: src.entry }, hit)
-          else if (!hit) unpinSnip(src.entry.id)
-          break
-        case 'snip':
-          if (k === 'lib') pinSnip(src.entry)
-          else if (k === 'shelf') shelfPut({ kind: 'snip', entry: src.entry }, hit)
-          break
-        case 'tile':
-          if (k === 'shelf') shelfMove(src.slot, src.idx, hit)
-          // back where it came from: off the Shelf (a snippet stays in the library)
-          else if (k === 'head' || k === 'card') shelfRemove(src.slot, src.idx)
-          else if (k === 'lib') { pinSnip(src.ref.entry); shelfRemove(src.slot, src.idx) }
-          else if (!hit) shelfRemove(src.slot, src.idx)
-          break
-      }
-    }
-    const onTap = (src, el, e) => {
-      if (src.type === 'status') {
-        pinDrag.replay = true
-        try {
-          el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true, button: 0, buttons: 1, pointerId: e.pointerId, pointerType: e.pointerType || 'mouse', isPrimary: true, clientX: e.clientX, clientY: e.clientY }))
-        } finally { pinDrag.replay = false }
-      } else if (src.type === 'pin' || src.type === 'snip') openPreview(src.entry)
-      else if (src.type === 'tile') {
-        if (src.ref.kind === 'snip') openPreview(src.ref.entry)
-        else if (!tapStatusTile(src.ref, el, src.at)) openStatusFrom(src.ref.key, el, e)
-      }
-    }
-    const ghostFor = (src, el) => {
-      const g = document.createElement('div')
-      g.id = 'atr-statusdock-ghost'
-      const entry = src.entry || src.ref?.entry
-      if (entry) {
-        const t = document.createElement('span'); t.className = 'atr-ghost-title'; t.textContent = entry.title || ''
-        const v = document.createElement('span'); v.textContent = entry.value || entry.note || ''
-        g.append(...(entry.title ? [t, v] : [v]))
-      } else {
-        const from = el.querySelector?.('.atr-tile-value') || el
-        g.replaceChildren(...[...from.childNodes].map(n => n.cloneNode(true)))
-      }
-      return g
-    }
-    const endPinDrag = () => {
-      window.removeEventListener('pointermove', onPinMove, true)
-      window.removeEventListener('pointerup', onPinUp, true)
-      window.removeEventListener('pointercancel', onPinCancel, true)
-      pinDrag.ghost?.remove()
-      pinDrag.ghost = null
-      light(null)
-      showShelfPhantom(null)
-      showLibPhantom(null)
-      pinDrag.el?.removeAttribute?.('data-lifted')
-      const was = pinDrag.moving
-      pinDrag.el = null
-      pinDrag.src = null
-      pinDrag.moving = false
-      if (was) {
-        document.documentElement.removeAttribute('data-atr-dragging')
-        layoutShelf()
-      }
-    }
-    const onPinMove = e => {
-      if (e.pointerId !== pinDrag.id || !pinDrag.el) return
-      if (e.buttons === 0 && e.pointerType === 'mouse') { endPinDrag(); return }
-      const src = pinDrag.src
-      if (!pinDrag.moving) {
-        if (Math.hypot(e.clientX - pinDrag.x, e.clientY - pinDrag.y) < 6) return
-        pinDrag.moving = true
-        document.documentElement.setAttribute('data-atr-dragging', src.type)
-        pinDrag.ghost = ghostFor(src, pinDrag.el)
-        document.body.appendChild(pinDrag.ghost)
-        if (src.type === 'tile') pinDrag.el.setAttribute('data-lifted', '')
-        layoutShelf()
-      }
-      e.preventDefault()
-      pinDrag.ghost.style.transform = `translate(${Math.round(e.clientX + 10)}px, ${Math.round(e.clientY + 8)}px)`
-      const hit = dropAt(e.clientX, e.clientY)
-      const ok = accepts(src, hit)
-      light(ok ? dropEl(hit) : null)
-      // show the thing where it would land
-      pinDrag.ghost.toggleAttribute('data-docked', !!(ok && (hit.kind === 'shelf' || hit.kind === 'lib')))
-      showShelfPhantom(ok && hit.kind === 'shelf' ? hit : null, src)
-      showLibPhantom(ok && hit.kind === 'lib' ? (src.entry || src.ref?.entry) : null)
-    }
-    const onPinUp = e => {
-      if (e.pointerId !== pinDrag.id || !pinDrag.el) return
-      const { el, src, moving } = pinDrag
-      const hit = moving ? dropAt(e.clientX, e.clientY) : null
-      endPinDrag()
-      if (!moving) { onTap(src, el, e); return }
-      pinDrag.endedAt = Date.now()
-      applyDrop(src, hit)
-    }
-    const onPinCancel = e => { if (e.pointerId === pinDrag.id) endPinDrag() }
-    function startDrag (e, src, el, hold) {
-      if (e.button !== 0 || pinDrag.el) return
-      pinDrag.el = el
-      pinDrag.src = src
-      pinDrag.key = src.key || ''
-      pinDrag.x = e.clientX
-      pinDrag.y = e.clientY
-      pinDrag.id = e.pointerId
-      pinDrag.moving = false
-      if (hold) { e.stopPropagation(); e.preventDefault() } // hold Radix's pointerdown until we know
-      window.addEventListener('pointermove', onPinMove, true)
-      window.addEventListener('pointerup', onPinUp, true)
-      window.addEventListener('pointercancel', onPinCancel, true)
-    }
-    const rowText = el => (el?.textContent || '').replace(/\s+/g, ' ').trim()
-    function startPinDrag (e, row) {
-      const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}]`)
-      if (row && !bar) return
-      if (row) startDrag(e, { type: 'status', key: statusKey(row, statusRows(bar)), text: rowText(row) }, row, true)
-      else {
-        const chip = dock.head.querySelector('.atr-sd-pin')
-        startDrag(e, { type: 'chip', text: rowText(chip) }, chip, false)
-      }
-    }
-    const onRowPointerDown = e => {
-      if (pinDrag.replay || !dock.side) return
-      const row = e.target?.closest?.(`footer[data-slot='statusbar'][${DOCK_SIDE_ATTR}][${DOCK_OPEN_ATTR}] > div > *`)
-      if (row) startPinDrag(e, row)
-    }
-    if (typeof document !== 'undefined') document.addEventListener('pointerdown', onRowPointerDown, true)
-
-    // ── Snippet pins ──────────────────────────────────────────────────────
-    const pinSnip = entry => {
-      if (!entry?.id || pins.get().some(p => p.id === entry.id)) return
-      pins.set([...pins.get(), entry])
-      persist()
-      onPinsChanged()
-    }
-    const unpinSnip = id => {
-      pins.set(pins.get().filter(p => p.id !== id))
-      persist()
-      onPinsChanged()
-    }
-    const snipText = e => [e.title && e.value ? `${e.title}: ${e.value}` : (e.value || e.title), e.note, e.source ? `(${e.source})` : ''].filter(Boolean).join('\n')
-    // Attach: Hermes's own composer door (host.composer, read off the SDK
-    // global so an older Hermes without it still loads the plugin). Active
-    // composer first, then the fresh new-chat draft; failing both, the text
-    // goes to the clipboard and the button says so.
-    const attachSnip = async entry => {
-      const text = snipText(entry)
-      try {
-        const c = globalThis.__HERMES_PLUGIN_SDK__?.host?.composer
-        if (c?.insertText) {
-          if (await c.insertText(null, text, { mode: 'block' })) return true
-          if (await c.insertText('new', text, { mode: 'block' })) return true
-        }
-      } catch {}
-      try { await navigator.clipboard?.writeText(text) } catch {}
-      return false
-    }
-
-    // ── Library drawer ────────────────────────────────────────────────────
-    // A click on any snippet (the chat card, a library row, a Shelf tile)
-    // slides the library out beside the sidebar: every pinned snippet in one
-    // column, the chosen one open with Copy / Attach / unpin, the rest as
-    // quiet lines around it. Arrows or the wheel walk the column; Attach keeps
-    // the drawer open so you can drop several in a row. No scrim: the chat
-    // stays live, a click outside or Esc puts it away. A snippet that is not
-    // pinned yet rides at the top, marked, with a pin to keep it.
-    const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
-    const ICON_PIN_SOLID = ICON_PIN.replace('fill="none"', 'fill="currentColor"')
-    const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
-    const drawer = { el: null, items: [], focus: -1, loose: null, prevFocus: null, wheel: 0, wheelAt: 0 }
-    const isPinned = id => pins.get().some(p => p.id === id)
-    const placeDrawer = () => {
-      const el = drawer.el
-      if (!el) return
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const parts = sidebarParts()
-      let x = 0.75 * rem, y = 3.5 * rem
-      if (parts) {
-        x = Math.round(parts.r.right + 0.5 * rem)
-        const lr = lib.el && !lib.el.hidden ? lib.el.getBoundingClientRect() : null
-        y = Math.round(lr ? lr.top : parts.r.top + 3.5 * rem)
-      }
-      y = Math.max(0.5 * rem, Math.min(y, innerHeight - 12 * rem))
-      el.style.setProperty('--atr-dw-x', `${x}px`)
-      el.style.setProperty('--atr-dw-y', `${y}px`)
-      el.style.setProperty('--atr-dw-maxh', `${Math.round(innerHeight - y - 0.75 * rem)}px`)
-    }
-    const drawerItem = (entry, loose) => {
-      const it = document.createElement('div')
-      it.className = 'atr-dw-item'
-      it.dataset.id = entry.id
-      it.innerHTML = '<div class="atr-dw-line"><span class="atr-dw-title"></span><span class="atr-dw-short"></span></div>'
-        + '<div class="atr-dw-more"><div class="atr-dw-inner"><div class="atr-dw-full"></div><div class="atr-dw-note"></div><div class="atr-dw-source"></div>'
-        + '<div class="atr-dw-foot"><button type="button" class="atr-dw-icon" data-act="pin"></button><span style="flex:1"></span>'
-        + '<button type="button" class="atr-dw-btn" data-act="copy" tabindex="-1">Copy</button>'
-        + '<button type="button" class="atr-dw-btn atr-dw-primary" data-act="attach" tabindex="-1">Attach to chat</button></div></div></div>'
-      const q = c => it.querySelector(c)
-      const fill = (c, t) => { const el = q(c); el.textContent = t || ''; el.hidden = !t }
-      fill('.atr-dw-title', entry.title || (entry.value ? '' : 'Snippet'))
-      fill('.atr-dw-short', entry.value || entry.note)
-      fill('.atr-dw-full', entry.value)
-      fill('.atr-dw-note', entry.note)
-      fill('.atr-dw-source', entry.source)
-      if (loose) {
-        const tag = document.createElement('span'); tag.className = 'atr-dw-loose'; tag.textContent = 'not in library'
-        q('.atr-dw-line').appendChild(tag)
-      }
-      const pin = q("[data-act='pin']")
-      const on = !loose
-      pin.toggleAttribute('data-on', on)
-      pin.innerHTML = on ? ICON_PIN_SOLID : ICON_PIN
-      pin.title = on ? 'Unpin from Snippets' : 'Pin to Snippets'
-      pin.setAttribute('aria-label', pin.title)
-      pin.tabIndex = -1
-      return it
-    }
-    const renderDrawer = () => {
-      const el = drawer.el
-      if (!el) return
-      const keep = drawer.items[drawer.focus]?.id
-      if (drawer.loose && isPinned(drawer.loose.id)) drawer.loose = null
-      drawer.items = [...(drawer.loose ? [drawer.loose] : []), ...pins.get()]
-      const list = el.querySelector('.atr-dw-list')
-      list.replaceChildren(...drawer.items.map((p, i) => drawerItem(p, i === 0 && !!drawer.loose)))
-      el.querySelector('.atr-dw-count').textContent = pins.get().length ? String(pins.get().length) : ''
-      if (!drawer.items.length) { closePreview(); return }
-      const i = drawer.items.findIndex(p => p.id === keep)
-      setDrawerFocus(i >= 0 ? i : Math.min(Math.max(drawer.focus, 0), drawer.items.length - 1), true)
-    }
-    const setDrawerFocus = (i, instant) => {
-      const el = drawer.el
-      if (!el || i < 0 || i >= drawer.items.length) return
-      drawer.focus = i
-      const rows = [...el.querySelectorAll('.atr-dw-item')]
-      rows.forEach((r, k) => {
-        const on = k === i
-        r.toggleAttribute('data-focus', on)
-        r.querySelectorAll('button').forEach(b => { b.tabIndex = on ? 0 : -1 })
-      })
-      const id = drawer.items[i].id
-      lib.el?.querySelectorAll('.atr-lib-row').forEach(r => r.toggleAttribute('data-current', r.dataset.id === id))
-      // centre the open one, measuring it at its opened height
-      const list = el.querySelector('.atr-dw-list')
-      const row = rows[i]
-      const h = row.querySelector('.atr-dw-line').offsetHeight + row.querySelector('.atr-dw-inner').scrollHeight
-      const top = row.offsetTop - list.offsetTop - Math.max(0, (list.clientHeight - h) / 2)
-      list.scrollTo({ top: Math.max(0, top), behavior: instant || reducedMotion() ? 'auto' : 'smooth' })
-    }
-    const say = (btn, text, ms = 1400) => {
-      const was = btn.dataset.label || btn.textContent
-      btn.dataset.label = was
-      btn.textContent = text
-      setTimeout(() => { if (btn.isConnected) btn.textContent = was }, ms)
-    }
-    const onDrawerKey = e => {
-      if (!drawer.el) return
-      const inDrawer = drawer.el.contains(document.activeElement) || document.activeElement === document.body
-      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closePreview(); return }
-      if (!inDrawer) return
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault()
-        setDrawerFocus(drawer.focus + (e.key === 'ArrowDown' ? 1 : -1))
-      } else if (e.key === 'Enter' && !e.target.closest?.('button')) {
-        e.preventDefault()
-        drawer.el.querySelector('.atr-dw-item[data-focus] [data-act=attach]')?.click()
-      }
-    }
-    const onDrawerOutside = e => {
-      if (!drawer.el || drawer.el.contains(e.target)) return
-      // a snippet elsewhere re-aims the drawer instead of closing it
-      if (e.target.closest?.('#atr-snips .atr-lib-row, .atr-snip, .atr-tile')) return
-      closePreview()
-    }
-    const closePreview = () => {
-      const el = drawer.el
-      if (!el) return
-      drawer.el = null
-      drawer.loose = null
-      document.removeEventListener('keydown', onDrawerKey, true)
-      document.removeEventListener('pointerdown', onDrawerOutside, true)
-      window.removeEventListener('resize', placeDrawer)
-      lib.el?.querySelectorAll('.atr-lib-row[data-current]').forEach(r => r.removeAttribute('data-current'))
-      if (reducedMotion()) el.remove()
-      else { el.setAttribute('data-leaving', ''); setTimeout(() => el.remove(), 170) }
-      try { if (el.contains(document.activeElement)) drawer.prevFocus?.focus?.() } catch {}
-    }
-    const openPreview = entry => {
-      if (!entry || typeof document === 'undefined') return
-      if (!isPinned(entry.id)) drawer.loose = entry
-      else if (drawer.loose?.id !== entry.id) drawer.loose = drawer.el ? drawer.loose : null
-      if (!drawer.el) {
-        drawer.prevFocus = document.activeElement
-        const el = document.createElement('div')
-        el.id = 'atr-snip-drawer'
-        el.tabIndex = -1
-        el.setAttribute('role', 'dialog')
-        el.setAttribute('aria-label', 'Snippets')
-        el.innerHTML = '<div class="atr-dw-head"><span>Snippets</span><span class="atr-dw-count"></span><span class="atr-dw-keys">↑ ↓</span>'
-          + `<button type="button" class="atr-dw-icon" data-act="close" aria-label="Close" title="Close (Esc)">${ICON_X}</button></div><div class="atr-dw-list"></div>`
-        el.addEventListener('click', e => {
-          const btn = e.target.closest?.('[data-act]')
-          const row = e.target.closest?.('.atr-dw-item')
-          if (!btn) { if (row && !row.hasAttribute('data-focus')) setDrawerFocus([...el.querySelectorAll('.atr-dw-item')].indexOf(row)); return }
-          const act = btn.dataset.act
-          if (act === 'close') { closePreview(); return }
-          const it = drawer.items[[...el.querySelectorAll('.atr-dw-item')].indexOf(row)]
-          if (!it) return
-          if (act === 'pin') { if (isPinned(it.id)) { drawer.loose = it; unpinSnip(it.id) } else pinSnip(it); renderDrawer() }
-          else if (act === 'copy') { void navigator.clipboard?.writeText(snipText(it)); say(btn, 'Copied') }
-          else if (act === 'attach') {
-            btn.disabled = true
-            attachSnip(it).then(ok => { btn.disabled = false; say(btn, ok ? 'Attached' : 'Copied, paste it in', ok ? 1400 : 2200) })
-          }
-        })
-        // the wheel walks the column one snippet at a time
-        el.querySelector('.atr-dw-list').addEventListener('wheel', e => {
-          if (e.target.closest?.('.atr-dw-full') && e.target.closest('.atr-dw-full').scrollHeight > e.target.closest('.atr-dw-full').clientHeight) return
-          e.preventDefault()
-          const now = Date.now()
-          if (now - drawer.wheelAt > 300) drawer.wheel = 0
-          drawer.wheelAt = now
-          drawer.wheel += e.deltaY
-          if (Math.abs(drawer.wheel) >= 60) { setDrawerFocus(drawer.focus + Math.sign(drawer.wheel)); drawer.wheel = 0 }
-        }, { passive: false })
-        document.body.appendChild(el)
-        drawer.el = el
-        placeDrawer()
-        document.addEventListener('keydown', onDrawerKey, true)
-        document.addEventListener('pointerdown', onDrawerOutside, true)
-        window.addEventListener('resize', placeDrawer)
-      }
-      drawer.items = []
-      renderDrawer()
-      setDrawerFocus(drawer.items.findIndex(p => p.id === entry.id), !drawer.el.dataset.shown)
-      drawer.el.dataset.shown = '1'
-      if (!drawer.el.contains(document.activeElement)) drawer.el.focus({ preventScroll: true })
-    }
-
-    // ── Snippet library (its own sidebar card) ────────────────────────────
-    // Pinned snippets live in a SNIPPETS card under the status card (or under
-    // search when there is none), toggled in Settings > Snippets. Header click
-    // folds it. A row: click = preview, drag onto the Shelf, drag off = unpin.
-    // A snippet dragged over the card shows as a ghost row where it will land.
-    const LIB_MAX_ROWS = 6
-    const ICON_BOOKMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>'
-    const ICON_CHEV = '<svg class="atr-lib-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
-    const lib = { el: null, sig: '', phantom: null, open: stored(STORE_KEYS.libraryOpen) !== false, h: 0, key: '', room: null }
-    const ensureLib = () => {
-      if (lib.el) return lib.el
-      const el = document.createElement('div')
-      el.id = 'atr-snips'
-      el.hidden = true
-      el.innerHTML = `<div class="atr-lib-head" role="button" tabindex="0">${ICON_BOOKMARK}<span class="atr-lib-label">Snippets</span><span class="atr-lib-count"></span>${ICON_CHEV}</div><div class="atr-lib-rows"></div>`
-      const head = el.firstElementChild
-      const toggle = () => {
-        lib.open = !lib.open
-        ctx.storage.set(STORE_KEYS.libraryOpen, lib.open)
-        lib.key = ''
-        layoutLibrary()
-      }
-      head.addEventListener('click', () => { if (Date.now() - pinDrag.endedAt > 250) toggle() })
-      head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } })
-      const rows = el.lastElementChild
-      rows.addEventListener('pointerdown', e => {
-        const row = e.target.closest?.('.atr-lib-row[data-id]')
-        if (!row) return
-        const entry = pins.get().find(p => p.id === row.dataset.id)
-        if (entry) startDrag(e, { type: 'pin', entry }, row, true)
-      })
-      rows.addEventListener('keydown', e => {
-        const row = e.target.closest?.('.atr-lib-row[data-id]')
-        if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPreview(pins.get().find(p => p.id === row.dataset.id)) }
-      })
-      document.body.appendChild(el)
-      lib.el = el
-      return el
-    }
-    const libRow = (p, phantom) => {
-      const row = document.createElement('div')
-      row.className = 'atr-lib-row'
-      if (phantom) row.setAttribute('data-phantom', '')
-      else { row.dataset.id = p.id; row.tabIndex = 0; row.setAttribute('role', 'button'); row.title = [p.title, p.value].filter(Boolean).join(': ') + '. Click to preview' }
-      if (p.title) { const t = document.createElement('span'); t.className = 'truncate atr-lib-title'; t.textContent = p.title; row.appendChild(t) }
-      const v = document.createElement('span'); v.className = 'truncate atr-lib-value'; v.textContent = p.value || p.note || ''
-      row.appendChild(v)
-      return row
-    }
-    const renderLib = () => {
-      const el = ensureLib()
-      const list = pins.get()
-      const ph = lib.phantom && !list.some(p => p.id === lib.phantom.id) ? lib.phantom : null
-      const sig = JSON.stringify(list.map(p => p.id)) + (ph ? '+' + ph.id : '')
-      const count = list.length ? String(list.length) : ''
-      const countEl = el.querySelector('.atr-lib-count')
-      if (countEl && countEl.textContent !== count) countEl.textContent = count
-      if (sig === lib.sig) return
-      lib.sig = sig
-      const rows = el.querySelector('.atr-lib-rows')
-      rows.replaceChildren(...list.map(p => libRow(p, false)), ...(ph ? [libRow(ph, true)] : []))
-      if (!list.length && !ph) {
-        const hint = document.createElement('div')
-        hint.className = 'atr-lib-hint'
-        hint.textContent = 'Drag a snippet here, or pin one'
-        rows.appendChild(hint)
-      }
-    }
-    const cropLib = () => {
-      if (!lib.el || lib.el.hidden) return
-      for (const row of lib.el.querySelectorAll('.atr-lib-row')) {
-        const spans = [...row.querySelectorAll('.truncate')].filter(sp => sp.firstChild?.nodeType === 3).map(spanInfo)
-        try { fitLine(row, spans) } catch {}
-      }
-    }
-    const unlib = () => {
-      if (lib.el) lib.el.hidden = true
-      if (lib.room) { lib.room.removeAttribute('data-atr-lib-room'); lib.room.style.removeProperty('--atr-lib-room'); lib.room = null }
-      lib.h = 0
-      lib.key = ''
-    }
-    const layoutLibrary = () => {
-      if (typeof document === 'undefined' || !document.body) return
-      const parts = library.get() ? sidebarParts() : null
-      if (!parts) { unlib(); return }
-      const { side, room, r } = parts
-      const el = ensureLib()
-      renderLib()
-      if (lib.room && lib.room !== room) unlib()
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const gap = 0.5 * rem
-      const headH = Math.round(1.85 * rem)
-      const srow = room.querySelector("[data-slot='sidebar-menu-item']")
-      const rowH = Math.round(Math.max(22, Math.min(64, srow?.getBoundingClientRect().height || 1.85 * rem)))
-      const btn = srow?.querySelector?.("[data-slot='sidebar-menu-button']")
-      const content = side.querySelector("[data-slot='sidebar-content']")
-      const cs = content ? getComputedStyle(content) : null
-      const flexGap = cs ? parseFloat(cs.rowGap) || 0 : 0
-      const prev = room.previousElementSibling
-      const ceiling = prev ? prev.getBoundingClientRect().bottom + flexGap : (content ? content.getBoundingClientRect().top + (parseFloat(cs.paddingTop) || 0) : r.top)
-      const statusOn = dock.side && dock.head && !dock.head.hidden
-      const statusH = statusOn ? (parseFloat(dock.head.style.getPropertyValue('--atr-sd-h')) || 0) + gap : 0
-      const n = pins.get().length + (lib.sig.includes('+') ? 1 : 0)
-      // the estimate from the sessions row height, or the rows as they actually
-      // render if that's taller (a bigger font, a hint line), so nothing clips
-      const estH = Math.round(Math.max(1, Math.min(n, LIB_MAX_ROWS)) * (rowH + 0.1 * rem) + 0.45 * rem)
-      const libRows = el.querySelector('.atr-lib-rows')
-      const shown = libRows ? [...libRows.children].slice(0, LIB_MAX_ROWS) : []
-      const realH = shown.length ? Math.ceil(shown.reduce((a, k) => a + Math.max(rowH, k.getBoundingClientRect().height), 0) + (shown.length - 1) * 0.1 * rem + 0.45 * rem) : 0
-      const bodyH = Math.max(estH, realH)
-      const h = headH + (lib.open ? bodyH : 0)
-      const padX = cs ? parseFloat(cs.paddingLeft) || 10 : 10
-      const x = Math.round(r.left + padX)
-      const w = Math.round(r.width - 2 * padX)
-      const top = Math.round(ceiling + statusH)
-      const key = [x, w, top, h, lib.open, lib.sig, rowH].join('|')
-      if (key === lib.key && !el.hidden) return
-      lib.key = key
-      el.hidden = false
-      el.toggleAttribute('data-open', lib.open)
-      el.firstElementChild.setAttribute('aria-expanded', String(lib.open))
-      el.firstElementChild.title = lib.open ? 'Collapse snippets' : 'Expand snippets'
-      el.style.setProperty('--atr-lib-x', `${x}px`)
-      el.style.setProperty('--atr-lib-y', `${top}px`)
-      el.style.setProperty('--atr-lib-w', `${w}px`)
-      el.style.setProperty('--atr-lib-h', `${h}px`)
-      el.style.setProperty('--atr-lib-head', `${headH}px`)
-      el.style.setProperty('--atr-sd-rowh', `${rowH}px`)
-      if (btn) el.style.setProperty('--atr-sd-font', getComputedStyle(btn).fontSize)
-      const lab = side.querySelector("[class*='tracking-[0.16em]']")
-      if (lab) { const c = getComputedStyle(lab); el.style.setProperty('--atr-sd-lab-size', c.fontSize); el.style.setProperty('--atr-sd-lab-color', c.color) }
-      room.setAttribute('data-atr-lib-room', '')
-      room.style.setProperty('--atr-lib-room', `${h + gap}px`)
-      lib.room = room
-      lib.h = h + gap
-      requestAnimationFrame(cropLib)
-    }
-    const showLibPhantom = entry => {
-      const id = entry?.id || ''
-      if ((lib.phantom?.id || '') === id) return
-      lib.phantom = entry || null
-      if (!lib.el || lib.el.hidden) return
-      if (entry && !lib.open) { lib.open = true; lib.reopen = true }
-      if (!entry && lib.reopen) { lib.open = false; lib.reopen = false }
-      lib.key = ''
-      layoutLibrary()
-      if (entry) morphFrom(lib.el.querySelector('.atr-lib-row[data-phantom]'), ghostRect(), 260)
-    }
-    const onPinsChanged = () => {
-      if (drawer.el) renderDrawer()
-      lib.key = ''
-      layoutLibrary()
-      layoutShelf()
-    }
-
-    // ── The Shelf ─────────────────────────────────────────────────────────
-    // Two slots on the new-chat screen, above and below the Hermes wordmark.
-    // Empty, they show only while something is being dragged; once they hold
-    // tiles they stay. Status tiles mirror their row live; snippet tiles
-    // show the value large and the title small. Fixed in <body> over the
-    // intro (Hermes's DOM is never touched), placed off the wordmark's box.
-    const SHELF_SLOTS = ['above', 'below']
-    const SHELF_MAX = 4
-    const refId = r => r.kind === 'status' ? 's:' + r.key : 'n:' + r.entry.id
-    const loadShelf = () => {
-      const v = stored(STORE_KEYS.shelf)
-      const ok = a => Array.isArray(a)
-        ? a.filter(r => r && ((r.kind === 'status' && typeof r.key === 'string' && r.key) || (r.kind === 'snip' && r.entry && typeof r.entry.id === 'string'))).slice(0, SHELF_MAX)
-        : []
-      return { above: ok(v?.above), below: ok(v?.below) }
-    }
-    let shelf = loadShelf()
-    const shelfEls = {}
-    const shelfSig = { above: '', below: '' }
-    const saveShelf = () => {
-      ctx.storage.set(STORE_KEYS.shelf, shelf)
-      shelfSig.above = shelfSig.below = ''
-      layoutShelf()
-    }
-    const shelfPut = (ref, hit) => {
-      if (!ref || (ref.kind === 'status' && !ref.key)) return
-      const id = refId(ref)
-      let at = hit.index
-      for (const sl of SHELF_SLOTS) {
-        const i = shelf[sl].findIndex(r => refId(r) === id)
-        if (i >= 0) { shelf[sl].splice(i, 1); if (sl === hit.slot && i < at) at-- }
-      }
-      const list = shelf[hit.slot]
-      if (list.length >= SHELF_MAX) { saveShelf(); return }
-      list.splice(Math.max(0, Math.min(at, list.length)), 0, ref)
-      saveShelf()
-    }
-    const shelfMove = (slot, idx, hit) => {
-      const ref = shelf[slot][idx]
-      if (!ref) return
-      if (hit.slot !== slot && shelf[hit.slot].length >= SHELF_MAX) return
-      shelfPut(ref, hit)
-    }
-    const shelfRemove = (slot, idx) => { shelf[slot].splice(idx, 1); saveShelf() }
-    // Resize: drag a tile's right edge. The width is kept on the tile's ref
-    // (so it rides along when the tile moves); double-click resets it.
-    const startResize = (e, tile, ref) => {
-      if (e.button !== 0) return
-      e.preventDefault()
-      e.stopPropagation()
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const shelfW = tile.parentElement.getBoundingClientRect().width
-      const x0 = e.clientX
-      const w0 = tile.getBoundingClientRect().width
-      const min = 4.5 * rem
-      let w = w0
-      tile.setAttribute('data-resizing', '')
-      document.documentElement.setAttribute('data-atr-resizing', '')
-      const move = ev => {
-        if (ev.pointerId !== e.pointerId) return
-        // tiles are centred, so the edge moves half as fast as the width
-        w = Math.round(Math.max(min, Math.min(shelfW, w0 + (ev.clientX - x0) * 2)))
-        tile.style.flex = `0 1 ${w}px`
-        cropTile(tile)
-      }
-      const up = ev => {
-        if (ev.pointerId !== e.pointerId) return
-        window.removeEventListener('pointermove', move, true)
-        window.removeEventListener('pointerup', up, true)
-        window.removeEventListener('pointercancel', up, true)
-        tile.removeAttribute('data-resizing')
-        document.documentElement.removeAttribute('data-atr-resizing')
-        pinDrag.endedAt = Date.now()
-        if (Math.abs(w - w0) >= 2) { ref.w = w; saveShelf() }
-      }
-      window.addEventListener('pointermove', move, true)
-      window.addEventListener('pointerup', up, true)
-      window.addEventListener('pointercancel', up, true)
-    }
-    // A tap on a status tile lands on the same part of the real row: the
-    // clone mirrors the row node for node, so the tapped node's child-index
-    // path finds its twin. A control there (pause, skip) gets a real click;
-    // anywhere else opens the row's own menu, placed beside the tile.
-    const CONTROL = "button, a, input, select, [role='button'], [role='switch'], [role='checkbox'], [role='slider'], [role='menuitem']"
-    const twinOf = (face, row, node) => {
-      const path = []
-      for (let n = node; n && n !== face; n = n.parentElement) {
-        const p = n.parentElement
-        if (!p) return null
-        path.unshift([...p.children].indexOf(n))
-      }
-      let t = row
-      for (const i of path) { t = t?.children[i]; if (!t) return null }
-      return t
-    }
-    const realClick = (el, near) => {
-      const r = el.getBoundingClientRect()
-      const x = r.width ? r.left + r.width / 2 : (near?.left ?? 0), y = r.height ? r.top + r.height / 2 : (near?.top ?? 0)
-      const base = { bubbles: true, cancelable: true, composed: true, button: 0, clientX: x, clientY: y, view: window }
-      const pe = { ...base, pointerId: 1, pointerType: 'mouse', isPrimary: true }
-      pinDrag.replay = true
-      try {
-        el.dispatchEvent(new PointerEvent('pointerdown', { ...pe, buttons: 1 }))
-        el.dispatchEvent(new MouseEvent('mousedown', { ...base, buttons: 1 }))
-        el.dispatchEvent(new PointerEvent('pointerup', { ...pe, buttons: 0 }))
-        el.dispatchEvent(new MouseEvent('mouseup', { ...base, buttons: 0 }))
-        el.dispatchEvent(new MouseEvent('click', { ...base, buttons: 0, detail: 1 }))
-      } finally { pinDrag.replay = false }
-    }
-    const tapStatusTile = (ref, tile, at) => {
-      const row = statusRowFor(ref.key)
-      const face = tile.querySelector('.atr-tile-face')
-      if (!row || !face) return false
-      const hit = at && face.contains(at) ? at.closest(CONTROL) : null
-      const twin = hit && face.contains(hit) ? twinOf(face, row, hit) : null
-      // the control tapped, if it is a control of its own (not the whole row)
-      if (twin && twin !== row) {
-        dock.popAnchor = { el: tile, at: Date.now() } // in case it opens a menu
-        realClick(twin, tile.getBoundingClientRect())
-        // let React re-render the row, then mirror it
-        setTimeout(() => { shelfSig.above = shelfSig.below = ''; layoutShelf() }, 60)
-        return true
-      }
-      // the box: the row's own menu. The row itself when it is the trigger,
-      // else the trigger inside it (a plugin's rendered item), else the
-      // first control in it.
-      const trig = row.matches('[aria-haspopup], button, a') ? row
-        : row.querySelector('[aria-haspopup]') || row.querySelector(CONTROL) || row
-      dock.popAnchor = { el: tile, at: Date.now() }
-      realClick(trig, tile.getBoundingClientRect())
-      return true
-    }
-    const ensureShelf = () => {
-      for (const sl of SHELF_SLOTS) {
-        if (shelfEls[sl]) continue
-        const el = document.createElement('div')
-        el.id = `atr-shelf-${sl}`
-        el.className = 'atr-shelf'
-        el.dataset.slot = sl
-        el.hidden = true
-        el.addEventListener('pointerdown', e => {
-          const tile = e.target.closest?.('.atr-tile')
-          if (!tile) return
-          const idx = [...el.querySelectorAll('.atr-tile')].indexOf(tile)
-          const ref = shelf[sl][idx]
-          if (!ref) return
-          if (e.target.closest('.atr-tile-grip')) { startResize(e, tile, ref); return }
-          startDrag(e, { type: 'tile', ref, slot: sl, idx, at: e.target }, tile, true)
-        })
-        el.addEventListener('dblclick', e => {
-          const tile = e.target.closest?.('.atr-tile')
-          if (!tile || !e.target.closest('.atr-tile-grip')) return
-          const ref = shelf[sl][[...el.querySelectorAll('.atr-tile')].indexOf(tile)]
-          if (ref?.w) { delete ref.w; saveShelf() }
-        })
-        // the clone's own controls are dead DOM: never let one act natively
-        el.addEventListener('click', e => { if (e.target.closest?.('.atr-tile-face')) e.preventDefault() })
-        el.addEventListener('keydown', e => {
-          const tile = e.target.closest?.('.atr-tile')
-          if (!tile || !(e.key === 'Enter' || e.key === ' ')) return
-          e.preventDefault()
-          const ref = shelf[sl][[...el.querySelectorAll('.atr-tile')].indexOf(tile)]
-          if (ref?.kind === 'snip') openPreview(ref.entry)
-          else if (ref && !tapStatusTile(ref, tile, null)) openStatusFrom(ref.key, tile, null)
-        })
-        document.body.appendChild(el)
-        shelfEls[sl] = el
-      }
-    }
-    const shelfSlotAt = (x, y) => {
-      if (!pinDrag.moving) return null
-      for (const sl of SHELF_SLOTS) {
-        const el = shelfEls[sl]
-        if (!el || el.hidden || !inRect(el, x, y, 10)) continue
-        const tiles = [...el.querySelectorAll('.atr-tile:not([data-phantom])')]
-        const index = tiles.filter(t => { const r = t.getBoundingClientRect(); return r.left + r.width / 2 < x }).length
-        return { slot: sl, index }
-      }
-      return null
-    }
-    // the dragged thing, drawn as a ghost tile where it would land
-    const phantom = { el: null, slot: '', index: -1 }
-    // FLIP: grow an element out of a rect (the drag chip, or where it just was)
-    const MORPH_EASE = 'cubic-bezier(.32,.72,0,1)'
-    const morphFrom = (el, from, ms = 240) => {
-      if (!el || !from || !el.animate || reducedMotion()) return
-      const to = el.getBoundingClientRect()
-      if (!to.width || !to.height) return
-      const dx = from.left - to.left, dy = from.top - to.top
-      const sx = from.width / to.width, sy = from.height / to.height
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.02 && Math.abs(sy - 1) < 0.02) return
-      el.animate([
-        { transformOrigin: '0 0', transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 0.35 },
-        { transformOrigin: '0 0', transform: 'none', opacity: getComputedStyle(el).opacity }
-      ], { duration: ms, easing: MORPH_EASE })
-    }
-    const ghostRect = () => pinDrag.ghost?.getBoundingClientRect() || null
-    const phantomRef = src => src.type === 'tile' ? src.ref
-      : (src.type === 'status' || src.type === 'chip') ? { kind: 'status', key: src.key || pinnedKey(), last: src.text }
-      : { kind: 'snip', entry: src.entry }
-    const showShelfPhantom = (hit, src) => {
-      if (!hit) {
-        phantom.el?.remove()
-        phantom.el = null
-        phantom.slot = ''
-        phantom.index = -1
-        SHELF_SLOTS.forEach(sl => shelfEls[sl]?.removeAttribute('data-preview'))
-        return
-      }
-      if (phantom.slot === hit.slot && phantom.index === hit.index && phantom.el) return
-      const fresh = !phantom.el || phantom.slot !== hit.slot
-      const was = phantom.el?.getBoundingClientRect() || null
-      if (!phantom.el) {
-        phantom.el = tileFor(phantomRef(src))
-        phantom.el.setAttribute('data-phantom', '')
-        phantom.el.removeAttribute('tabindex')
-      }
-      const el = shelfEls[hit.slot]
-      SHELF_SLOTS.forEach(sl => shelfEls[sl]?.toggleAttribute('data-preview', sl === hit.slot))
-      const tiles = [...el.querySelectorAll('.atr-tile:not([data-phantom])')]
-      el.insertBefore(phantom.el, tiles[hit.index] || null)
-      phantom.slot = hit.slot
-      phantom.index = hit.index
-      cropTile(phantom.el)
-      // the chip under the cursor grows into the tile; a reorder slides it
-      morphFrom(phantom.el, fresh ? ghostRect() : was, fresh ? 260 : 180)
-    }
-    // the live row for a status key (null when the dock is off)
-    const statusRowFor = key => {
-      const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_ATTR}]`)
-      const rows = statusRows(bar)
-      return rows.find(r => statusKey(r, rows) === key) || null
-    }
-    const statusLast = {}
-    const tileFor = (ref, w) => {
-      const tile = document.createElement('div')
-      tile.className = 'atr-tile'
-      tile.dataset.kind = ref.kind
-      tile.tabIndex = 0
-      tile.setAttribute('role', 'button')
-      const label = document.createElement('span')
-      label.className = 'atr-tile-label'
-      const value = document.createElement('span')
-      value.className = 'atr-tile-value'
-      if (ref.kind === 'snip') {
-        const e = ref.entry
-        label.textContent = e.title || 'Snippet'
-        const t = document.createElement('span'); t.className = 'atr-tile-text'; t.textContent = e.value || e.note || ''
-        value.appendChild(t)
-        tile.title = [e.title, e.value].filter(Boolean).join(': ') + '. Click to preview, drag off to remove'
-      } else {
-        // a status tile is the row itself, no label: Hermes's own markup
-        // cloned whole, so its spacing and muted parts ("Backend ready")
-        // survive; inert, since a click on the tile opens the row's menu
-        const row = statusRowFor(ref.key)
-        if (row) {
-          const face = row.cloneNode(true)
-          face.querySelectorAll('[id], [title]').forEach(n => { n.removeAttribute('id'); n.removeAttribute('title') })
-          face.removeAttribute('id')
-          face.removeAttribute('title')
-          ;[...face.attributes].filter(a => a.name.startsWith('data-atr-') || a.name.startsWith('aria-')).forEach(a => face.removeAttribute(a.name))
-          // the sidebar's smart crop rides along in the clone: undo it
-          face.querySelectorAll('[data-atr-full]').forEach(n => { if (n.firstChild?.nodeType === 3) n.firstChild.nodeValue = n.dataset.atrFull; delete n.dataset.atrFull; delete n.dataset.atrCrop })
-          face.classList.add('atr-tile-face')
-          // live-looking but dead: a tap on any part is replayed on the same
-          // part of the real row (pause, the menu...), see tapStatusTile
-          ;[face, ...face.querySelectorAll('*')].forEach(n => [...n.attributes].forEach(at => { if (/^on/i.test(at.name)) n.removeAttribute(at.name) }))
-          face.querySelectorAll('button, a, input, [tabindex]').forEach(n => { n.setAttribute('tabindex', '-1'); n.removeAttribute('href') })
-          if (face.matches('button, a, [tabindex]')) { face.setAttribute('tabindex', '-1'); face.removeAttribute('href') }
-          face.removeAttribute('disabled')
-          value.appendChild(face)
-          statusLast[ref.key] = rowText(row)
-          tile.title = statusLast[ref.key] + '. Click for its menu, drag off to remove'
-        } else {
-          tile.setAttribute('data-stale', '')
-          const t = document.createElement('span'); t.className = 'truncate'; t.textContent = statusLast[ref.key] || ref.last || ref.key.replace(/^lucide-|^txt:/, '')
-          value.appendChild(t)
-          tile.title = t.textContent + ' (status bar hidden)'
-        }
-      }
-      if (ref.kind === 'snip') tile.append(label, value)
-      else tile.append(value)
-      // a sized tile keeps its width (it still shrinks if the shelf is full)
-      if (ref.w > 0) tile.style.flex = `0 1 ${ref.w}px`
-      const grip = document.createElement('span')
-      grip.className = 'atr-tile-grip'
-      grip.title = 'Drag to resize. Double-click to reset'
-      tile.appendChild(grip)
-      return tile
-    }
-    const cropTile = tile => {
-      const v = tile?.querySelector('.atr-tile-value')
-      if (!v) return
-      const face = v.querySelector('.atr-tile-face')
-      if (!face && !v.querySelector('.truncate')) return
-      try { fitLine(face || v, (face ? croppable(face) : [...v.querySelectorAll('.truncate')]).map(spanInfo)) } catch {}
-    }
-    const shelf$ = { ro: null, watched: null, raf: 0 }
-    const layoutShelf = () => {
-      if (typeof document === 'undefined' || !document.body) return
-      ensureShelf()
-      const intro = document.querySelector("[data-slot='aui_intro']")
-      const box = intro?.firstElementChild
-      const br = box?.getBoundingClientRect()
-      const hideAll = () => SHELF_SLOTS.forEach(sl => { if (!shelfEls[sl].hidden) shelfEls[sl].hidden = true })
-      if (!intro || !br || br.width < 120 || !intro.getClientRects().length) { hideAll(); return }
-      if (typeof ResizeObserver === 'function' && shelf$.watched !== intro) {
-        shelf$.ro?.disconnect()
-        shelf$.ro = new ResizeObserver(() => { if (!shelf$.raf) shelf$.raf = requestAnimationFrame(() => { shelf$.raf = 0; layoutShelf() }) })
-        shelf$.ro.observe(intro)
-        shelf$.watched = intro
-      }
-      const mark = box.querySelector(".wordmark, [class*='wordmark']") || box.firstElementChild
-      const para = box.querySelector('p:last-child') || mark
-      const mr = mark.getBoundingClientRect()
-      const pr = para.getBoundingClientRect()
-      const ir = intro.getBoundingClientRect()
-      const input = document.querySelector("[data-slot='composer-rich-input']")
-      const form = input?.closest('form') || input?.parentElement
-      const floor = Math.min(window.innerHeight - 8, form ? form.getBoundingClientRect().top - 12 : Infinity)
-      // the intro is only as tall as its copy: measure up to the pane it sits in
-      let pane = intro.parentElement
-      while (pane && pane !== document.body && pane.getBoundingClientRect().height < ir.height + 120) pane = pane.parentElement
-      const ceil = Math.max(8, (pane && pane !== document.body ? pane.getBoundingClientRect().top : 0) + 8)
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const H = Math.round(3.1 * rem)
-      const gap = Math.round(1.25 * rem)
-      const dragging = pinDrag.moving
-      const w = Math.min(Math.round(br.width), Math.round(40 * rem))
-      const x = Math.round(br.left + (br.width - w) / 2)
-      for (const sl of SHELF_SLOTS) {
-        const el = shelfEls[sl]
-        const items = shelf[sl]
-        const top = sl === 'above' ? Math.round(mr.top - gap - H) : Math.round(pr.bottom + gap)
-        const fits = sl === 'above' ? top >= ceil : top + H <= floor
-        if (!(items.length || dragging) || !fits) {
-          if (!el.hidden) el.hidden = true
-          if (!items.length && el.firstChild) { el.replaceChildren(); shelfSig[sl] = '' }
-          continue
-        }
-        if (el.hidden) el.hidden = false
-        el.style.setProperty('--atr-sh-x', `${x}px`)
-        el.style.setProperty('--atr-sh-y', `${top}px`)
-        el.style.setProperty('--atr-sh-w', `${w}px`)
-        el.style.setProperty('--atr-sh-h', `${H}px`)
-        el.toggleAttribute('data-empty', !items.length)
-        // render first, measure after (below), so the slot fits its tallest tile
-        const live = items.map(r => r.kind === 'status' ? (statusRowFor(r.key)?.innerHTML || '') : '').join('|')
-        const sig = JSON.stringify(items.map(r => refId(r) + '@' + (r.w || 0))) + live + w + (items.length ? '' : dragging ? 'D' : '')
-        if (sig !== shelfSig[sl]) {
-          shelfSig[sl] = sig
-          if (!items.length) {
-            const hint = document.createElement('div')
-            hint.className = 'atr-shelf-hint'
-            hint.textContent = sl === 'above' ? 'Drop here' : 'Or here'
-            el.replaceChildren(hint)
-          } else {
-            el.replaceChildren(...items.map(r => tileFor(r, w)))
-            // smart-crop each value line to its tile
-            el.querySelectorAll('.atr-tile').forEach(cropTile)
-          }
-        }
-        // grow to the tallest tile (a wrapped snippet), never below the base
-        // height; the upper slot grows upward so it keeps its gap to the mark
-        if (items.length) {
-          el.style.setProperty('--atr-sh-h', 'auto')
-          const Hs = Math.max(H, Math.ceil(el.getBoundingClientRect().height))
-          const topS = sl === 'above' ? Math.round(mr.top - gap - Hs) : top
-          const fitsS = sl === 'above' ? topS >= ceil : topS + Hs <= floor
-          el.style.setProperty('--atr-sh-y', `${fitsS ? topS : top}px`)
-          el.style.setProperty('--atr-sh-h', `${fitsS ? Hs : H}px`)
-        }
-      }
-    }
-    // A status tile's click: open that status's own menu, placed beside the
-    // tile (placeDockPop reads dock.popAnchor).
-    const openStatusFrom = (key, tile, e) => {
-      const row = statusRowFor(key)
-      if (!row) return
-      dock.popAnchor = { el: tile, at: Date.now() }
-      const r = row.getBoundingClientRect()
-      pinDrag.replay = true
-      try {
-        row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true, button: 0, buttons: 1, pointerId: e?.pointerId ?? 1, pointerType: e?.pointerType || 'mouse', isPrimary: true, clientX: r.left + 4, clientY: r.top + 4 }))
-        if (!e) row.click?.()
-      } finally { pinDrag.replay = false }
-    }
-    let pinsUnsub = null
-    try { pinsUnsub = pins.subscribe?.(() => { if (lib.el) onPinsChanged() }) } catch {}
-
-    const ensureSideHead = () => {
-      if (dock.head) return dock.head
-      const head = document.createElement('div')
-      head.id = 'atr-statusdock-head'
-      // a atr- class opts the card out of the global control radius (8px), so
-      // it keeps the 12px of every other sidebar card
-      head.className = 'atr-sd-card'
-      head.setAttribute('role', 'button')
-      head.tabIndex = 0
-      head.innerHTML = '<span class="atr-sd-row">'
-        + '<svg class="atr-sd-eq" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6v4M8 3.5v9M12 5.5v5"/></svg>'
-        + '<svg class="atr-sd-pinico" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
-        + '<span class="atr-sd-label">Status</span><span class="atr-sd-pin" title="Pinned. Drag off the title to unpin"></span>'
-        + '<svg class="atr-sd-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>'
-        + '</span>'
-      const toggle = () => {
-        dock.manual = { open: !dock.sideOpen, auto: dock.lastAuto }
-        dock.sideKey = ''
-        layoutSideDock()
-      }
-      head.addEventListener('click', () => {
-        if (Date.now() - pinDrag.endedAt < 250) return // the click that ends a drag
-        toggle()
-      })
-      head.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() }
-      })
-      head.querySelector('.atr-sd-pin').addEventListener('pointerdown', e => startPinDrag(e, null))
-      document.body.appendChild(head)
-      dock.head = head
-      return head
-    }
-    const watchSide = els => {
-      if (typeof ResizeObserver !== 'function') return
-      if (els.length === dock.roWatched.length && els.every((el, i) => el === dock.roWatched[i])) return
-      dock.ro?.disconnect()
-      dock.ro = new ResizeObserver(() => requestAnimationFrame(() => layoutSideDock()))
-      els.forEach(el => dock.ro.observe(el))
-      dock.roWatched = els
-    }
-    const layoutSideDock = () => {
-      const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_ATTR}]`)
-      const parts = bar && sidebarParts()
-      if (!parts) { if (dock.side) unside(); return false }
-      const { side, room, r } = parts
-      const head = ensureSideHead()
-      if (head.hidden) head.hidden = false
-      if (dock.room && dock.room !== room) unside()
-      dock.side = side
-      dock.room = room
-      put(bar, DOCK_SIDE_ATTR, '')
-      put(room, DOCK_ROOM_ATTR, '')
-      watchSide([side, bar])
-
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const gap = 0.5 * rem
-      const headH = Math.round(1.85 * rem)
-      const row = room.querySelector("[data-slot='sidebar-menu-item']")
-      const rowH = Math.max(22, Math.min(64, row?.getBoundingClientRect().height || 1.85 * rem))
-      const need = (SIDE_MIN_SESSIONS + 2) * rowH
-      // borrow the session rows' and section labels' faces so the card matches
-      const btn = row?.querySelector?.("[data-slot='sidebar-menu-button']") || room.querySelector("[data-slot='sidebar-menu-button']")
-      const lab = side.querySelector("[class*='tracking-[0.16em]']")
-      const face = [btn && getComputedStyle(btn).fontSize, Math.round(rowH), lab && (() => { const c = getComputedStyle(lab); return [c.fontSize, c.fontWeight, c.letterSpacing, c.color].join('|') })()].join('/')
-      if (face !== dock.face) {
-        dock.face = face
-        const set = (el, k, v) => { if (v) el.style.setProperty(k, v); else el.style.removeProperty(k) }
-        for (const el of [head, bar]) {
-          set(el, '--atr-sd-font', btn && getComputedStyle(btn).fontSize)
-          set(el, '--atr-sd-rowh', row ? `${Math.round(rowH)}px` : '')
-        }
-        if (lab) {
-          const c = getComputedStyle(lab)
-          set(head, '--atr-sd-lab-size', c.fontSize); set(head, '--atr-sd-lab-weight', c.fontWeight)
-          set(head, '--atr-sd-lab-track', c.letterSpacing === 'normal' ? '' : c.letterSpacing); set(head, '--atr-sd-lab-color', c.color)
-        }
-      }
-      const maxBody = Math.round(r.height * 0.5)
-      const body = Math.min(bar.scrollHeight || 0, maxBody)
-      // Measure from the fixed ends (the list's top and the rail's top), so
-      // a list mid-resize never feeds back into the verdict.
-      const content = side.querySelector("[data-slot='sidebar-content']")
-      const cs = content ? getComputedStyle(content) : null
-      const flexGap = cs ? parseFloat(cs.rowGap) || 0 : 0
-      const rail = room.parentElement?.lastElementChild !== room ? room.parentElement?.lastElementChild : null
-      const floor = rail
-        ? rail.getBoundingClientRect().top - flexGap
-        : (content ? content.getBoundingClientRect().bottom - (parseFloat(cs.paddingBottom) || 0) : r.bottom)
-      // The card sits at the TOP of the list, just under the search box, so
-      // its header stays put and opening grows it downward.
-      const prev = room.previousElementSibling
-      const ceiling = prev
-        ? prev.getBoundingClientRect().bottom + flexGap
-        : (content ? content.getBoundingClientRect().top + (parseFloat(cs.paddingTop) || 0) : r.top)
-      // the list's height with the card shut, then with it open
-      const shutList = floor - ceiling - (headH + gap)
-      const auto = shutList - body - lib.h >= need
-      refreshPin()
-      if (dock.manual && dock.manual.auto !== auto) dock.manual = null
-      dock.lastAuto = auto
-      const open = dock.manual ? dock.manual.open : auto
-      const cardH = headH + (open ? body : 0)
-      const key = `${open}|${cardH}|${Math.round(r.left)}|${Math.round(r.width)}|${Math.round(r.height)}`
-      if (key === dock.sideKey) return true
-      dock.sideKey = key
-      dock.sideOpen = open
-      room.style.setProperty('--atr-sd-room', `${cardH + gap}px`)
-      const padX = cs ? parseFloat(cs.paddingLeft) || 10 : 10
-      const x = Math.round(r.left + padX)
-      const w = Math.round(r.width - 2 * padX)
-      const top = Math.round(ceiling)
-      for (const el of [head, bar]) {
-        el.style.setProperty('--atr-sd-x', `${x}px`)
-        el.style.setProperty('--atr-sd-w', `${w}px`)
-      }
-      head.style.setProperty('--atr-sd-y-head', `${top}px`)
-      head.style.setProperty('--atr-sd-h', `${cardH}px`)
-      head.style.setProperty('--atr-sd-head', `${headH}px`)
-      bar.style.setProperty('--atr-sd-y', `${top + headH}px`)
-      bar.style.setProperty('--atr-sd-max', `${maxBody}px`)
-      bar.toggleAttribute(DOCK_OPEN_ATTR, open)
-      head.setAttribute('aria-expanded', String(open))
-      head.title = open ? 'Collapse status' : 'Expand status'
-      lib.key = ''
-      layoutLibrary()
-      return true
-    }
-
-    // Menus from the docked bar: Radix opens them above the trigger (the bar
-    // was at the bottom). Docked, they open beside the panel instead, toward
-    // the middle of the window. Only the wrapper whose content the trigger
-    // controls is moved; submenus anchor to their parent and follow it.
-    const placeDockPop = (wrap, trigger) => {
-      const bar = trigger.closest('footer')
-      if (!bar || !wrap.isConnected) return
-      // opened from a Shelf tile: drop it under the tile instead
-      const pa = dock.popAnchor
-      if (pa && pa.el.isConnected && Date.now() - pa.at < 1500) {
-        if (!wrap.dataset.atrAnchored) { wrap.dataset.atrAnchored = '1'; pa.at = 0; wrap.atrAnchor = pa.el }
-      }
-      if (wrap.atrAnchor?.isConnected) {
-        const a = wrap.atrAnchor.getBoundingClientRect()
-        const h = wrap.offsetHeight || 0
-        const w = wrap.offsetWidth || 0
-        const x = Math.max(8, Math.min(a.left + a.width / 2 - w / 2, window.innerWidth - w - 8))
-        const below = a.bottom + 6 + h <= window.innerHeight - 8
-        const y = below ? a.bottom + 6 : Math.max(8, a.top - 6 - h)
-        wrap.style.setProperty('--atr-pop-x', `${Math.round(x)}px`)
-        wrap.style.setProperty('--atr-pop-y', `${Math.round(y)}px`)
-        wrap.style.setProperty('--atr-pop-origin', below ? 'center top' : 'center bottom')
-        return
-      }
-      const b = bar.getBoundingClientRect()
-      const t = trigger.getBoundingClientRect()
-      const h = wrap.offsetHeight || 0
-      const w = wrap.offsetWidth || 0
-      const toRight = b.left + b.width / 2 < window.innerWidth / 2
-      const x = toRight ? b.right + 8 : b.left - 8 - w
-      const y = Math.max(8, Math.min(t.top, window.innerHeight - h - 8))
-      wrap.style.setProperty('--atr-pop-x', `${Math.round(x)}px`)
-      wrap.style.setProperty('--atr-pop-y', `${Math.round(y)}px`)
-      wrap.style.setProperty('--atr-pop-origin', toRight ? 'left top' : 'right top')
-    }
-    const adoptDockPop = wrap => {
-      const bar = document.querySelector(`footer[data-slot='statusbar'][${DOCK_ATTR}]`)
-      if (!bar || wrap.hasAttribute(DOCK_POP_ATTR)) return
-      const content = wrap.firstElementChild
-      const slot = content?.getAttribute?.('data-slot') || ''
-      if (/tooltip|sub-content|hover-card/.test(slot)) return
-      const open = [...bar.querySelectorAll("[aria-expanded='true']")]
-      const trigger = (content?.id && open.find(el => el.getAttribute('aria-controls') === content.id)) ||
-        (open.length === 1 ? open[0] : null)
-      if (!trigger) return
-      wrap.setAttribute(DOCK_POP_ATTR, '')
-      placeDockPop(wrap, trigger)
-      requestAnimationFrame(() => placeDockPop(wrap, trigger))
-      if (typeof ResizeObserver === 'function') {
-        const ro = new ResizeObserver(() => { if (wrap.isConnected) placeDockPop(wrap, trigger); else ro.disconnect() })
-        ro.observe(wrap)
-      }
-    }
-    const watchDockPops = () => {
-      if (dock.popObs || typeof MutationObserver !== 'function' || !document.body) return
-      dock.popObs = new MutationObserver(records => {
-        if (!document.querySelector(`[${DOCK_ATTR}]`)) return
-        for (const rec of records) {
-          for (const node of rec.addedNodes) {
-            if (node.nodeType !== 1) continue
-            if (node.matches?.('[data-radix-popper-content-wrapper]')) adoptDockPop(node)
-            else node.querySelectorAll?.('[data-radix-popper-content-wrapper]').forEach(adoptDockPop)
-          }
-        }
-      })
-      dock.popObs.observe(document.body, { childList: true })
-    }
-    const pressStatusbarKeybind = () => {
-      const init = { key: 'S', code: 'KeyS', shiftKey: true, bubbles: true, cancelable: true, composed: true }
-      init[IS_MAC ? 'metaKey' : 'ctrlKey'] = true
-      window.dispatchEvent(new KeyboardEvent('keydown', init))
-      window.dispatchEvent(new KeyboardEvent('keyup', init))
-    }
-    const syncStatusDock = () => {
-      if (typeof document === 'undefined' || !document.body) return
-      const mode = interfaceMode()
-      if (mode !== dock.mode) {
-        // a mode change clears Hermes's session reveals, so start over
-        dock.mode = mode
-        dock.revealed = false
-        dock.pressed = false
-        dock.tries = 0
-      }
-      const bar = document.querySelector("footer[data-slot='statusbar']")
-      if (mode !== 'simple' || !statusDock.get()) {
-        undock()
-        return
-      }
-      ensureDockChrome()
-      if (!bar) {
-        if (dock.side) unside()
-        // once it was up, its going away is the user hiding it (⌘⇧S or the
-        // bar's own menu): respect that until the mode changes again
-        if (dock.revealed) return
-        const t = Date.now()
-        if (dock.tries < 2 && t - dock.lastTry > 4000) {
-          dock.tries += 1
-          dock.lastTry = t
-          pressStatusbarKeybind()
-          dock.pressed = true
-          if (dock.tries === 2) console.info?.('[hermes-atrium] status dock: the status-bar keybind did not answer (rebound?), leaving it')
-        }
-        return
-      }
-      dock.revealed = true
-      watchDockPops()
-      if (!bar.hasAttribute(DOCK_ATTR)) bar.setAttribute(DOCK_ATTR, '')
-      // no sidebar on screen: the bar stays lifted but hidden until it returns
-      if (!layoutSideDock() && bar.hasAttribute(DOCK_OPEN_ATTR)) bar.removeAttribute(DOCK_OPEN_ATTR)
-    }
-    // Maintenance passes that measure layout (the dock, the snippet library,
-    // the status stack's fillets, the live work tiles) pause while the user
-    // scrolls: a forced layout landing mid-gesture is exactly the hitch they
-    // would cause, and the next tick after the gesture recomputes everything
-    // anyway. The transcript is excluded: it writes scrollTop every frame while
-    // a reply streams, and treating that as a gesture would freeze the timers
-    // for the whole turn. The same flag also switches hover transitions off
-    // mid-gesture (see [motion:history]).
-    let lastScrollAt = 0
+    // A scroll gesture switches hover transitions off until it settles (see
+    // [motion:history]). The transcript is excluded: it writes scrollTop every
+    // frame while a reply streams, and treating that as a gesture would hold
+    // the flag for the whole turn.
     let scrollIdleTimer = 0
     const onAnyScroll = event => {
       const target = event?.target
       if (target?.nodeType === 1 && target.closest?.('[data-chat-surface]')) return
-      lastScrollAt = Date.now()
       const root = document.documentElement
       if (root && !root.hasAttribute('data-atr-scrolling')) root.setAttribute('data-atr-scrolling', '')
       if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
@@ -6179,13 +3585,6 @@ export default {
     if (typeof document !== 'undefined') {
       document.addEventListener?.('scroll', onAnyScroll, { capture: true, passive: true })
     }
-    const scrollSettled = () => Date.now() - lastScrollAt >= 150
-    const dockTimer = setInterval(() => {
-      if (typeof document === 'undefined' || document.hidden || !scrollSettled()) return
-      syncStatusDock()
-      if (!pinDrag.moving) { layoutLibrary(); layoutShelf() }
-    }, 1000)
-    setTimeout(syncStatusDock, 600)
 
     let resizeRaf = 0
     const onResize = () => {
@@ -6195,10 +3594,6 @@ export default {
         wordmarkKey = ''
         pinWordmark()
         fitColumn()
-        if (dock.side) layoutSideDock()
-        lib.key = ''
-        layoutLibrary()
-        layoutShelf()
       })
     }
     if (typeof window !== 'undefined') window.addEventListener?.('resize', onResize)
@@ -6210,820 +3605,34 @@ export default {
     }
     applyMarginsAndMark(margins.get())
 
-    // ── Work progress collapsing for finished turns ──────────────────────────
-    // Turn times. Hermes stamps a turn's duration (the ⏱ badge) only in memory
-    // when it finishes streaming, so it is missing for any history reloaded
-    // from the backend (after a restart, or a session reopened later). Each
-    // time we see a badge, we remember its seconds keyed by a hash of the
-    // reply's own text, which survives a reload where message ids don't.
-    const TURN_TIMES_KEY = 'turnTimes'
-    const TURN_TIMES_MAX = 3000
-    const turnTimes = (() => {
-      const v = ctx.storage.get(TURN_TIMES_KEY, null)
-      return v && typeof v === 'object' ? v : {}
-    })()
-    let turnTimesTimer = 0
-    const saveTurnTimes = () => {
-      if (turnTimesTimer) return
-      turnTimesTimer = setTimeout(() => {
-        turnTimesTimer = 0
-        const keys = Object.keys(turnTimes)
-        for (let i = 0; i < keys.length - TURN_TIMES_MAX; i++) delete turnTimes[keys[i]]
-        try { ctx.storage.set(TURN_TIMES_KEY, turnTimes) } catch {}
-      }, 1500)
-    }
-    /* The reply's prose (not the work scaffolds, whose text changes between a
-       live turn and a reloaded one), whitespace-folded, FNV-1a hashed. */
-    const turnKey = contentEl => {
-      if (typeof document === 'undefined' || !document.createTreeWalker) return ''
-      const walker = document.createTreeWalker(contentEl, 4 /* SHOW_TEXT */)
-      let text = ''
-      for (let n = walker.nextNode(); n && text.length < 800; n = walker.nextNode()) {
-        const host = n.parentElement
-        if (host?.closest?.('[data-conversation-scaffold], .atr-work-summary')) continue
-        text += n.nodeValue
-      }
-      text = text.replace(/\s+/g, ' ').trim().slice(0, 800)
-      if (text.length < 12) return ''
-      let h = 0x811c9dc5
-      for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0 }
-      return h.toString(36) + '.' + text.length
-    }
-
-    const formatDuration = secs => {
-      const s = Math.max(0, Math.round(secs))
-      if (s < 60) return `${s} second${s === 1 ? '' : 's'}`
-      const m = Math.floor(s / 60)
-      const r = s % 60
-      return `${m} minute${m === 1 ? '' : 's'}${r ? ` ${r} second${r === 1 ? '' : 's'}` : ''}`
-    }
-
-    /* "Thought", "Thought and searched", "Thought, searched and used tools" */
-    const joinVerbs = verbs => {
-      if (verbs.length === 0) return 'Working'
-      const v = verbs.slice()
-      v[0] = v[0][0].toUpperCase() + v[0].slice(1)
-      return v.length === 1 ? v[0] : `${v.slice(0, -1).join(', ')} and ${v[v.length - 1]}`
-    }
-
-    const readBadgeSecs = root => {
-      // The last badge in the container is the settled turn's: earlier
-      // messages of a multi-message turn can carry their own step badges.
-      const durEls = root.querySelectorAll?.("[data-slot='aui_turn-duration']") || []
-      const durEl = durEls.length ? durEls[durEls.length - 1] : null
-      if (!durEl) return null
-      const durRaw = (durEl.getAttribute?.('title') || durEl.textContent || '').trim()
-      // Hermes prints anything past a minute as m:ss ("1:20"), not "1m 20s"
-      const clock = durRaw.match(/(?:(\d+):)?(\d+):(\d{2})\b/)
-      if (clock) return parseInt(clock[1] || '0', 10) * 3600 + parseInt(clock[2], 10) * 60 + parseInt(clock[3], 10)
-      const minMatch = durRaw.match(/(\d+)\s*m(?:in(?:utes?)?)?\b(?:\s*(\d+)\s*s)?/i)
-      if (minMatch) return parseInt(minMatch[1], 10) * 60 + parseInt(minMatch[2] || '0', 10)
-      const secMatch = durRaw.match(/(\d+(?:\.\d+)?)\s*s(?:ec(?:onds?)?)?\b/i)
-      return secMatch ? parseFloat(secMatch[1]) : null
-    }
-
-    /* What the turn did, in the order it reads best, plus per-kind counts for
-       the tooltip. */
-    const classifyWork = scaffolds => {
-      const n = { think: 0, search: 0, cmd: 0, file: 0, tool: 0 }
-      for (const el of scaffolds) {
-        const slot = el.getAttribute?.('data-slot') || ''
-        const text = (el.textContent || '').toLowerCase()
-        if (slot === 'aui_thinking-disclosure' || /^\s*(thought|thinking)\b/.test(text)) n.think++
-        else if (/\b(web_)?search(ed|ing)?\b|\bquer(y|ied|ies)\b/.test(text)) n.search++
-        else if (/\b(commands?|ran|terminal|scripts?|exec(uted)?|bash|shell)\b/.test(text)) n.cmd++
-        else if (/\b(files?|patch(ed)?|read|edit(ed)?|wr(ite|ote))\b/.test(text)) n.file++
-        else if (/\b(tools?|skills?|mcp)\b/.test(text) || slot === 'tool-block' || el.matches?.('[data-tool-group], [data-tool-summary]')) n.tool++
-      }
-      const verbs = []
-      const icons = []
-      if (n.think) verbs.push('thought')
-      if (n.search) { verbs.push('searched'); icons.push('search') }
-      if (n.cmd) { verbs.push('ran commands'); icons.push('terminal') }
-      if (n.file) { verbs.push('worked on files'); icons.push('file') }
-      if (n.tool) { verbs.push('used tools'); icons.push('tool') }
-      const plural = (k, one, many) => (k ? `${k} ${k === 1 ? one : many}` : '')
-      const detail = [
-        plural(n.search, 'search', 'searches'), plural(n.cmd, 'command', 'commands'),
-        plural(n.file, 'file step', 'file steps'), plural(n.tool, 'tool call', 'tool calls')
-      ].filter(Boolean).join(', ')
-      return { verbs, icons, detail }
-    }
-
-    /* Live turns: when each started (keyed by the user message it answers,
-       whose id holds steady through the turn even across a chat switch), so
-       the tile can count up from the first moment the agent works. */
-    // Hermes renames a message while it is in flight (user-queued-… becomes the
-    // real id), and a session you left and came back to is rebuilt from scratch,
-    // so an id is not a steady name for a turn. The text of the prompt is: the
-    // key is the session plus a hash of the prompt. Starts are kept in storage
-    // too, so leaving a running session from the sidebar and coming back does
-    // not count from zero. A turn that stops looking live is only marked done:
-    // a short gap between steps picks the same start back up, while the same
-    // prompt typed again later starts a new count.
-    const LIVE_STARTS_KEY = 'liveStarts'
-    const LIVE_START_TTL = 12 * 3600 * 1000
-    const LIVE_DONE_GRACE = 90 * 1000
-    const savedStarts = (() => {
-      const v = ctx.storage.get(LIVE_STARTS_KEY, null)
-      if (!v || typeof v !== 'object') return {}
-      for (const k of Object.keys(v)) if (typeof v[k] === 'number') v[k] = { t: v[k] }
-      return v
-    })()
-    let savedStartsTimer = 0
-    const saveStarts = () => {
-      if (savedStartsTimer) return
-      savedStartsTimer = setTimeout(() => {
-        savedStartsTimer = 0
-        const now = Date.now()
-        for (const k of Object.keys(savedStarts)) if (!savedStarts[k] || now - savedStarts[k].t > LIVE_START_TTL) delete savedStarts[k]
-        const keys = Object.keys(savedStarts)
-        for (let i = 0; i < keys.length - 60; i++) delete savedStarts[keys[i]]
-        try { ctx.storage.set(LIVE_STARTS_KEY, savedStarts) } catch {}
-      }, 1000)
-    }
-    const liveKey = root => {
-      const pair = root.closest?.("[data-slot='aui_turn-pair']")
-      const user = pair?.querySelector?.("[data-slot='aui_user-message-root']")
-      if (!user) return null
-      const text = (user.textContent || '').replace(/\s*\d{1,2}:\d{2}\s?[AP]M\s*$/i, '').replace(/\s+/g, ' ').trim().slice(0, 400)
-      if (!text) return user.getAttribute('data-message-id')
-      let h = 0x811c9dc5
-      for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0 }
-      const session = typeof location !== 'undefined' ? String(location.hash || '').replace(/^#\/?/, '').split(/[?/#]/)[0] : ''
-      return `${session}|${h.toString(36)}.${text.length}`
-    }
-    // the start for a key, unless that turn finished a while ago (a repeat prompt)
-    const savedStart = key => {
-      const e = key ? savedStarts[key] : null
-      if (!e) return undefined
-      const now = Date.now()
-      if (now - e.t > LIVE_START_TTL) return undefined
-      if (e.d && now - e.d > LIVE_DONE_GRACE) return undefined
-      return e.t
-    }
-    const rememberStart = (key, t) => { savedStarts[key] = { t }; saveStarts() }
-    const markLive = root => {
-      const e = savedStarts[liveKey(root)]
-      if (e && e.d) { delete e.d; saveStarts() }
-    }
-    const markDone = root => {
-      const e = savedStarts[liveKey(root)]
-      if (e && !e.d) { e.d = Date.now(); saveStarts() }
-    }
-    const startOf = root => {
-      if (root.dataset.atrStart) return Number(root.dataset.atrStart)
-      const key = liveKey(root)
-      let t = savedStart(key)
-      if (t === undefined) {
-        // Hermes's own pre-first-token timer counts from the turn's start
-        const timer = root.querySelector?.("[data-slot='aui_response-loading']")
-        const m = (timer?.textContent || '').match(/(?:(\d+):)?(\d+)(?::(\d{2})|s)/)
-        const ago = m ? (m[3] ? (parseInt(m[1] || '0', 10) * 60 + parseInt(m[2], 10)) * 60 + parseInt(m[3], 10) : parseInt(m[2], 10)) : 0
-        t = Date.now() - ago * 1000
-        if (key) rememberStart(key, t)
-      }
-      root.dataset.atrStart = String(t)
-      return t
-    }
-
-    const streamingMarkers = [
-      "[data-message-streaming='true']", "[data-slot='aui_message-streaming-marker'][data-message-streaming]",
-      "[data-slot='aui_response-loading']", "[data-slot='aui_turn-activity'][data-state='active']",
-      ".shimmer", "[aria-label='Running']", "[data-slot='glyph-spinner']"
-    ].join(', ')
-    const isStreamingRoot = root => Boolean(root.querySelector?.(streamingMarkers))
-
-    const setToggleExpanded = (toggle, contentEls, expanded) => {
-      for (const contentEl of contentEls) {
-        if (contentEl) put(contentEl, 'data-atr-work-collapsed', expanded ? 'false' : 'true')
-      }
-      put(toggle, 'data-expanded', expanded ? 'true' : 'false')
-      put(toggle, 'aria-expanded', expanded ? 'true' : 'false')
-    }
-
-    /* Hermes renders every assistant prose segment — the ones said between
-       tool calls included — as .aui-md, so the CSS exemption that keeps the
-       final reply visible would keep the middle chatter too. A segment that
-       precedes the last work block is interim and folds with the tools; the
-       prose that follows all the work is the reply and stays. */
-    const WORK_MARKERS = "[data-conversation-scaffold], [data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], [data-tool-group], [data-tool-summary]"
-    // Set on a tile that Atrium opened itself for a running turn, so the fold can
-    // close it when the model stops without overriding a click.
-    const AUTO_OPEN_ATTR = 'data-atr-auto-open'
-    // Node is absent from the CSS test rigs, so fall back to the spec's values.
-    const DOC_FOLLOWING = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_FOLLOWING : 4
-    const DOC_CONTAINED = typeof Node !== 'undefined' ? Node.DOCUMENT_POSITION_CONTAINED_BY : 16
-    // The chain's last work block anchors the interim marking across every
-    // root of that chain: prose before it is chatter, prose after it is the
-    // reply. One root's markers are compared against the whole chain, so a
-    // later message's tool call also folds an earlier message's chatter.
-    const markInterimProse = (parts, lastWork) => {
-      for (const { content } of parts) {
-        for (const md of content.querySelectorAll?.('.aui-md') || []) {
-          // strictly before the last work block: follows it in document order,
-          // without containing it (a wrapper holding the work is not before it)
-          const interim = Boolean(lastWork) &&
-            (md.compareDocumentPosition(lastWork) & (DOC_FOLLOWING | DOC_CONTAINED)) === DOC_FOLLOWING
-          if (interim) put(md, 'data-atr-work-interim', 'true')
-          else if (md.hasAttribute?.('data-atr-work-interim')) md.removeAttribute('data-atr-work-interim')
-        }
-      }
-    }
-
-    /* One response group can carry more than one response chain. A background
-       delivery — a finished process, an async result — is folded into the
-       same group, and the model's answer to it becomes a new assistant root,
-       so the group reads [answer 1][delivery][answer 2]. The interim anchor
-       must not reach across a delivery: once a chain has answered, a later
-       chain's work would otherwise mark that answer as chatter, and folding
-       the turn would hide the actual response in favour of the update. */
-    const chainsOf = (container, parts) => {
-      const deliveries = Array.from(container.querySelectorAll?.("[data-slot='aui_background-result']") || [])
-      if (deliveries.length === 0 || parts.length < 2) return [parts]
-      const between = (a, b, el) =>
-        Boolean((a.compareDocumentPosition(el) & DOC_FOLLOWING) && (el.compareDocumentPosition(b) & DOC_FOLLOWING))
-      const chains = []
-      let chain = []
-      for (let i = 0; i < parts.length; i += 1) {
-        if (i > 0 && deliveries.some(el => between(parts[i - 1].root, parts[i].root, el))) {
-          chains.push(chain)
-          chain = []
-        }
-        chain.push(parts[i])
-      }
-      chains.push(chain)
-      return chains
-    }
-
-    /* The chain's last real work block anchors the interim marking. A settled
-       turn keeps its own status row mounted as the tail of the content (empty,
-       sr-only, data-state='idle') so the live region survives a flip — it is
-       not work, and letting it anchor would mark the reply above it as
-       chatter and fold the reply away the moment the turn settles. */
-    const lastWorkBlockOf = chain => {
-      const work = chain.flatMap(part => Array.from(part.content.querySelectorAll?.(WORK_MARKERS) || []))
-      for (let i = work.length - 1; i >= 0; i -= 1) {
-        const el = work[i]
-        const idleStatus = el.getAttribute?.('data-slot') === 'aui_turn-activity' && el.getAttribute?.('data-state') === 'idle'
-        if (!idleStatus) return el
-      }
-      return null
-    }
-
-    /* The nearest ancestor that actually scrolls; null means the page does. */
-    const scrollParentOf = node => {
-      if (typeof getComputedStyle !== 'function') return null
-      let n = node
-      while (n && n !== document.documentElement) {
-        const s = getComputedStyle(n)
-        if (s && s.overflowY !== 'visible' && s.overflowY !== 'clip') return n
-        n = n.parentElement
-      }
-      return null
-    }
-
-    /* Opening a fold used to shove the transcript below it down: the revealed
-       work lands between the summary and the reply, so every later turn paid
-       for the height. Pin the bottom of the turn across the flip instead —
-       the work eats the space above it, and only what sits above moves. At
-       the end of the conversation (or with nothing but padding left under the
-       turn) there is no chat below to protect, so the fold grows down and the
-       chat above stays put. */
-    const FOLD_END_SLACK = 96
-    const pinWhileFolding = anchorEl => {
-      const bottom = () => anchorEl.getBoundingClientRect?.().bottom ?? 0
-      const before = bottom()
-      const box = scrollParentOf(anchorEl) || (typeof document !== 'undefined' ? document.scrollingElement || document.documentElement : null)
-      const scrollTop = box?.scrollTop || 0
-      const scrollHeight = box?.scrollHeight || 0
-      const atEnd = Boolean(box) && scrollTop + (box?.clientHeight || 0) >= scrollHeight - FOLD_END_SLACK
-      const slackUnderTurn = scrollHeight - (before + scrollTop)
-      return () => {
-        const delta = bottom() - before
-        if (!box || !delta || atEnd || slackUnderTurn <= FOLD_END_SLACK) return
-        box.scrollTop += delta
-      }
-    }
-
-    const ASSISTANT_ROOT = "[data-slot='aui_assistant-message-root']"
-    const RESPONSE_GROUP = "[data-slot='aui_response-group']"
-    const TURN_PAIR = "[data-slot='aui_turn-pair']"
-    const contentOf = root => root?.querySelector?.("[data-slot='aui_assistant-message-content']") || null
-    const groupContainerOf = root =>
-      root?.closest?.(RESPONSE_GROUP) ||
-      root?.closest?.(TURN_PAIR) ||
-      root ||
-      null
-    const partsOf = container => {
-      if (!container?.querySelectorAll) return []
-      const roots = container.getAttribute?.('data-slot') === 'aui_assistant-message-root'
-        ? [container]
-        : Array.from(container.querySelectorAll(ASSISTANT_ROOT))
-      return roots.map(root => ({ root, content: contentOf(root) })).filter(part => part.content)
-    }
-
-    /* One turn can arrive as several assistant messages (one per model step),
-       each with its own content root. The fold is a turn-level idea: one
-       summary serves the whole turn, and it is hosted by the FIRST part, so
-       it sits at the top of the work tree — above every step — instead of in
-       the middle of it. Parts only ever arrive below the first one, so the
-       top stays the top for the whole stream; the last part that carries work
-       (or is live) is the owner, which supplies the turn's settled prose and
-       the scroll pin's anchor, not the tile's home. */
-    const processTurn = (container, isEnabled) => {
-      const parts = partsOf(container)
-      if (!parts.length) return
-
-      if (!isEnabled) {
-        for (const { content } of parts) {
-          if (content.hasAttribute?.('data-atr-work-collapsed')) content.removeAttribute('data-atr-work-collapsed')
-          content.querySelector?.('.atr-work-summary')?.remove()
-          content.querySelectorAll?.('[data-atr-work-interim]').forEach(el => el.removeAttribute?.('data-atr-work-interim'))
-        }
-        return
-      }
-
-      const info = parts.map(part => ({
-        ...part,
-        live: isStreamingRoot(part.root),
-        scaffolds: Array.from(part.content.querySelectorAll?.('[data-conversation-scaffold]') || []),
-        toggle: part.content.querySelector?.('.atr-work-summary') || null
-      }))
-      const scaffolds = info.flatMap(part => part.scaffolds)
-      // The owner is the last part with something to fold: work, a live
-      // stream, or the tile the turn already wears. It supplies the turn's
-      // answer (whose prose keys the duration memory) and the scroll anchor.
-      let owner = null
-      for (const part of info) if (part.live || part.scaffolds.length || part.toggle) owner = part
-      // A finished reply with no work to fold needs no tile; a live one gets
-      // it from the first moment, so the work never flashes open and shut.
-      if (!owner) return
-      // A tool-continuation part that only waits on an approval rests at
-      // display:none until a result is opened; the tile is hosted by the
-      // first part the app actually shows, or it would vanish with the work.
-      const hiddenPart = part => Boolean(part.root.hasAttribute?.('data-approval-activity-only') && !part.root.querySelector?.('[data-tool-open]'))
-      const host = info.find(part => !hiddenPart(part)) || info[0]
-
-      // Both live and finished turns keep the fold honest across the whole
-      // response: prose that precedes the chain's newest tool call is interim
-      // the moment that call appears, even when it sat in an earlier message.
-      // Each response chain is marked on its own, and the idle status row a
-      // settled turn keeps mounted is not work: a late update's tools cannot
-      // fold the answer that preceded them.
-      for (const chain of chainsOf(container, parts)) {
-        markInterimProse(chain, lastWorkBlockOf(chain))
-      }
-
-      // One tile per turn, hosted by the first part. A tile a later part
-      // still wears (an older render, a part that used to host it) is moved
-      // up rather than duplicated.
-      let toggle = info.map(part => part.toggle).find(Boolean) || null
-      if (!toggle) {
-        toggle = document.createElement('button')
-        toggle.type = 'button'
-        toggle.className = 'atr-work-summary'
-        put(toggle, 'data-atr-work-toggle', 'true')
-        toggle.addEventListener('click', e => {
-          e.preventDefault()
-          e.stopPropagation()
-          // Both the anchor and the current state are read live: a streaming
-          // turn moves its owner, so a part captured at creation would go
-          // stale under the tile.
-          const clickParts = partsOf(container)
-          const settle = pinWhileFolding((clickParts[clickParts.length - 1] || owner).root)
-          // A click is his decision: the automatic fold stands down from here on.
-          toggle.removeAttribute(AUTO_OPEN_ATTR)
-          const expandedNow = toggle.getAttribute('data-expanded') === 'true'
-          setToggleExpanded(toggle, clickParts.map(part => part.content), !expandedNow)
-          if (!expandedNow) {
-            // Opening: the space arrives immediately, so pin now.
-            settle()
-            return
-          }
-          // Closing: the shape only collapses when the display fade ends, so
-          // the pin has to wait for that moment or the transcript lurches.
-          // The fade runs on --atr-t-1; read it so Motion off settles at once,
-          // and keep a timeout fallback in case transitionend is swallowed.
-          const fadeRoot = toggle.parentElement || owner.content
-          const ms = parseFloat(getComputedStyle?.(fadeRoot)?.getPropertyValue('--atr-t-1')) || 90
-          let done = false
-          const finish = () => {
-            if (done) return
-            done = true
-            fadeRoot.removeEventListener?.('transitionend', onEnd)
-            clearTimeout(fallback)
-            settle()
-          }
-          const onEnd = event => { if (event.propertyName === 'display') finish() }
-          fadeRoot.addEventListener?.('transitionend', onEnd)
-          const fallback = setTimeout(finish, ms + 80)
-        })
-        host.content.insertBefore(toggle, host.content.firstChild)
-        // The work stays open while the turn runs: a fold that snaps shut the
-        // moment the first tool lands hides what he just asked to watch. The
-        // tile starts expanded on a live turn and processTurn folds it when the
-        // stream stops; a finished turn (a session switch, a scroll back) still
-        // arrives folded. A click in between hands control to him for good.
-        const liveNow = info.some(part => part.live)
-        setToggleExpanded(toggle, parts.map(part => part.content), liveNow)
-        if (liveNow) put(toggle, AUTO_OPEN_ATTR, 'true')
-      } else if (toggle.parentElement !== host.content || host.content.firstChild !== toggle) {
-        host.content.insertBefore(toggle, host.content.firstChild)
-      }
-
-      // Every other tile is retired, and each part mirrors the surviving
-      // tile's state, so one click folds or reveals the whole response. The
-      // state lives on the tile: a part that joins later (a new step, a
-      // swapped-in root) reads it from there instead of arriving open.
-      const expanded = toggle.getAttribute('data-expanded') === 'true'
-      for (const stray of container.querySelectorAll?.('.atr-work-summary') || []) if (stray !== toggle) stray.remove?.()
-      for (const part of info) {
-        const foldable = part.scaffolds.length || Boolean(part.content.querySelector?.(WORK_MARKERS))
-        if (foldable) put(part.content, 'data-atr-work-collapsed', expanded ? 'false' : 'true')
-        else if (part.content.hasAttribute?.('data-atr-work-collapsed')) part.content.removeAttribute('data-atr-work-collapsed')
-      }
-
-      const livePart = info.find(part => part.live) || null
-      if (livePart) {
-        put(toggle, 'data-live', 'true')
-        const { verbs, icons, detail } = classifyWork(scaffolds)
-        const secs = (Date.now() - startOf(livePart.root)) / 1000
-        markLive(livePart.root)
-        paintToggle(toggle, icons, `${joinVerbs(verbs)} for ${formatDuration(secs)}`, detail)
-        return
-      }
-
-      // Just finished: if Hermes stamped no badge, keep the time we counted.
-      const started = info.map(part => part.root.dataset.atrStart).find(Boolean)
-      const counted = toggle.getAttribute('data-live') === 'true' && started
-        ? (Date.now() - Number(started)) / 1000 : null
-      toggle.removeAttribute('data-live')
-      // The model stopped talking: fold the work the running turn kept open.
-      // Anything he clicked during the turn cleared the marker and stays as he
-      // left it.
-      if (toggle.getAttribute(AUTO_OPEN_ATTR) === 'true') {
-        toggle.removeAttribute(AUTO_OPEN_ATTR)
-        const settleFold = pinWhileFolding(owner.root)
-        setToggleExpanded(toggle, info.map(part => part.content), false)
-        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(settleFold)
-        else setTimeout(settleFold, 0)
-      }
-      if (counted !== null) markDone(info[0].root)
-
-      // Finished turns don't change: once summarised with the same scaffold
-      // count, skip the text heuristics entirely.
-      const badge = readBadgeSecs(container)
-      const scaffoldKey = `${scaffolds.length}|${badge}`
-      if (toggle.dataset.scaffolds === scaffoldKey && toggle.dataset.signature && counted === null) return
-      putData(toggle, 'scaffolds', scaffoldKey)
-
-      const { verbs, icons, detail } = classifyWork(scaffolds)
-      const key = turnKey(owner.content)
-      let secs = badge
-      if (secs === null && counted !== null && counted >= 1) secs = Math.round(counted)
-      if (secs !== null) {
-        if (key && turnTimes[key] !== secs) { turnTimes[key] = secs; saveTurnTimes() }
-      } else if (key && typeof turnTimes[key] === 'number') {
-        secs = turnTimes[key]                  // remembered from when it ran
-      } else {
-        // last resort: the reasoning blocks' own "Thought for 12s"
-        let total = 0
-        for (const el of scaffolds) {
-          const m = (el.textContent || '').match(/thought for (\d+(?:\.\d+)?)\s*s/i)
-          if (m) total += parseFloat(m[1])
-        }
-        if (total > 0) secs = total
-      }
-      const verbText = verbs.length ? joinVerbs(verbs) : 'Worked'
-      paintToggle(toggle, icons, secs !== null ? `${verbText} for ${formatDuration(secs)}` : verbText, detail)
-    }
-
-    function paintToggle(toggle, icons, labelText, detail) {
-      const signature = `${icons.join(',')}|${labelText}`
-      if (toggle.dataset.signature === signature) return
-      const iconsKey = icons.join(',')
-      if (toggle.dataset.icons !== iconsKey || !toggle.querySelector('.atr-work-summary-label')) {
-        putData(toggle, 'icons', iconsKey)
-        const iconStackHtml = icons.length > 0 ? [
-          '<span class="atr-work-icon-stack" aria-hidden="true">',
-          ...icons.map(k => `<span class="atr-work-icon-item">${WORK_ICONS[k] || ''}</span>`),
-          '</span>'
-        ].join('') : ''
-        toggle.innerHTML = [
-          iconStackHtml,
-          '<span class="atr-work-summary-label"></span>',
-          '<span class="atr-work-summary-caret" aria-hidden="true">\u203A</span>'
-        ].join('')
-      }
-      // only the text node changes while the timer ticks: no icon re-parse
-      putText(toggle.querySelector('.atr-work-summary-label'), labelText)
-      const wantTitle = detail ? `${detail}. Click to ${toggle.getAttribute('data-expanded') === 'true' ? 'hide' : 'show'} the steps.` : ''
-      if (toggle.title !== wantTitle) toggle.title = wantTitle
-      putData(toggle, 'signature', signature)
-    }
-
-    const scanWorkProgress = () => {
-      if (typeof document === 'undefined') return
-      const isEnabled = collapseWork.get()
-      const seen = new Set()
-      const messages = document.querySelectorAll?.(ASSISTANT_ROOT) || []
-      for (const root of messages) {
-        const group = groupContainerOf(root)
-        if (!group || seen.has(group)) continue
-        seen.add(group)
-        processTurn(group, isEnabled)
-      }
-    }
-
-    const dirtyTurns = new Set()
-    let fullWorkScan = false
-    let workLayout = false
-    const runScanWork = (full = false) => {
-      if (collapseWork.get()) {
-        if (full || fullWorkScan) scanWorkProgress()
-        else for (const group of dirtyTurns) {
-          if (group.isConnected) processTurn(group, true)
-        }
-      }
-      dirtyTurns.clear()
-      if (full || fullWorkScan || workLayout) {
-        pinWordmark()
-        fitColumn()
-      }
-      fullWorkScan = workLayout = false
-    }
-
-    const hasRaf = typeof requestAnimationFrame === 'function'
-    let workThrottle = null
-    let workFrame = null
-    const flushWork = () => {
-      workFrame = null
-      runScanWork()
-    }
-    const scheduleScanWork = (full = false) => {
-      fullWorkScan ||= full
-      if (workFrame !== null) return
-      // While core holds the session-switch curtain on the chat surface the
-      // transcript is invisible, so the 60ms throttle only delays the fold
-      // toward the reveal. Coalesce to the next frame instead; normal
-      // streaming keeps the throttle below. A throttle already pending from
-      // just before the switch is dropped, so the frame is the only run.
-      if (typeof document !== 'undefined' && hasRaf && document.querySelector?.('[data-chat-surface][data-session-switching]')) {
-        if (workThrottle) {
-          clearTimeout(workThrottle)
-          workThrottle = null
-        }
-        workFrame = requestAnimationFrame(flushWork)
-        return
-      }
-      if (workThrottle) return
-      workThrottle = setTimeout(() => {
-        workThrottle = null
-        runScanWork()
-      }, 60)
-    }
-
-    const applyCollapseWork = on => {
-      if (typeof document === 'undefined' || !document.documentElement) return
-      if (!document.documentElement.dataset) document.documentElement.dataset = {}
-      if (on) {
-        document.documentElement.dataset.atrCollapseWork = 'on'
-      } else {
-        delete document.documentElement.dataset.atrCollapseWork
-      }
-      scanWorkProgress()
-    }
-    applyCollapseWork(collapseWork.get())
     applyMotion(motion.get())
 
-    // ── Chat switch ─────────────────────────────────────────────────────────
-    // The switch is animated by core's own data-session-switching window on
-    // [data-chat-surface]: the transcript stays hidden while rows land and
-    // the scroll restores, and the plugin does its folding behind that
-    // curtain (see the [motion:switch] CSS and the scan scheduling below).
-    // The old JS slide was retired: it raced this window and animated a
-    // transcript the user was not looking at yet.
-    const queueGroup = root => dirtyTurns.add(groupContainerOf(root))
-    const queueTurn = node => {
-      const part = node.closest?.(ASSISTANT_ROOT)
-      if (collapseWork.get()) {
-        const turn = part || node.closest?.(RESPONSE_GROUP)
-        if (turn) queueGroup(turn)
-        else node.closest?.(TURN_PAIR)?.querySelectorAll(ASSISTANT_ROOT).forEach(queueGroup)
-      }
-      return part
-    }
-
-    const onDocClick = event => {
-      const target = event?.target
-      if (target?.nodeType !== 1 || !target.closest?.('[data-chat-surface]')) return
-      if (!queueTurn(target)) workLayout = true
-      scheduleScanWork()
-    }
-
-    const onNavChange = () => { scheduleScanWork(true); runRescanHooks() }
-
-    // Core lifts data-session-switching once the new transcript's rows are
-    // placed and the scroll has settled. Attribute MutationObserver callbacks
-    // run before the browser paints, so this is the one chance to fold and
-    // re-anchor the transcript in the frame the curtain opens.
-    //
-    // But that early stability is not completion: the render-budget backfill
-    // commits more pages, Shiki highlights after mount, the code plugin
-    // re-renders markdown, fonts swap and tables apply widths — all after
-    // core's two quiet frames. So the plugin holds its own curtain
-    // (data-atr-settling, paint-only via CSS) until the transcript is
-    // actually quiet, bounded by SETTLE_MAX_MS and lifted on any user input.
-    const SETTLE_QUIET_MS = 160
-    const SETTLE_MAX_MS = 1400
-    const SETTLE_INPUT = ['wheel', 'pointerdown', 'keydown', 'touchstart']
-    const settleRunners = new Map()
-
-    const finishSettle = surface => {
-      const runner = settleRunners.get(surface)
-      if (runner) {
-        settleRunners.delete(surface)
-        try { runner.stop() } catch {}
-      }
-      surface?.removeAttribute?.('data-atr-settling')
-    }
-
-    const finishAllSettles = () => {
-      if (!settleRunners.size) return
-      for (const surface of [...settleRunners.keys()]) finishSettle(surface)
-    }
-
-    const startSettleCurtain = (surface, viewport, atBottom) => {
-      if (!surface || !viewport) return
-      // A re-armed switch restarts clean rather than stacking runners.
-      finishSettle(surface)
-      surface.setAttribute?.('data-atr-settling', '')
-      if (typeof requestAnimationFrame !== 'function' || viewport.isConnected === false) {
-        finishSettle(surface)
-        return
-      }
-      const now = () => performance.now?.() ?? Date.now()
-      const started = now()
-      let lastChange = started
-      let frames = 0
-      let frame = 0
-      let stopped = false
-      let resizeObserver = null
-      let mutationObserver = null
-      const content = surface.querySelector?.("[data-slot='aui_thread-content']")
-      const onChange = () => { lastChange = now() }
-      // A running turn never goes quiet; the curtain would hold until the cap.
-      // It only exists to hide the load's parse and backfill, so a streaming
-      // transcript gets a much shorter leash.
-      const streaming = Boolean(surface.querySelector?.("[data-message-streaming='true'], [data-slot='aui_message-streaming-marker'][data-message-streaming], [data-slot='aui_response-loading'], [data-slot='aui_turn-activity'][data-state='active']"))
-      const quietMs = streaming ? 80 : SETTLE_QUIET_MS
-      const maxMs = streaming ? 500 : SETTLE_MAX_MS
-
-      const runner = {
-        stop() {
-          if (stopped) return
-          stopped = true
-          if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
-          frame = 0
-          resizeObserver?.disconnect?.()
-          mutationObserver?.disconnect?.()
-          viewport.removeEventListener?.('scroll', onChange)
-        }
-      }
-      settleRunners.set(surface, runner)
-
-      if (typeof ResizeObserver === 'function') {
-        resizeObserver = new ResizeObserver(onChange)
-        if (content) resizeObserver.observe?.(content)
-        if (viewport !== content) resizeObserver.observe?.(viewport)
-      }
-      if (typeof MutationObserver !== 'undefined' && content) {
-        mutationObserver = new MutationObserver(onChange)
-        mutationObserver.observe(content, {
-          childList: true,
-          subtree: true,
-          characterData: true,
-          attributes: true,
-          attributeFilter: ['class', 'style', 'data-status', 'data-streaming', 'data-state', 'data-message-streaming']
-        })
-      }
-      viewport.addEventListener?.('scroll', onChange, { passive: true })
-
-      const tick = () => {
-        frame = 0
-        if (stopped) return
-        frames += 1
-        // No scrollHeight compare here: reading it forces a layout flush on a
-        // transcript that is still committing, every frame, for the whole
-        // settle. The ResizeObserver, the mutation observer and the scroll
-        // listener are the witnesses that already reset lastChange — the
-        // per-frame read only duplicated them at full layout cost.
-        const t = now()
-        const fontsReady =
-          typeof document === 'undefined' ||
-          typeof document.fonts?.status !== 'string' ||
-          document.fonts.status === 'loaded' ||
-          t - started >= 350
-        const quiet = t - lastChange >= quietMs && frames >= 2 && fontsReady
-        if (quiet || t - started >= maxMs) {
-          finishSettle(surface)
-          if (atBottom) viewport.scrollTop = viewport.scrollHeight
-          return
-        }
-        frame = requestAnimationFrame(tick)
-      }
-      frame = requestAnimationFrame(tick)
-    }
-
-    const settleSwitch = surface => {
-      if (!surface) return
-      const viewport = surface.querySelector?.("[data-slot='aui_thread-viewport']") || surface
-      // Measure first: scanWorkProgress changes the transcript height, so only
-      // the pre-fold geometry can say whether the session was anchored to the
-      // bottom. Re-pin after the fold so the reveal does not jump.
-      const atBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 24
-      // A frame-coalesced pass armed just before the switch would duplicate
-      // this synchronous one; drop it.
-      if (workFrame !== null) {
-        cancelAnimationFrame?.(workFrame)
-        workFrame = null
-      }
-      if (workThrottle) {
-        clearTimeout(workThrottle)
-        workThrottle = null
-      }
-      runScanWork(true)
-      if (atBottom) viewport.scrollTop = viewport.scrollHeight
-      // The curtain keeps the transcript hidden past the fold until the late
-      // work lands; its lift re-pins a bottom-anchored viewport again.
-      startSettleCurtain(surface, viewport, atBottom)
-    }
-
-    /* Re-scan hooks. The page marks and the rail are measured off surfaces that
-       the app mounts and unmounts, so their observers are scoped to those
-       surfaces and re-attached here. A session switch or a route change is what
-       can move them; a streamed token cannot, and the transcript commits one per
-       chunk. Before this, both observers watched document.body and every chunk
-       woke a full-document sweep. */
+    // ── Re-scan hooks ────────────────────────────────────────────────────────
+    // The page marks are measured off surfaces the app mounts and unmounts, so
+    // their observers are scoped to those surfaces and re-attached here. A
+    // session switch or a route change is what can move them; the host's own
+    // focus state and the window's navigation events say when one happened.
     const rescanHooks = []
     const runRescanHooks = () => { for (const hook of rescanHooks) { try { hook() } catch {} } }
-
-    let chatObserver = null
-    if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
-      // Streaming fires this on every token; all the real work is batched
-      // into one throttled pass. The session-switch attribute is observed too,
-      // so its removal is caught pre-paint and settled in that same frame.
-      chatObserver = new MutationObserver(mutations => {
-        let settled = false
-        // One batch can carry the removal record once per observed holder;
-        // settling a surface twice in the same batch is wasted work.
-        const settledSurfaces = new Set()
-        for (const mutation of mutations) {
-          if (mutation?.type === 'attributes') {
-            const name = mutation.attributeName
-            if (name === 'data-session-switching') {
-              const surface = mutation.target
-              if (!surface?.hasAttribute?.('data-chat-surface') || surface.hasAttribute('data-session-switching')) continue
-              if (settledSurfaces.has(surface)) continue
-              settledSurfaces.add(surface)
-              settled = true
-              settleSwitch(surface)
-              runRescanHooks()
-            } else if (name === 'data-message-streaming') {
-              queueTurn(mutation.target)
-            }
-            continue
-          }
-          if (mutation?.type !== 'childList') continue
-          const target = mutation.target
-          if (target.nodeType !== 1 || target.closest?.('.atr-work-summary')) continue
-          // Streamed children can affect any part of their response group,
-          // but leave the composer and other turns alone.
-          if (queueTurn(target)) continue
-          if (target === document.body || target.closest?.('[data-chat-surface]')) workLayout = true
-          if (!collapseWork.get()) continue
-          for (const node of mutation.addedNodes) {
-            if (node.nodeType !== 1 || !node.isConnected) continue
-            if (node.matches(ASSISTANT_ROOT)) queueGroup(node)
-            else node.querySelectorAll(ASSISTANT_ROOT).forEach(queueGroup)
-          }
-        }
-        // settleSwitch ran the pass synchronously for this frame; everything
-        // else inside the transcript still gets the throttled one.
-        if (!settled && (workLayout || dirtyTurns.size)) scheduleScanWork()
-      })
-      const observeTarget = document.body || document.documentElement
-      if (observeTarget) {
-        chatObserver.observe(observeTarget, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['data-message-streaming', 'data-session-switching']
-        })
+    const onNavChange = () => runRescanHooks()
+    const rescanUnsubs = []
+    if (typeof window !== 'undefined') {
+      window.addEventListener?.('popstate', onNavChange)
+      window.addEventListener?.('hashchange', onNavChange)
+    }
+    if (typeof host !== 'undefined') {
+      for (const a of [host?.state?.focusedSessionId, host?.state?.activeSessionId]) {
+        const off = a?.subscribe?.(() => requestAnimationFrame(onNavChange))
+        if (typeof off === 'function') rescanUnsubs.push(off)
       }
     }
-
+    ctx.onDispose?.(() => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener?.('popstate', onNavChange)
+        window.removeEventListener?.('hashchange', onNavChange)
+      }
+      rescanUnsubs.forEach(off => { try { off() } catch {} })
+    })
     // ── Exit ghosts ─────────────────────────────────────────────────────────
     // Measured on the Hermes desktop build: React commits the unmount of a
     // closing floating surface ~45-60ms after its data-state flips to closed,
@@ -7236,31 +3845,6 @@ export default {
       for (const ghost of liveGhosts.slice()) ghost.__atrDrop?.()
     })
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener?.('popstate', onNavChange)
-      window.addEventListener?.('hashchange', onNavChange)
-    }
-    if (typeof document !== 'undefined') {
-      document.addEventListener?.('click', onDocClick, true)
-    }
-
-    // Any input means the user is engaged with the transcript now: drop every
-    // curtain immediately rather than hold it for quiet that may never come.
-    const onSettleInput = () => finishAllSettles()
-    if (typeof document !== 'undefined') {
-      for (const type of SETTLE_INPUT) {
-        document.addEventListener?.(type, onSettleInput, { capture: true, passive: true })
-      }
-    }
-    ctx.onDispose?.(() => {
-      if (typeof document !== 'undefined') {
-        for (const type of SETTLE_INPUT) {
-          document.removeEventListener?.(type, onSettleInput, { capture: true, passive: true })
-        }
-      }
-      finishAllSettles()
-    })
-
     // The look is one still picture and one palette, so "now" is simply now;
     // there is no held moment, no sun position and no clock to follow.
     const nowAt = () => new Date()
@@ -7321,40 +3905,6 @@ export default {
       requestTheme(THEME_NAME)
       if (tint.get()) setAccentOverride(SKIN.accent)
     }
-    // The status stack's concave corners read the layout, so they are refreshed
-    // on a cheap interval rather than from a paint pass.
-    let flareStyle = null
-    if (typeof document !== 'undefined') {
-      flareStyle = document.createElement('style')
-      flareStyle.id = 'atr-stack-flare'
-      flareStyle.textContent = STACK_FLARE_CSS
-      document.head.appendChild(flareStyle)
-    }
-    // Live work tiles count up once a second. Only the turns that are still
-    // running (and the newest reply, which may have just started) are touched.
-    // The newest reply is the last thing in the transcript, so walk down its
-    // last-child chain: scanning every message root in the document, once a
-    // second for the whole session, was the one thing here that grew with the
-    // length of the conversation.
-    const newestMessageRoot = () => {
-      let el = document.querySelector?.("[data-slot='aui_thread-content']")
-      for (let depth = 0; el && depth < 6; depth += 1) {
-        if (el.matches?.("[data-slot='aui_assistant-message-root']")) return el
-        el = el.lastElementChild
-      }
-      return null
-    }
-    const liveTimer = setInterval(() => {
-      if (typeof document === 'undefined' || document.hidden || !collapseWork.get() || !scrollSettled()) return
-      const groups = new Set()
-      document.querySelectorAll?.('.atr-work-summary[data-live]').forEach(el => {
-        const g = groupContainerOf(el.closest?.("[data-slot='aui_assistant-message-root']")); if (g) groups.add(g)
-      })
-      const newest = newestMessageRoot()
-      if (newest) { const g = groupContainerOf(newest); if (g) groups.add(g) }
-      groups.forEach(g => processTurn(g, true))
-    }, 1000)
-    const flareTimer = setInterval(() => { if (typeof document !== 'undefined' && !document.hidden && scrollSettled()) fitStatusStack() }, 1000)
     apply()
 
     // ── themes: one stable host entry ──────────────────────────────────────
@@ -7398,11 +3948,9 @@ export default {
       themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-hermes-theme'] })
     }
 
-    // ── snippet cards: the medium for "small boxes I can copy and pin" ──
+    // ── snippet cards: the medium for "small boxes I can copy" ──
     ensureSnippetStyle()
-    ensureHomeStyle()
     ensureMotionStyle()
-    const stopPreviewMeasure = ensurePreviewMeasureShim()
     ctx.register({
       id: 'snippet',
       area: DIRECTIVE_AREA,
@@ -7411,13 +3959,7 @@ export default {
         render: ({ attrs }) =>
           jsx(SnippetCard, {
             attrs,
-            pins,
-            onCopy: text => void navigator.clipboard?.writeText(text),
-            onGrab: (event, entry) => startDrag(event.nativeEvent || event, { type: 'snip', entry }, event.currentTarget, true),
-            onPin: entry => {
-              if (pins.get().some(p => p.id === entry.id)) unpinSnip(entry.id)
-              else pinSnip(entry)
-            }
+            onCopy: text => void navigator.clipboard?.writeText(text)
           })
       }
     })
@@ -8056,273 +4598,31 @@ export default {
 
 
     // ── Chat or empty page ───────────────────────────────────────────────────
-    // The picture is sharp on an empty page and frosted behind a conversation:
-    // mark which one is on screen, and let the sheet do the rest. The app only
-    // draws its intro for the very first draft, so every other empty tab gets
-    // the same wordmark from here.
+    // The picture is sharp on a fresh draft and frosted behind a conversation.
+    // Which one is up comes from the host's own focus state, not from finding
+    // the transcript in the app's markup: a fresh draft is a focused chat with
+    // no session yet. A page such as Capabilities keeps the last chat's focus,
+    // so it frosts as it always did. The marks are the plugin's own attributes
+    // on <html>, which the sheet reads.
     if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') try {
       const root = document.documentElement
       let pageDead = false
-      document.querySelectorAll('#atr-landing').forEach(el => el.remove())
-      const landing = document.createElement('div')
-      landing.id = 'atr-landing'
-      landing.setAttribute('aria-hidden', 'true')
-      const LINES = ['Where should we begin?', 'What are we making today?', 'Bring the stuck part. We will work it out.', 'Drop in a task, a file, or a rough idea.', 'What should Hermes tackle?']
-      landing.innerHTML = '<div class="atr-land-mark">HERMES AGENT</div><div class="atr-land-line"></div>'
-      landing.lastElementChild.textContent = LINES[Math.floor(Math.random() * LINES.length)]
-      document.body.appendChild(landing)
-      // borrow the app's own intro (font-fitted wordmark and all) once seen
-      const borrowIntro = intro => {
-        if (landing.dataset.cloned || !intro) return
-        const copy = intro.cloneNode(true)
-        copy.removeAttribute('data-slot')
-        copy.querySelectorAll('[data-slot]').forEach(el => el.removeAttribute('data-slot'))
-        landing.replaceChildren(copy)
-        landing.dataset.cloned = '1'
-        for (const x of extraLandings) x.replaceChildren(copy.cloneNode(true))
-      }
-      const extraLandings = []
-      let rootTimer = 0
-      let rootTries = 0
-      // ── New-tab shelf ──────────────────────────────────────────────────────
-      // What to open next, drawn on the empty page. The rules live in RECENTS
-      // (recents/engine.js, tested on their own); this only records visits and
-      // draws what the rules return. Nothing is sent anywhere: the history is a
-      // small record per session in this plugin's own storage.
-      const home = (() => {
-        const none = { sync() {}, reset() {}, dispose() {} }
-        if (typeof host === 'undefined' || !host.state || typeof host.listPersistedSessions !== 'function') return none
-        const SEED_WINDOW = 30 * 86400
-        const REFRESH_MS = 20000
-        let records = RECENTS.sanitize(ctx.storage.get(STORE_KEYS.recents, {}))
-        let sessions = []
-        let fetchedAt = 0
-        let fetching = null
-        let saveTimer = 0
-        let dead = false
-        let shown = false
-        let anchorPane = null, anchorTagline = null
-        let token = 0
-        const unbind = []
-        const keyOf = s => s._lineage_root_id || s.id
-        const rootOfStored = id => {
-          const s = sessions.find(x => x.id === id || (Array.isArray(x._lineage_ids) && x._lineage_ids.includes(id)))
-          return s ? keyOf(s) : id
-        }
-        const flush = () => { clearTimeout(saveTimer); saveTimer = 0; try { ctx.storage.set(STORE_KEYS.recents, RECENTS.prune(records)) } catch {} }
-        const queueSave = () => { if (!saveTimer && !dead) saveTimer = setTimeout(flush, 2000) }
-
-        // ── recording ──
-        const touch = turn => {
-          if (dead || !homeOn.get()) return
-          const id = host.state.focusedStoredSessionId.get()
-          if (!id || typeof id !== 'string') return
-          const key = rootOfStored(id)
-          const rec = records[key] || (records[key] = RECENTS.emptyRecord(key))
-          if (turn) RECENTS.recordTurn(rec, Date.now())
-          else RECENTS.recordFocus(rec, Date.now())
-          queueSave()
-        }
-        let sending = false
-        unbind.push(host.state.focusedStoredSessionId.subscribe(() => touch(false)))
-        unbind.push(host.state.awaitingResponse.subscribe(v => { if (v && !sending) touch(true); sending = Boolean(v) }))
-        ctx.setInterval?.(() => { if (document.visibilityState === 'visible' && document.hasFocus()) touch(false) }, 60000)
-
-        // ── reading ──
-        const refresh = () => {
-          if (fetching) return fetching
-          if (sessions.length && Date.now() - fetchedAt < REFRESH_MS) return Promise.resolve()
-          fetching = (async () => {
-            try {
-              // The host always sorts by started_at, newest first, and caps the page
-              // (`order: 'created'` is hard-coded in the SDK). Ask for the endpoint's
-              // whole page: at 200, a long-lived session you started months ago but
-              // still open daily falls outside the window and is never suggested.
-              const r = await host.listPersistedSessions(null, { profile: host.state.profile.get(), limit: 500 })
-              if (dead) return
-              sessions = Array.isArray(r && r.sessions) ? r.sessions.filter(s => s && typeof s.id === 'string') : []
-              fetchedAt = Date.now()
-              let added = false
-              for (const s of sessions) {
-                const k = keyOf(s)
-                if (!records[k] && Date.now() / 1000 - s.last_active < SEED_WINDOW) { records[k] = RECENTS.seedFromSession(RECENTS.emptyRecord(k), s); added = true }
-              }
-              if (added) queueSave()
-            } catch { /* no gateway yet: the shelf stays away */ } finally { fetching = null }
-          })()
-          return fetching
-        }
-        const choose = () => {
-          const now = Date.now()
-          const byRow = {}
-          for (const s of sessions) byRow[s.id] = records[keyOf(s)]
-          const focused = host.state.focusedStoredSessionId.get()
-          const exclude = new Set(focused ? sessions.filter(s => s.id === focused || (s._lineage_ids || []).includes(focused)).map(s => s.id) : [])
-          return RECENTS.pickUp(sessions, byRow, now, { exclude })
-        }
-
-        // ── drawing ──
-        const el = document.createElement('div')
-        el.id = 'atr-home'
-        el.setAttribute('aria-label', 'Suggested sessions')
-        el.dataset.cards = homeCard.get()
-        document.body.appendChild(el)
-        unbind.push(homeCard.subscribe?.(v => { el.dataset.cards = v }))
-        const open = id => { try { Promise.resolve(host.openSession(id)).catch(() => {}) } catch {} }
-        const card = (item, dropTitle, drop) => {
-          const wrap = document.createElement('div')
-          wrap.className = 'atr-card'
-          const b = document.createElement('button')
-          b.type = 'button'
-          b.className = 'atr-card-open'
-          const t = document.createElement('span')
-          t.className = 'atr-card-title'
-          t.textContent = (item.session.title || '').trim() || 'Untitled'
-          const r = document.createElement('span')
-          r.className = 'atr-card-why'
-          r.textContent = item.reason
-          b.append(t, r)
-          b.addEventListener('click', () => open(item.id))
-          const x = document.createElement('button')
-          x.type = 'button'
-          x.className = 'atr-card-x'
-          x.title = dropTitle
-          x.setAttribute('aria-label', dropTitle)
-          x.textContent = '×'
-          x.addEventListener('click', e => { e.stopPropagation(); drop(item); wrap.remove(); if (!el.querySelector('.atr-card')) el.replaceChildren() })
-          wrap.append(b, x)
-          return wrap
-        }
-        const row = (label, items, dropTitle, drop) => {
-          if (!items.length) return null
-          const sec = document.createElement('section')
-          const h = document.createElement('h3')
-          h.textContent = label
-          const cards = document.createElement('div')
-          cards.className = 'atr-cards'
-          for (const it of items) cards.appendChild(card(it, dropTitle, drop))
-          sec.append(h, cards)
-          return sec
-        }
-        const draw = () => {
-          const pick = choose()
-          const ensure = item => records[keyOf(item.session)] || (records[keyOf(item.session)] = RECENTS.emptyRecord(keyOf(item.session)))
-          const parts = [
-            row('Pick up where you left off', pick, 'Not this one', item => { ensure(item).dismissed = Date.now(); queueSave() }),
-          ].filter(Boolean)
-          el.replaceChildren(...parts)
-          el.dataset.on = parts.length ? '1' : ''
-        }
-        const hide = () => { shown = false; token++; el.dataset.on = ''; el.replaceChildren() }
-        const place = (r, tagline) => {
-          const width = Math.max(260, Math.min(920, r.width - 48))
-          // Sit just under the tagline's real bottom edge (it can wrap to two lines); fall back to a fixed fraction.
-          const tb = tagline && tagline.getBoundingClientRect()
-          let top = tb && tb.height > 0 && tb.bottom > r.top && tb.bottom < r.top + r.height ? tb.bottom + 44 : r.top + r.height * 0.6
-          // the pinned status shelf sits right under the tagline: start below it when it is showing
-          const pinned = document.getElementById('atr-shelf-below')
-          const sb = pinned && !pinned.hidden ? pinned.getBoundingClientRect() : null
-          if (sb && sb.height > 0 && sb.bottom + 28 > top && sb.top < r.top + r.height) top = sb.bottom + 28
-          const next = { left: Math.round(r.left + (r.width - width) / 2) + 'px', top: Math.round(top) + 'px', width: Math.round(width) + 'px', maxHeight: Math.max(0, Math.round(r.top + r.height - top - 88)) + 'px' }
-          for (const k in next) if (el.style[k] !== next[k]) el.style[k] = next[k]
-        }
-
-        return {
-          // called on every page pass with the empty pane's box, or null
-          sync(rect, tagline, pane) {
-            if (dead) return
-            anchorPane = pane
-            anchorTagline = tagline
-            if (!rect || !homeOn.get()) { if (shown) hide(); return }
-            place(rect, tagline)
-            if (shown) return
-            shown = true
-            const mine = ++token
-            if (sessions.length) draw()
-            refresh().then(() => { if (shown && mine === token && !el.querySelector('.atr-card')) draw() })
-          },
-          // Re-measure directly during a view-transition update: hit testing
-          // in syncPage can see the transition snapshot rather than the pane.
-          layout() {
-            if (!dead && shown && anchorPane?.isConnected) place(anchorPane.getBoundingClientRect(), anchorTagline)
-          },
-          poke() { if (shown && !homeOn.get()) hide() },
-          reset() { records = {}; flush(); if (shown) draw() },
-          dispose() {
-            dead = true
-            unbind.forEach(u => { try { u() } catch {} })
-            flush()
-            el.remove()
-          },
-        }
-      })()
-
-      homeApi = home
-      const syncPage = () => {
+      const focusAtom = typeof host !== 'undefined' ? host?.state?.focusedSessionId : null
+      const syncChatMark = () => {
         if (pageDead) return
-        // several tabs keep their thread mounted in the same spot; only the one
-        // the pointer would actually hit counts (a page like Capabilities sits
-        // on top of a still-mounted thread)
-        const vps = Array.from(document.querySelectorAll("[data-slot='aui_thread-viewport']")).filter(el => el.getClientRects().length && el.getBoundingClientRect().width > 200)
-        const shown = []
-        let rootOnly = false
-        for (const v of vps) {
-          const r = v.getBoundingClientRect()
-          // looking through <html>: during a view transition it is the transition's own snapshot layer
-          const hits = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height * 0.3).filter(h => h !== document.documentElement && h !== landing && !landing.contains(h))
-          if (hits.length && v.contains(hits[0])) {
-            const intro = v.querySelector("[data-slot='aui_intro']")
-            const introShown = Boolean(intro && intro.getClientRects().length)
-            const hasMsg = Boolean(v.querySelector("[data-slot*='message']"))
-            shown.push({ r, v, intro, introShown, empty: introShown || !hasMsg })
-          } else if (!hits.length && !v.closest('[data-pane-hidden]')) rootOnly = true
+        // without the focus state (an older host) every view counts as a chat
+        const draft = Boolean(focusAtom?.get) && !focusAtom.get()
+        if (draft) {
+          delete root.dataset.atrChat
+          if (root.dataset.atrDraft !== '1') root.dataset.atrDraft = '1'
+        } else {
+          if (root.dataset.atrChat !== '1') root.dataset.atrChat = '1'
+          delete root.dataset.atrDraft
         }
-        // nothing but the transition layer: say nothing yet, keep the old state, look again shortly
-        if (!shown.length && rootOnly && rootTries++ < 24) { clearTimeout(rootTimer); rootTimer = setTimeout(schedulePage, 90); return }
-        rootTries = 0
-        const chats = shown.filter(p => !p.empty)
-        const empties = shown.filter(p => p.empty)
-        // no pane found at all (a page like Capabilities on top) frosts as it always did
-        const chat = chats.length > 0 || !shown.length
-        if (chat) { if (root.dataset.atrChat !== '1') root.dataset.atrChat = '1' }
-        else if (root.dataset.atrChat) delete root.dataset.atrChat
-        // a split with a conversation and an empty pane: cut the empty pane out of the frost
-        if (chat && chats.length && empties.length) {
-          const W = Math.round(window.innerWidth), H = Math.round(window.innerHeight)
-          const hole = p => `M${Math.round(p.r.left)} ${Math.round(p.r.top)}h${Math.round(p.r.width)}v${Math.round(p.r.height)}h${-Math.round(p.r.width)}z`
-          const clip = `path(evenodd, 'M0 0h${W}v${H}h${-W}z${empties.map(hole).join('')}')`
-          if (root.style.getPropertyValue('--atr-chat-clip') !== clip) root.style.setProperty('--atr-chat-clip', clip)
-          if (root.dataset.atrClip !== '1') root.dataset.atrClip = '1'
-        } else if (root.dataset.atrClip) {
-          delete root.dataset.atrClip
-          root.style.removeProperty('--atr-chat-clip')
-        }
-        borrowIntro((shown.find(p => p.intro) || {}).intro || document.querySelector("[data-slot='aui_intro']"))
-        const landPanes = empties.filter(p => !p.introShown)
-        // the first pane uses the landing element itself; each further empty pane gets a clone
-        while (extraLandings.length < landPanes.length - 1) {
-          const copy = landing.cloneNode(true)
-          copy.removeAttribute('id')
-          copy.className = 'atr-landing-x'
-          document.body.appendChild(copy)
-          extraLandings.push(copy)
-        }
-        while (extraLandings.length > Math.max(0, landPanes.length - 1)) extraLandings.pop().remove()
-        if (landPanes.length) {
-          const place = (el, r) => {
-            const next = { left: Math.round(r.left) + 'px', top: Math.round(r.top) + 'px', width: Math.round(r.width) + 'px', height: Math.round(r.height * 0.82) + 'px' }
-            for (const k in next) if (el.style[k] !== next[k]) el.style[k] = next[k]
-          }
-          landPanes.forEach((p, i) => place(i === 0 ? landing : extraLandings[i - 1], p.r))
-          if (root.dataset.atrLanding !== '1') {
-            if (!landing.dataset.cloned) landing.lastElementChild.textContent = LINES[Math.floor(Math.random() * LINES.length)]
-            root.dataset.atrLanding = '1'
-          }
-        } else if (root.dataset.atrLanding) {
-          delete root.dataset.atrLanding
-        }
-        home.sync(empties.length ? empties[0].r : null, [...document.querySelectorAll("[data-slot='aui_intro'] p, #atr-landing p")].filter(e => !/wordmark/.test(String(e.className)) && e.getClientRects().length).pop(), empties[0]?.v)
       }
+      const focusUnsub = focusAtom?.subscribe?.(syncChatMark)
+      syncChatMark()
+
       let pageQueued = false
       // The sheet matched 13 things with :has(). Scrolling mounts rows, and each
       // mount made Blink re-evaluate those over a large subtree (40ms per row
@@ -8378,47 +4678,17 @@ export default {
       }
 
       const markHas = () => {
-        const tc = document.querySelector("[data-slot='aui_thread-content']")
-        if (tc) {
-          flag(tc, 'data-atr-intro', !!tc.querySelector("[data-slot='aui_intro'], .wordmark, [class*='wordmark']"))
-          flag(tc, 'data-atr-msgs', !!tc.querySelector("[data-slot*='message'], [data-slot='aui_turn-pair'], [data-slot='aui_message-group']"))
-        }
         markPageZones()
         const grid = document.querySelector("[class*='grid-cols-[13rem_minmax(0,1fr)]']")
         flag(document.documentElement, 'data-atr-settings', !!grid)
         const boxes = new Set()
         if (grid) for (let p = grid.parentElement, d = 0; p && d < 2; p = p.parentElement, d++) if (p.matches('div.rounded-xl')) boxes.add(p)
         sweep('data-atr-setbox', boxes)
-        const fx = new Set()
-        // The sidebar toggle's PARENT is what carries the mark, and BOTH titlebar
-        // clusters are `div.fixed`. Matching `aria-label*='sidebar'` is far too
-        // loose: the RIGHT cluster also holds
-        //
-        //   "Swap sidebar sides"   (the flip-panes button)
-        //   "Show right sidebar"   (the right-sidebar toggle)
-        //
-        // and either one matching meant the mark landed on the cluster carrying
-        // Settings, Layout, HUD and both of those buttons — which the arc-mode
-        // rule then hid with `div.fixed[data-atr-sbbtn] { opacity: 0 }`. That is
-        // why every app action vanished from the top right under Atrium while a
-        // stock theme still showed them.
-        //
-        // Match the LEFT column's toggle exactly instead of by substring. Its
-        // label is "Show sidebar" / "Hide sidebar" (en.ts); "Swap sidebar sides"
-        // and "…right sidebar" are different controls that merely talk about
-        // sidebars.
-        const SIDEBAR_TOGGLE = /^(show|hide) sidebar$/i
-        document.querySelectorAll('div.fixed > button')
-          .forEach(b => { if (SIDEBAR_TOGGLE.test(b.getAttribute('aria-label') || '')) fx.add(b.parentElement) })
-        sweep('data-atr-sbbtn', fx)
-        const nav = new Set()
-        document.querySelectorAll("[data-tour^='sidebar-nav-']").forEach(n => { const b = n.closest("[data-slot='sidebar-menu-button']"); if (b) nav.add(b) })
-        sweep('data-atr-nav', nav)
       }
       const schedulePage = () => {
         if (pageQueued) return
         pageQueued = true
-        requestAnimationFrame(() => { pageQueued = false; if (pageDead) return; markStrips(); markHas(); syncPage() })
+        requestAnimationFrame(() => { pageQueued = false; if (pageDead) return; markStrips(); markHas() })
       }
       const pageObs = new MutationObserver(schedulePage)
       // What these marks measure. The tab strips, the sidebar rows and the
@@ -8448,7 +4718,8 @@ export default {
       const attachPageObs = () => {
         const targets = PAGE_TARGETS.flatMap(sel => [...document.querySelectorAll(sel)])
         pageObs.disconnect()
-        for (const target of targets.length ? targets : [document.body]) {
+        // none mounted yet: watch nothing, and let the next re-scan attach
+        for (const target of targets) {
           pageObs.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected', 'data-state', 'hidden'] })
         }
         attachedZones = document.querySelectorAll('[data-zone-body]').length
@@ -8476,110 +4747,23 @@ export default {
       }
       attachPageObs()
       attachStructureObs()
-      // Sidebar docking and split resizing change pane geometry without a
-      // window resize or a mutation in the sidebar content.
-      const pageSizeObs = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePage) : null
-      const attachPageSizeObs = () => {
-        if (pageDead) return
-        pageSizeObs?.disconnect()
-        document.querySelectorAll("[data-slot='aui_thread-viewport']").forEach(el => pageSizeObs?.observe(el))
-      }
-      attachPageSizeObs()
-      rescanHooks.push(attachPageSizeObs)
       rescanHooks.push(() => { attachPageObs(); attachStructureObs(); schedulePage() })
       window.addEventListener('resize', schedulePage)
       markStrips()
       markHas()
-      syncPage()
       ctx.onDispose?.(() => {
         pageDead = true
-        home.dispose()
-        clearTimeout(rootTimer)
-        delete root.dataset.atrClip
-        root.style.removeProperty('--atr-chat-clip')
+        try { focusUnsub?.() } catch {}
         document.querySelectorAll('[data-atr-strip]').forEach(el => { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') })
-        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav', 'data-atr-page', 'data-atr-pagebody']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
+        for (const a of ['data-atr-settings', 'data-atr-setbox', 'data-atr-page', 'data-atr-pagebody']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
         pageObs.disconnect()
         structureObs.disconnect()
-        pageSizeObs?.disconnect()
         window.removeEventListener('resize', schedulePage)
         delete root.dataset.atrChat
-        delete root.dataset.atrLanding
-        landing.remove()
-        for (const x of extraLandings) x.remove()
-        extraLandings.length = 0
+        delete root.dataset.atrDraft
       })
     } catch (err) {
       console.error('[hermes-atrium] page state failed: ' + (err && err.stack || err))
-    }
-
-    // ── Session clicks ───────────────────────────────────────────────────────
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement
-      // A session clicked in the sidebar opens in the tab you are in. The app
-      // always routes a row click to the first (workspace) tab; when a session
-      // tab is active, open the row as a tab through the row's own menu and
-      // retire the tab it replaces.
-      const topTabs = () => Array.from(document.querySelectorAll("[role='tab'][data-tree-tab]")).filter(t => !t.closest('[data-atr-arc-col]'))
-      let swapping = false
-      let replaying = false
-      const onRowClick = event => {
-        if (replaying || swapping || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-        // the whole row counts (it is ~62px tall; the title button is 18px),
-        // except its own controls: the actions menu and the reorder handle
-        const t = event.target
-        if (!t.closest || !t.closest("[data-slot='sidebar']")) return
-        if (t.closest("button:not([data-slot='row-button']), [aria-label^='Reorder'], input, [role='menu']")) return
-        const row = t.closest("[data-slot='context-menu-trigger']")
-        const btn = row && row.querySelector("button[data-slot='row-button']")
-        if (!btn) return
-        const active = topTabs().find(t => t.getAttribute('aria-selected') === 'true')
-        const oldId = active && active.dataset.treeTab
-        if (!row || !oldId || !oldId.startsWith('session-tile:')) return
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        swapping = true
-        root.dataset.atrGhostMenu = '1'
-        const r = btn.getBoundingClientRect()
-        row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + 20, clientY: r.top + r.height / 2, button: 2 }))
-        const finish = () => { swapping = false; delete root.dataset.atrGhostMenu }
-        // pick and retire run on animation frames, which a hidden window never delivers
-        setTimeout(() => { if (swapping) finish() }, 3000)
-        let tries = 0
-        const pick = () => {
-          const items = Array.from(document.querySelectorAll("[role='menuitem']"))
-          if (!items.length && tries++ < 20) { requestAnimationFrame(pick); return }
-          const item = items.find(i => /new tab/i.test(i.textContent))
-          if (!item) {
-            // already open somewhere: close the menu, let the app route it
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-            setTimeout(() => { finish(); replaying = true; try { btn.click() } finally { replaying = false } }, 60)
-            return
-          }
-          const before = new Set(topTabs().map(t => t.dataset.treeTab))
-          item.click()
-          let waits = 0
-          const retire = () => {
-            const fresh = topTabs().find(t => !before.has(t.dataset.treeTab))
-            if (!fresh && waits++ < 40) { setTimeout(retire, 25); return }
-            finish()
-            const old = topTabs().find(t => t.dataset.treeTab === oldId)
-            const close = old && old.querySelector("button[aria-label='Close']")
-            if (fresh && close) {
-              close.click()
-              // a running tab asks first; keep it rather than surprise anyone
-              setTimeout(() => {
-                const dlg = document.querySelector("[role='alertdialog'], [role='dialog'][data-state='open']")
-                if (dlg && /running/i.test(dlg.textContent)) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-              }, 120)
-            }
-          }
-          retire()
-        }
-        requestAnimationFrame(pick)
-      }
-      document.addEventListener('click', onRowClick, true)
-      ctx.onDispose?.(() => document.removeEventListener('click', onRowClick, true))
     }
 
     // ── the picture + glass editor ───────────────────────────────────────────
@@ -8721,14 +4905,8 @@ export default {
         const isChrome = useValue(chromeOn)
         const isReplyGround = useValue(replyGround)
         const isMargins = useValue(margins)
-        const isHome = useValue(homeOn)
-        const isHomeCard = useValue(homeCard)
-        const isCollapseWork = useValue(collapseWork)
         const isMotion = useValue(motion)
-        const isStatusDock = useValue(statusDock)
-        const isLibrary = useValue(library)
         const lookNow = useValue(look)
-        const list = useValue(pins)
 
         // One sentence for every look: they differ only in which saved skin they
         // show, so the status says which one and where its picture comes from,
@@ -8759,8 +4937,8 @@ export default {
                 jsx('p', {
                   className: 'mt-1 text-[0.8125rem] leading-5 text-(--ui-text-secondary)',
                   children: 'A glossy Atrium for Hermes: a painting or a picture of your own behind the app, '
-                    + 'tints every panel to match, and gives each reply a panel of its own. It also adds a floating '
-                    + 'sidebar, wide tabs, folded work steps and snippet cards you can pin.'
+                    + 'tints every panel to match, and gives each reply a panel of its own. It also adds wide tabs '
+                    + 'and snippet cards you can copy.'
                 }),
                 jsx('p', { className: 'mt-2 text-[0.75rem] text-(--ui-text-tertiary)', children: `Now: ${status}` })
               ]
@@ -8832,40 +5010,6 @@ export default {
 
         const chatSection = section('comment-discussion', 'Chat & motion', [
           jsx(ToggleRow, {
-            checked: isHome,
-            description: 'On a new tab: the sessions you are most likely to want, and the ones you keep coming back to. It learns only from when you open sessions and send messages, keeps that on this computer, and shows why each one is there. The x on a card removes it.',
-            label: 'Suggest sessions on new tabs',
-            onChange: on => {
-              homeOn.set(on)
-              persist()
-              homeApi.poke?.()
-            }
-          }),
-          isHome
-            ? jsx(ListRow, {
-                title: 'Suggestion card material',
-                description: 'Matte is the flat fill the sidebar, snippet and tool cards wear, with no edge or shadow. Glass is the translucent sidebar glass, edged and lifted.',
-                action: jsx(SegmentedControl, {
-                  value: isHomeCard,
-                  options: [
-                    { id: 'matte', label: 'Matte' },
-                    { id: 'glass', label: 'Glass' }
-                  ],
-                  onChange: next => {
-                    homeCard.set(next)
-                    persist()
-                  }
-                })
-              })
-            : null,
-          isHome
-            ? jsx(ListRow, {
-                description: 'Clears what Atrium has learned about which sessions you open.',
-                title: 'Forget my session history',
-                action: jsx(Button, { size: 'sm', variant: 'ghost', onClick: () => homeApi.reset(), children: 'Forget' })
-              })
-            : null,
-          jsx(ToggleRow, {
             checked: isReplyGround,
             description: 'Give every reply a solid panel of its own, so the text never sits directly on the picture. Off leaves the prose bare.',
             label: 'Reply panels',
@@ -8883,392 +5027,49 @@ export default {
             }
           }),
           jsx(ToggleRow, {
-            checked: isCollapseWork,
-            description: 'When a reply finishes, fold its thinking and tool steps into one line with the time it took. Click the line to open the steps.',
-            label: 'Fold finished work',
-            onChange: on => {
-              collapseWork.set(on)
-              persist()
-              applyCollapseWork(on)
-            }
-          }),
-          jsx(ToggleRow, {
             checked: isMotion,
-            description: 'Short fades and slides on menus, the history list, the composer, message actions and opening the folded work. Off makes every interaction instant. Also follows your system\'s reduced-motion setting.',
+            description: 'Short fades and slides on menus, the history list, the composer, and message actions. Off makes every interaction instant. Also follows your system\'s reduced-motion setting.',
             label: 'App animations',
             onChange: on => {
               motion.set(on)
               persist()
               applyMotion(on)
             }
-          }),
-          jsx(ToggleRow, {
-            checked: isStatusDock,
-            description: 'In Simple mode, the status bar (model, context, agents, radio) becomes a card at the foot of the sessions sidebar. It opens when there is room for at least six sessions, and a click on its header opens or closes it. It hides with the sidebar and comes back with it. Advanced mode keeps the bar at the bottom.',
-            label: 'Status panel in Simple mode',
-            onChange: on => {
-              statusDock.set(on)
-              persist()
-              // put Simple back as it was: hide the bar we revealed
-              if (!on && dock.pressed && interfaceMode() === 'simple' && document.querySelector("footer[data-slot='statusbar']")) {
-                pressStatusbarKeybind()
-                dock.pressed = false
-              }
-              syncStatusDock()
-            }
           })
         ], { collapse: true })
 
-        const pinSection = section('bookmark', list.length ? `Snippets (${list.length})` : 'Snippets', [
-          jsx(ToggleRow, {
-            checked: isLibrary,
-            description: 'Your snippet library: a Snippets card in the sessions sidebar that holds every snippet you pin. Click one to preview it, copy it or attach it to the chat; drag one onto the new-chat Shelf; drag it off the card to unpin it.',
-            label: 'Snippet library',
-            onChange: on => {
-              library.set(on)
-              persist()
-              lib.key = ''
-              layoutLibrary()
-            }
-          }),
-          ...list.map(entry =>
-            jsx(ListRow, {
-              description: [entry.value, entry.note].filter(Boolean).join(' — '),
-              title: entry.title || entry.value || 'snippet',
-              action: jsx(Button, {
-                size: 'sm',
-                variant: 'ghost',
-                onClick: () => unpinSnip(entry.id),
-                children: 'Unpin'
-              })
-            })
-          ),
-          list.length > 1
-            ? jsx('div', {
-                className: 'flex justify-end pt-1',
-                children: jsx(Button, {
-                  size: 'sm',
-                  variant: 'ghost',
-                  onClick: () => { pins.set([]); persist(); onPinsChanged() },
-                  children: 'Unpin all'
-                })
-              })
-            : null
-        ], { collapse: true })
-
-        return jsxs('div', { children: [header, lookSection, skinSection, lightSection, chatSection, pinSection].filter(Boolean) })
+        return jsxs('div', { children: [header, lookSection, skinSection, lightSection, chatSection].filter(Boolean) })
       }
     })
-
-    // ── The floating sidebar ─────────────────────────────────────────────────────────────
-    // The app unmounts the whole sidebar tree when it collapses, and remounting
-    // it on every hover was the lag. So the app's sidebar is kept open, and
-    // "collapsed" is ours: the column is lifted out of the flow and parked
-    // off-screen, and a touch on the left edge slides it in. The app's own
-    // toggle (button or shortcut) flips between this and a pinned sidebar.
-    if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') try {
-      window.__atrRailGen = (window.__atrRailGen || 0) + 1
-      const railGen = window.__atrRailGen
-      let railDead = false
-      const alive = () => !railDead && window.__atrRailGen === railGen
-      const root = document.documentElement
-      const ARC_KEY = 'hermes-atrium.arc.v1'
-      let arc = (() => { try { return localStorage.getItem(ARC_KEY) !== '0' } catch { return true } })()
-      let open = false
-      let autoUntil = 0
-      let closeTimer = 0
-
-      document.querySelectorAll('#atr-rail-hot').forEach(el => el.remove())
-
-      document.querySelectorAll('#atr-mode-btn').forEach(el => el.remove())
-      const modeBtn = document.createElement('button')
-      modeBtn.type = 'button'
-      modeBtn.id = 'atr-mode-btn'
-      modeBtn.className = 'atr-mode-btn'
-      modeBtn.setAttribute('aria-label', 'Toggle sidebar mode')
-      document.body.appendChild(modeBtn)
-      const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>'
-      const ICON_FLOAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><rect x="6" y="7" width="5" height="10" rx="1.5"/></svg>'
-      // the chord is the platform's own: Cmd on macOS, Ctrl everywhere else
-      const CHORD = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '') ? '\u2318S' : 'Ctrl+S'
-      const paintMode = () => {
-        modeBtn.innerHTML = arc ? ICON_PIN : ICON_FLOAT
-        modeBtn.title = arc ? `Pin sidebar (${CHORD})` : `Float sidebar (${CHORD})`
-        modeBtn.setAttribute('aria-label', modeBtn.title)
-      }
-      modeBtn.addEventListener('click', e => {
-        e.stopPropagation(); e.preventDefault()
-        if (arc) { morph(() => setArc(false)); return }
-        morph(() => { setArc(true); setOpen(true, true) })
-      })
-      modeBtn.addEventListener('keydown', e => e.stopPropagation())
-
-      const hot = document.createElement('div')
-      hot.id = 'atr-rail-hot'
-      hot.setAttribute('aria-hidden', 'true')
-      document.body.appendChild(hot)
-
-      // The sidebar switch is drawn by SIDEBAR_CSS, which is part of the
-      // styling sheet. With Hermes Atrium styling off there is no sheet to position or
-      // hide it, so keep the raw button and the edge sensor out of the way.
-      const syncChromeControls = () => {
-        const show = chromeOn.get()
-        modeBtn.style.display = show ? '' : 'none'
-        hot.style.display = show ? '' : 'none'
-      }
-      const chromeUnsub = chromeOn.subscribe?.(syncChromeControls)
-      syncChromeControls()
-
-      const toggleBtn = () => Array.from(document.querySelectorAll('button'))
-        .find(el => /^(show|hide) sidebar/i.test(el.getAttribute('aria-label') || ''))
-      const press = el => {
-        autoUntil = Date.now() + 400
-        el.click()
-      }
-      // The snippet card and the status-dock head are placed by the app's own
-      // layout from the column's box. A CSS slide moves that box, so once the
-      // slide settles the app gets one resize to re-measure against the new
-      // one: ordered, not fighting.
-      const column = () => {
-        const side = document.querySelector("[data-slot='sidebar']")
-        let node = side
-        while (node && node.parentElement && !node.parentElement.hasAttribute('data-tree-split')) node = node.parentElement
-        return node && node.parentElement ? node : null
-      }
-
-      // Cmd+S / the mode button morph between pinned and floating: the column
-      // and the main pane are captured and glide to their new boxes.
-      const morph = fn => {
-        const update = () => { fn(); layoutShelf(); homeApi.layout?.() }
-        if (document.hidden || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { update(); return }
-        const col = column()
-        const split = col && col.parentElement
-        const main = split && Array.from(split.children).filter(c => c !== col && c.getClientRects().length).sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0]
-        if (col) col.style.viewTransitionName = 'atr-side'
-        if (main) main.style.viewTransitionName = 'atr-main'
-        const home = document.getElementById('atr-home')
-        if (home) home.style.viewTransitionName = 'atr-home'
-        root.dataset.atrMorph = '1'
-        // The toggle must not wait on the animation: a view transition holds its callback until a
-        // frame is presented, which can take seconds under load, and a second press then undoes the first.
-        let ran = false
-        const once = () => { if (!ran) { ran = true; update() } }
-        const t = document.startViewTransition(once)
-        setTimeout(once, 400)
-        t.finished.finally(() => {
-          if (col) col.style.viewTransitionName = ''
-          if (main) main.style.viewTransitionName = ''
-          if (home) home.style.viewTransitionName = ''
-          delete root.dataset.atrMorph
-          window.dispatchEvent(new Event('atr-morph-end'))
-        })
-      }
-
-      const setArc = value => {
-        arc = value
-        try { localStorage.setItem(ARC_KEY, value ? '1' : '0') } catch {}
-        setOpen(false, true)
-        sync()
-      }
-      const setOpen = (value, instant) => {
-        clearTimeout(closeTimer)
-        if (open === value) return
-        open = value
-        if (value) root.dataset.atrArcOpen = '1'
-        else delete root.dataset.atrArcOpen
-        if (instant) {
-          const col = column()
-          const els = [col].filter(Boolean)
-          els.forEach(el => { el.style.transition = 'none' })
-          requestAnimationFrame(() => els.forEach(el => { el.style.transition = '' }))
-        }
-      }
-
-      const sync = () => {
-        if (!alive()) return
-        // Native narrow overlays own their own lifecycle. Do not interpret
-        // their dismissal as a desktop pin/float toggle and reopen them.
-        if (window.innerWidth < 640) {
-          clearTimeout(closeTimer)
-          modeBtn.style.display = 'none'
-          hot.style.display = 'none'
-          delete root.dataset.atrArc
-          delete root.dataset.atrArcOpen
-          document.querySelectorAll('[data-atr-arc-col]').forEach(el => { delete el.dataset.atrArcCol })
-          return
-        }
-        syncChromeControls()
-        const side = document.querySelector("[data-slot='sidebar']")
-        if (!side) {
-          // the app collapsed it (button, shortcut, or our own first run):
-          // that is a toggle of the sidebar, then the tree comes back
-          if (Date.now() > autoUntil) {
-            const btn = toggleBtn()
-            if (btn && /^show sidebar/i.test(btn.getAttribute('aria-label') || '')) {
-              arc = !arc || !root.dataset.atrArcSeen ? true : !arc
-              try { localStorage.setItem(ARC_KEY, arc ? '1' : '0') } catch {}
-              setOpen(false, true)
-              press(btn)
-            }
-          }
-          return
-        }
-        if (root.dataset.atrArcSeen !== '1') root.dataset.atrArcSeen = '1'
-        const col = column()
-        document.querySelectorAll('[data-atr-arc-col]').forEach(el => { if (el !== col) delete el.dataset.atrArcCol })
-        if (col && !col.dataset.atrArcCol) col.dataset.atrArcCol = '1'
-        if (col && modeBtn.parentElement !== col) col.appendChild(modeBtn)
-        if (arc) { if (root.dataset.atrArc !== '1') root.dataset.atrArc = '1' }
-        else if (root.dataset.atrArc) delete root.dataset.atrArc
-        if (modeBtn.dataset.arc !== String(arc)) { modeBtn.dataset.arc = String(arc); paintMode() }
-
-        if (!root.dataset.atrArcReady) root.dataset.atrArcReady = '1'
-        // the floating card's inner x, so the fixed layers above can sit on it
-        const content = side.querySelector("[data-slot='sidebar-content']")
-        if (content) {
-          const padX = parseFloat(getComputedStyle(content).paddingLeft) || 10
-          const x = Math.round(10 + padX)
-          const w = Math.round(272 - 2 * padX)
-          if (root.style.getPropertyValue('--atr-rail-x') !== x + 'px') root.style.setProperty('--atr-rail-x', x + 'px')
-          if (root.style.getPropertyValue('--atr-rail-w') !== w + 'px') root.style.setProperty('--atr-rail-w', w + 'px')
-        }
-      }
-      let queued = false
-      const schedule = () => {
-        if (queued) return
-        queued = true
-        requestAnimationFrame(() => { queued = false; sync() })
-      }
-      const railObs = new MutationObserver(records => {
-        if (records.some(({ target }) => !target.closest?.("[data-slot='aui_thread-content']"))) schedule()
-      })
-      // The wrapper also owns the transcript. Its content must not wake the
-      // sidebar measurement, but the wrapper still sees sidebar remounts.
-      const attachRailObs = () => {
-        railObs.disconnect()
-        railObs.observe(document.querySelector("[data-slot='sidebar-wrapper']") || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected', 'data-state', 'hidden'] })
-      }
-      attachRailObs()
-      rescanHooks.push(() => { attachRailObs(); schedule() })
-      window.addEventListener('resize', schedule)
-      sync()
-
-      // Cmd+S: hide / show the sidebar (pinned <-> sidebar)
-      const onCmdS = event => {
-        if (!alive()) return
-        if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && (event.key === 's' || event.key === 'S')) {
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          if (!document.querySelector("[data-slot='sidebar']")) {
-            const btn = toggleBtn()
-            if (btn) press(btn)
-            setArc(false)
-            return
-          }
-          morph(() => setArc(!arc))
-        }
-      }
-      window.addEventListener('keydown', onCmdS, true)
-
-      // the app's toggle flips sidebar <-> pinned instead of unmounting the tree
-      const onToggleClick = event => {
-        if (!alive() || !event.isTrusted || window.innerWidth < 640) return
-        const btn = event.target instanceof Element ? event.target.closest('button') : null
-        if (!btn || !/^(show|hide) sidebar/i.test(btn.getAttribute('aria-label') || '')) return
-        if (!document.querySelector("[data-slot='sidebar']")) return
-        event.preventDefault()
-        event.stopImmediatePropagation()
-        morph(() => setArc(!arc))
-      }
-      window.addEventListener('click', onToggleClick, true)
-
-      // reveal / tuck away
-      hot.addEventListener('mouseenter', () => { if (alive() && arc) setOpen(true) })
-      const busy = () => Boolean(document.querySelector('[data-radix-popper-content-wrapper], [role=menu], [role=dialog][data-state=open]'))
-      const onArcMove = event => {
-        if (!alive() || !arc || !open) return
-        const limit = 10 + 272 + 6
-        if (event.clientX <= limit) { clearTimeout(closeTimer); closeTimer = 0; return }
-        if (closeTimer || busy()) return
-        closeTimer = setTimeout(() => { closeTimer = 0; if (!busy()) setOpen(false) }, 40)
-      }
-      document.addEventListener('mousemove', onArcMove, { passive: true })
-      const onArcLeave = () => {
-        if (!alive() || !arc || !open || busy()) return
-        clearTimeout(closeTimer)
-        closeTimer = setTimeout(() => { closeTimer = 0; setOpen(false) }, 60)
-      }
-      document.documentElement.addEventListener('mouseleave', onArcLeave)
-      const onArcEsc = event => {
-        if (alive() && arc && open && event.key === 'Escape' && !busy()) setOpen(false)
-      }
-      window.addEventListener('keydown', onArcEsc)
-
-      ctx.onDispose?.(() => {
-        railDead = true
-        railObs.disconnect()
-        window.removeEventListener('resize', schedule)
-        window.removeEventListener('keydown', onCmdS, true)
-        window.removeEventListener('click', onToggleClick, true)
-        document.removeEventListener('mousemove', onArcMove)
-        document.documentElement.removeEventListener('mouseleave', onArcLeave)
-        window.removeEventListener('keydown', onArcEsc)
-        clearTimeout(closeTimer)
-        try { chromeUnsub?.() } catch {}
-        hot.remove(); modeBtn.remove()
-        for (const k of ['atrArc', 'atrArcOpen', 'atrArcReady', 'atrArcSeen', 'atrMorph']) delete root.dataset[k]
-        document.querySelectorAll('[data-atr-arc-col]').forEach(el => { delete el.dataset.atrArcCol })
-      })
-    } catch (err) {
-      console.error('[atr-rail] failed: ' + (err && err.stack || err))
-    }
 
     // A plugin is a guest: leave the host as we found it when it unloads.
     ctx.onDispose?.(() => {
       atrDisposed = true
       themeObs?.disconnect()
-      stopPreviewMeasure?.()
       clearInterval(configTimer)
-      clearInterval(flareTimer)
-      clearInterval(dockTimer)
       iconStyle?.remove()
-      if (typeof document !== 'undefined') { document.removeEventListener('pointerdown', onRowPointerDown, true); endPinDrag(); undock(); dock.ro?.disconnect(); dock.popObs?.disconnect(); document.querySelectorAll(`[${DOCK_POP_ATTR}]`).forEach(el => el.removeAttribute(DOCK_POP_ATTR)); document.getElementById('atr-statusdock-tab')?.remove(); dock.head?.remove(); dock.style?.remove(); document.getElementById('atr-snippet-style')?.remove(); document.getElementById('atr-motion-style')?.remove(); closePreview(); unlib(); lib.el?.remove(); SHELF_SLOTS.forEach(sl => shelfEls[sl]?.remove()); shelf$.ro?.disconnect(); try { pinsUnsub?.() } catch {}; document.documentElement.removeAttribute('data-atr-dragging') }
-      clearInterval(liveTimer)
+      if (typeof document !== 'undefined') { document.getElementById('atr-snippet-style')?.remove(); document.getElementById('atr-motion-style')?.remove() }
       colObs?.disconnect()
       if (typeof document !== 'undefined') unfitColumn()
-      flareStyle?.remove()
-      document.querySelector?.(`[${STACK_FLARE_ATTR}]`)?.removeAttribute(STACK_FLARE_ATTR)
       clearSheet()
       try { panelUnsub?.() } catch {}
       document.getElementById('atr-reply-ground')?.remove()
+      document.getElementById(REPLY_PROBE_ID)?.remove()
       pictureReady = () => {}
       setAccentOverride(null)
       unpinWordmark()
       if (typeof window !== 'undefined') window.removeEventListener?.('resize', onResize)
-      if (workThrottle) clearTimeout(workThrottle)
-      if (workFrame !== null) cancelAnimationFrame?.(workFrame)
-      dirtyTurns.clear()
       if (typeof document !== 'undefined' && document.documentElement) {
         document.documentElement.style.removeProperty('--atr-sun')
         if (document.documentElement.dataset) {
           delete document.documentElement.dataset.atrMargins
-          delete document.documentElement.dataset.atrCollapseWork
           delete document.documentElement.dataset.atrMotion
         }
-        document.querySelectorAll?.('.atr-work-summary').forEach(el => el.remove?.())
-        document.querySelectorAll?.('[data-atr-work-collapsed]').forEach(el => el.removeAttribute?.('data-atr-work-collapsed'))
-        document.querySelectorAll?.('[data-atr-work-interim]').forEach(el => el.removeAttribute?.('data-atr-work-interim'))
-        document.removeEventListener?.('click', onDocClick, true)
         document.removeEventListener?.('scroll', onAnyScroll, { capture: true })
         if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
         scrollIdleTimer = 0
         document.documentElement?.removeAttribute?.('data-atr-scrolling')
       }
-      if (typeof window !== 'undefined') {
-        window.removeEventListener?.('popstate', onNavChange)
-        window.removeEventListener?.('hashchange', onNavChange)
-      }
-      if (chatObserver) chatObserver.disconnect()
     })
 
   }

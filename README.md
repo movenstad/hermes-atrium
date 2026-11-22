@@ -114,14 +114,8 @@ photograph.
 
 ## What it also adds
 
-- A floating sessions sidebar that slides open and shut.
-- Wide, legible tabs, with keyboard bindings to move between them.
-- Finished turns fold their thinking and tool steps into one line.
-- Snippet cards you can pin, drag onto a shelf, or keep in a library.
-- A status panel at the foot of the sidebar in Simple mode.
-- Suggestions on a new tab, learned only from local session activity.
-
-Every one of those is a switch in **Settings --> Hermes Atrium**.
+- Wide, legible tabs.
+- Snippet cards with a copy button.
 
 ## Credits
 
