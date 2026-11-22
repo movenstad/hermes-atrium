@@ -1408,6 +1408,55 @@ const SIDEBAR_CSS = [
   '}',
 ]
 
+// ── Which zones paint their own ground ─────────────────────────────────────
+// A zone's container is cleared to transparent so the picture is the ground
+// everywhere. Only some panes back that with a surface of their own:
+//
+//   chat       the reply panels grade the ink against the picture (§2)
+//   sessions   the sidebar cards paint themselves
+//   files      the right sidebar's aside carries a surface token
+//   app pages  Artifacts, Messaging, Capabilities wear the chat token, which
+//              the sheet already fills as a floating card
+//   terminal   xterm paints its own canvas, and the pane's body does not even
+//              live in the zone (it is a keep-alive host), so it is named by
+//              pane id rather than looked for
+//
+// Everything else is a page that draws no ground: a plugin route (Security,
+// Memory Wiki), the Bots roster, a preview of a file or a patch. Their
+// headings, rows and code sat straight on the wallpaper and disappeared over a
+// light passage. `data-atr-page` is how the sheet gives them one.
+//
+// Two gates, both load-bearing:
+//   * a keep-alive pane host carries `data-tree-group` too, but it is a sibling
+//     laid OVER the zone rather than the zone itself; a fill there would paint
+//     glass over a neighbour. `data-pane-host` names it.
+//   * a surface inside a HIDDEN pane does not paint. An inactive tab stays
+//     mounted with `data-pane-hidden`, so the sessions column is still in the
+//     DOM while Bots is fronted. Counting it left the Bots roster on the
+//     wallpaper, which is exactly the bug this fixes.
+const PAGE_GROUND_MARKS = [
+  '[data-chat-surface]',
+  "[data-slot='sidebar']",
+  '[data-slot="aui_thread-content"]',
+  'aside[class*="bg-(--ui-sidebar-surface-background)"]',
+  'section[class*="bg-(--ui-chat-surface-background)"]:not([data-chat-surface])'
+]
+// Panes whose content paints its own surface, or whose zone must stay clear.
+const PAGE_GROUND_PANES = new Set(['terminal'])
+const marksPageGround = zone => {
+  if (!zone?.querySelector || zone.hasAttribute('data-pane-host')) return false
+  const active = zone.querySelector('[data-tree-tab][aria-selected="true"]')
+  if (active && PAGE_GROUND_PANES.has(active.getAttribute('data-tree-tab'))) return false
+  return !PAGE_GROUND_MARKS.some(sel => [...zone.querySelectorAll(sel)].some(el => !el.closest('[data-pane-hidden]')))
+}
+// The element the page fill goes on: the zone's own body box. The
+// `[data-zone-body]` wrapper is `display: contents` (it exists to carry the
+// zone's context menu), so the fill belongs on the first element inside it,
+// which is the flex body the pane renders into. Marking that element rather
+// than writing a selector for it keeps the fill off the keep-alive anchors,
+// which are absolutely positioned children of the same box.
+const pageBodyOf = zone => zone?.querySelector?.('[data-zone-body]')?.firstElementChild || null
+
 // `backdrop` paints the ground the app sits on (the painting or your picture);
 // `chrome` paints Atrium's own panels, type and controls. They are separate
 // switches in Settings, so a plain Hermes chrome can keep the picture, and the
@@ -2435,6 +2484,32 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     "section[class*='bg-(--ui-chat-surface-background)']:not([data-chat-surface]) :is(footer, section)[class*='bg-(--ui-chat-surface-background)'] {",
     '  background: transparent !important;',
+    '}',
+    // ── Panes that hold a page, not a conversation ─────────────────────────
+    // The zone container is cleared to transparent so the picture is the
+    // ground everywhere (see "Every pane paints a surface" above). That is
+    // right for the chat, whose ink the reply panels grade, and right for the
+    // sidebar, whose cards paint themselves. It is wrong for everything else:
+    // a plugin route (Security, Memory Wiki), the Bots roster, a preview of a
+    // file or a patch paints no ground at all, so its headings, rows and code
+    // sat straight on the wallpaper and disappeared over a light passage.
+    //
+    // The fill goes on the zone's BODY, not the zone: the body is the content
+    // area below the pane's tab strip, so the strip keeps its clear ground and
+    // the page becomes the same floating card the app's own pages get (inset,
+    // rounded, lifted). The strong tier is deliberate: this is dense small
+    // type with no reply panel solving a tone for it, so it wants the same
+    // weight dialogs and sheets wear, a step solider than the sidebar cards.
+    //
+    // `data-atr-pagebody` is set by the sweep rather than written as a selector
+    // because the element is the host's own flex body: its classes and depth
+    // are internals, and a selector for them would also catch the keep-alive
+    // anchors, which are absolutely positioned children of the same box.
+    '[data-atr-pagebody] {',
+    '  background: var(--atr-glass-strong) !important;',
+    '  border-radius: var(--atr-radius-lg) !important;',
+    '  box-shadow: var(--atr-lift) !important;',
+    '  box-sizing: border-box !important;',
     '}',
     // Overlays (Settings, Command Center, Agents, Cron, Profiles…): a light
     // scrim so the painting stays present, and one raised glass card on it.
@@ -7941,12 +8016,28 @@ export default {
         document.querySelectorAll('[' + name + ']').forEach(el => { if (!found.has(el)) el.removeAttribute(name) })
         found.forEach(el => flag(el, name, true))
       }
+
+      // A zone that paints nothing of its own. The chat grades its text with
+      // the reply panels, the sessions column paints its cards and the terminal
+      // paints xterm's canvas; every other pane (a plugin route, the Bots
+      // roster, a file preview) draws no ground at all, so its headings, rows
+      // and code sat straight on the wallpaper. Those get the page material,
+      // on the zone's body box so the tab strip above it stays clear.
+      const markPageZones = () => {
+        document.querySelectorAll('[data-tree-group]').forEach(zone => {
+          const page = marksPageGround(zone)
+          flag(zone, 'data-atr-page', page)
+          flag(page ? pageBodyOf(zone) : null, 'data-atr-pagebody', page)
+        })
+      }
+
       const markHas = () => {
         const tc = document.querySelector("[data-slot='aui_thread-content']")
         if (tc) {
           flag(tc, 'data-atr-intro', !!tc.querySelector("[data-slot='aui_intro'], .wordmark, [class*='wordmark']"))
           flag(tc, 'data-atr-msgs', !!tc.querySelector("[data-slot*='message'], [data-slot='aui_turn-pair'], [data-slot='aui_message-group']"))
         }
+        markPageZones()
         const grid = document.querySelector("[class*='grid-cols-[13rem_minmax(0,1fr)]']")
         flag(document.documentElement, 'data-atr-settings', !!grid)
         const boxes = new Set()
@@ -8000,7 +8091,7 @@ export default {
         delete root.dataset.atrClip
         root.style.removeProperty('--atr-chat-clip')
         document.querySelectorAll('[data-atr-strip]').forEach(el => { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') })
-        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
+        for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav', 'data-atr-page', 'data-atr-pagebody']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
         pageObs.disconnect()
         pageSizeObs?.disconnect()
         window.removeEventListener('resize', schedulePage)
