@@ -550,17 +550,17 @@ const SESSION_TAB_CSS = [
   // re-shows on hover at the left edge); filling its container would leave a
   // floating empty pill where the button used to be.
   "[data-titlebar-cluster='right']:has(> :is(button, a)) {",
-  // The tint alone is not enough here: this sits over the darkest band of the
-  // painting, where an 88% fill of the same dark tint lands within 0.004 luma
-  // of the bare picture and the pill simply is not there. Mix in the skin's
-  // raised tint (`--atr-tint-hi`, the step the sidebar cards use to lift off
-  // the ground) so the group reads as a surface rather than a coincidence.
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 78%, var(--atr-tint-hi, #2b4636)) !important;',
+  // Measured on the shipped painting, a tint-only fill came out 1.12:1 off the
+  // picture and a tint + --atr-tint-hi mix only reached 1.14:1. Both are too
+  // close to call a surface: every dark tint in this skin is within a few
+  // thousandths of the painting's own darkness over the titlebar band.
+  //
+  // So step it toward the INK, the same way the active session tab does, and
+  // let the hairline finish the edge. This is the one place in the titlebar
+  // where a real surface is needed, and half-measures measured as nothing.
+  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 86%, rgb(var(--atr-hi, 251, 241, 199))) !important;',
   '  border-radius: 8px;',
-  // A visible hairline, not the subtle inset one: the group's edge is the
-  // thing that tells the eye "these four icons belong together", and a 4%
-  // wash disappears into a busy picture.
-  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 20%, transparent) !important;',
+  '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 26%, transparent) !important;',
   // No padding: the app reserves `count * var(--titlebar-control-size)` for this
   // cluster, so growing the box by even 2px pushes it into the native window
   // controls and shifts the panel header's own reservation.
@@ -8170,7 +8170,19 @@ export default {
         if (grid) for (let p = grid.parentElement, d = 0; p && d < 2; p = p.parentElement, d++) if (p.matches('div.rounded-xl')) boxes.add(p)
         sweep('data-atr-setbox', boxes)
         const fx = new Set()
-        document.querySelectorAll("div.fixed > button[aria-label*='sidebar' i]").forEach(b => fx.add(b.parentElement))
+        // The sidebar toggle's PARENT is what carries the mark, and BOTH titlebar
+        // clusters are `div.fixed`. The right-hand one holds "Hide right sidebar",
+        // which matches `aria-label*='sidebar'` just as the left one's "Hide
+        // sidebar" does — so the mark landed on the cluster holding Settings,
+        // Layout, Chat and the right-sidebar toggle, and the arc-mode rule
+        // `div.fixed[data-atr-sbbtn] { opacity: 0 }` hid all of them. That is the
+        // "the settings buttons come and go" report.
+        //
+        // The BUTTON rule further up already excluded the right-sidebar toggle;
+        // this sweep was simply never given the same exclusion. Keep the two in
+        // step: "show/hide sidebar" is the left column, "…right sidebar" is not.
+        document.querySelectorAll("div.fixed > button[aria-label*='sidebar' i]:not([aria-label*='right sidebar' i])")
+          .forEach(b => fx.add(b.parentElement))
         sweep('data-atr-sbbtn', fx)
         const nav = new Set()
         document.querySelectorAll("[data-tour^='sidebar-nav-']").forEach(n => { const b = n.closest("[data-slot='sidebar-menu-button']"); if (b) nav.add(b) })
