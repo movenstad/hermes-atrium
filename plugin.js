@@ -9,7 +9,10 @@
  * Four looks, one editor: **Gruvbox** is a preset (the shipped painting, palette
  * and opacities) and **Custom 1**, **Custom 2** and **Custom 3** are three
  * independent records of the same knobs, kept as you leave them, each optionally
- * driven by its own hermes-atrium-theme*.json. There is no weather, no feed and
+ * driven by its own hermes-atrium-theme*.json. The three Custom slots are also
+ * born as designed looks of their own (Watersky, Goldensky, Nightsky, see
+ * LOOK_PRESETS), so a fresh install has four finished appearances rather than
+ * one and three blank ones. There is no weather, no feed and
  * no network access of any kind: nothing leaves the computer, ever.
  *
  * Each feature rides the cheapest existing mechanism:
@@ -203,6 +206,111 @@ const LOOK_LABELS = { gruvbox: 'Gruvbox', custom: 'Custom 1', custom2: 'Custom 2
 const lookLabel = id => LOOK_LABELS[id] || LOOK_LABELS.custom
 const isCustomLook = id => id !== 'gruvbox'
 
+// ── What a Custom slot is born as ───────────────────────────────────────────
+// Each Custom slot starts as a designed look instead of a copy of Gruvbox, and
+// stays an ordinary editable record: this table is only the seed a slot is born
+// with, and anything you change is stored and wins from then on. A slot that
+// already has a record is never touched, so an upgrade keeps the picture and
+// palette it had.
+//
+// The pictures are referenced as `assets/<file>`, a marker resolvePluginFiles
+// turns into a file URL once it has found the folder. Two reasons for the
+// indirection: the records are built before the desktop bridge has answered, so
+// an absolute path cannot exist yet, and a clone that ships plugin.js without
+// these pictures then falls back to the shipped painting instead of painting
+// nothing.
+//
+// The palettes are measured rather than picked by eye, against each picture's
+// own pixels, through the same compositing the reply-panel solver runs. At the
+// shipped panel dials, ink on the solved reply panel reaches 9.4:1 on Watersky,
+// 12.3:1 on Goldensky and 9.7:1 on Nightsky, and no faint tier is quieter than
+// Gruvbox's own on the chrome ground (the closest is Goldensky's faintest at
+// 3.70:1 against Gruvbox's 3.66:1). `npm --prefix dev run measure` reproduces
+// every one of those numbers and fails the run if a change drops below them, so
+// treat this comment as the summary and that script as the source.
+//
+// The scrims are heavier than Gruvbox's 0.31 because two of these pictures are
+// bright: Watersky is a 190-250 luma wash of blue concrete, and behind the
+// reading column it measures 110 luma before the scrim. Without the scrim the
+// solved panel would be the only thing separating prose from its picture, and
+// the sidebar cards would read as lit panels rather than glass. Blur stays at 0
+// like every other look: a still picture gains nothing from a full-window
+// compositor pass on every scroll.
+const LOOK_PRESETS = {
+  custom: {
+    name: 'Watersky',
+    description: 'Blue concrete, cool glass',
+    skin: {
+      image: 'assets/watersky.jpg', fit: 'cover', posX: 50, posY: 46,
+      scrim: 0.34, chrome: 0.86, card: 0.90, bubble: 0.82, page: 0.92,
+      ground: '#1b3350', deeper: '#0a182e', cardTint: '#24445f', bubbleTint: '#2e567a',
+      edge: '#5480a8', accent: '#7fc6fa',
+      ink: '#f6fbff', ink2: '#dbe8f6', ink3: '#c4d6e9', quiet: '#a9bed4', ink4: '#8ea4bb',
+      link: '#96d2f9', code: '#f6cc9e', quote: '#9ee3d8'
+    }
+  },
+  custom2: {
+    name: 'Goldensky',
+    description: 'Dusk clouds, warm glass',
+    skin: {
+      image: 'assets/goldensky.jpg', fit: 'cover', posX: 50, posY: 50,
+      scrim: 0.26, chrome: 0.78, card: 0.82, bubble: 0.78, page: 0.87,
+      ground: '#2e2022', deeper: '#150d0f', cardTint: '#3e2d2e', bubbleTint: '#4e3737',
+      edge: '#75564f', accent: '#eeae8a',
+      ink: '#faf1ea', ink2: '#e9d8cd', ink3: '#d6c0b3', quiet: '#c4aa9c', ink4: '#aa968c',
+      link: '#c3b6dd', code: '#eabf92', quote: '#d2b0cb'
+    }
+  },
+  custom3: {
+    name: 'Nightsky',
+    description: 'Starfield, indigo glass',
+    skin: {
+      image: 'assets/nightsky.jpg', fit: 'cover', posX: 50, posY: 32,
+      scrim: 0.24, chrome: 0.78, card: 0.82, bubble: 0.78, page: 0.88,
+      ground: '#211d3d', deeper: '#0b0a1c', cardTint: '#2c274e', bubbleTint: '#3a3363',
+      edge: '#585086', accent: '#f4d08a',
+      ink: '#f0edff', ink2: '#d6d0f0', ink3: '#bdb5dd', quiet: '#c0b8db', ink4: '#a49cc0',
+      link: '#b0c8fb', code: '#eeaff0', quote: '#93e0d3'
+    }
+  }
+}
+// The record a slot starts from: the shipped knobs, then whatever its preset
+// names. Spelled out in one place so readLookSkin, resetSkin and the previous
+// record all agree on what "before you touched it" means.
+const presetSkin = which => ({ ...SKIN_DEFAULTS, ...(LOOK_PRESETS[which]?.skin || {}) })
+
+// Whether a stored Custom record holds nothing but the shipped Gruvbox defaults,
+// which is what the previous build wrote the first time any knob moved. Only the
+// knobs are judged: `image` lives under its own per-look key, so a picture the
+// user chose is not part of this record and cannot be mistaken for an edit here.
+// A record whose only difference is the previous build's resolved path for our
+// own painting therefore still counts as untouched, and readLookSkin puts the
+// preset's picture back.
+const isShippedDefaults = record => Object.keys(SKIN_DEFAULTS).every(key => {
+  if (key === 'image') return true
+  const a = record[key], b = SKIN_DEFAULTS[key]
+  if (a === undefined) return true
+  if (typeof b === 'number') return Number(a) === b
+  return String(a) === String(b)
+})
+
+// A picture that names a file in the plugin's own assets/ is resolved here, at
+// paint time, from whatever the folder scan found. Anything else (an upload, a
+// path, a URL) passes through untouched, which is why this is a prefix test and
+// not a general path resolver. An unresolved marker returns '' so the caller
+// falls back (to the shipped painting, or to a tile's gradient) rather than
+// handing the marker string to CSS as if it were a url.
+const ASSET_IMAGES = {}   // lower-case file name -> file URL
+const assetImage = image => {
+  const s = String(image || '')
+  const hit = /^assets[\\/]([^\\/]+)$/i.exec(s)
+  if (!hit) return s
+  return ASSET_IMAGES[hit[1].toLowerCase()] || ''
+}
+// What is actually painted: the skin's image, with an unloaded or unresolved
+// picture falling back to the painting the folder scan found.
+const skinImage = () => assetImage(SKIN.image) || PAINTING_URL
+
 // The skin comes from a hand-edited file and goes into the stylesheet as text, so
 // one stray `;` or `}` would break every rule after it. Colours must be hex and
 // numbers are clamped to what the sliders allow; anything else keeps its default.
@@ -336,7 +444,7 @@ const pictureLayers = () => {
     // shipped painting is what you see. Two of the pictures in use (a 2.3 MB
     // PNG and a 3.4 MB JPEG) sat over that line and could never be applied,
     // while every smaller one worked. background-image has no such limit.
-    `    url("${String(SKIN.image || PAINTING_URL).replace(/"/g, '%22')}");`,
+    `    url("${String(skinImage()).replace(/"/g, '%22')}");`,
     `  background-size: 160px 160px, cover, cover, ${SKIN.fit === 'contain' ? 'contain' : 'cover'};`,
     `  background-position: 0 0, center, center, ${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%;`,
     '  background-repeat: repeat, no-repeat, no-repeat, no-repeat;',
@@ -398,7 +506,7 @@ const preparePictureBackdrop = url => {
 
 const pictureBackdrop = (bounds, filtered = true) => {
   const source = pictureSource
-  if (!source || source.url !== String(SKIN.image || PAINTING_URL) || source.failed) return [[0, 0, 0], [255, 255, 255]]
+  if (!source || source.url !== skinImage() || source.failed) return [[0, 0, 0], [255, 255, 255]]
   const width = Math.max(1, window.innerWidth || 1), height = Math.max(1, window.innerHeight || 1)
   const fallback = { left: (width - Math.min(width, 736)) / (2 * width), top: 0, right: (width + Math.min(width, 736)) / (2 * width), bottom: 1 }
   const region = bounds && ['left', 'top', 'right', 'bottom'].every(key => Number.isFinite(bounds[key])) ? bounds : fallback
@@ -3451,9 +3559,21 @@ const THEME_NAME = 'hermes-atrium'
 // The gallery reads the same list the chip does, so a look can never show up in
 // one and be missing from the other. Only Gruvbox needs a drawn preview: every
 // Custom tile shows its own picture, and falls back to an empty material.
+//
+// The label names what a slot is, and the description says which designed look
+// it starts as, because "Your own picture and colours" told a new user nothing
+// about the three looks waiting there. A slot you have changed still carries its
+// preset's name: it is the slot's identity, not a claim about its contents.
 const APPEARANCE_LOOKS = LOOK_IDS.map(id => id === 'gruvbox'
   ? { id, label: lookLabel(id), description: 'The shipped painting & palette', preview: 'linear-gradient(165deg, #767b52 35%, #aa9a6d 36%, #aa9a6d 56%, #4d593c 57%, #353a2e)' }
-  : { id, label: lookLabel(id), description: 'Your own picture & colours', preview: 'var(--ui-widget-surface-background)' })
+  : { id, label: lookLabel(id), description: LOOK_PRESETS[id]?.name || 'Your own picture & colours', preview: 'var(--ui-widget-surface-background)' })
+// What a look's tile paints: its picture, resolved through the assets marker, or
+// the look's own fallback. Takes the picture rather than a look id, because the
+// records live inside register() and this is a module-level helper.
+const lookPreview = (image, fallback) => {
+  const url = assetImage(image)
+  return url ? `center / cover url("${String(url).replace(/"/g, '%22')}")` : fallback
+}
 // Every theme name Hermes Atrium owns; anything else is the user's own pick.
 // The legacy names are the ones this plugin published before it was renamed
 // (`zephyr-sky` pre-Atrium, `atrium` in the first Atrium build). An install
@@ -7158,7 +7278,7 @@ export default {
       const ink = styled ? hexRgb(SKIN.ink) : native.ink
       let samples = native.samples
       if (!away && backdropOn.get()) {
-        preparePictureBackdrop(String(SKIN.image || PAINTING_URL))
+        preparePictureBackdrop(skinImage())
         samples = pictureBackdrop(native.bounds, chromeOn.get())
       }
       if (!samples.length) samples = [hexRgb(SKIN.ground)]
@@ -7367,14 +7487,41 @@ export default {
     const readLookSkin = which => {
       const keys = SKIN_STORES[which] || SKIN_STORES.custom
       const raw = stored(keys.object)
-      const out = raw && typeof raw === 'object' ? { ...SKIN_DEFAULTS, ...raw } : { ...SKIN_DEFAULTS }
+      // A slot with a record of its own keeps every value in it. A slot without
+      // one is born as its designed preset, not as a copy of Gruvbox, so a fresh
+      // install opens onto three finished looks rather than three empty ones.
+      //
+      // A record that still holds exactly the shipped Gruvbox defaults counts as
+      // no record at all. That is what the previous build wrote for every Custom
+      // slot the moment one of its knobs moved, so without this rule an install
+      // that upgraded would keep three gruvbox-coloured slots and the presets
+      // would appear to have done nothing. Any real edit, however small, differs
+      // from the defaults and is left alone.
+      const preset = presetSkin(which)
+      const untouched = !raw || typeof raw !== 'object' || isShippedDefaults(raw)
+      const out = untouched ? { ...preset } : { ...preset, ...raw }
       const picture = stored(keys.image)
       if (typeof picture === 'string' && picture.length > 32) {
         out.image = picture
         STORED_PICTURE[which] = picture
       }
+      // The record is healed here; the picture is not. Whether the value under
+      // the picture key is this plugin's own default or a picture the user
+      // chose cannot be known until the assets folder resolves, so the decision
+      // waits for it (HEAL_SLOTS, applied in resolvePluginFiles). Gruvbox is
+      // excluded: its preset IS the shipped record, so there is nothing to heal.
+      if (untouched && raw && isCustomLook(which)) {
+        HEAL_SLOTS.push(which)
+        ctx.storage.set(keys.object, { ...out, image: preset.image })
+      }
       return out
     }
+    // Slots whose stored record was the previous build's Gruvbox copy. There is
+    // nothing to rewrite in the record itself (it now holds the preset), so this
+    // only tracks which slots may still be holding the previous build's resolved
+    // painting under their picture key. Declared before readLookSkin runs, in
+    // LOOK_SKINS below.
+    const HEAL_SLOTS = []
     // The picture is the one large value this plugin stores, so it is written in
     // one place per look: its own key. The record holds only the small knobs,
     // and that key is only rewritten when the picture itself changed, so dragging
@@ -7389,13 +7536,29 @@ export default {
     const writeLookSkin = (which, next) => {
       const keys = SKIN_STORES[which] || SKIN_STORES.custom
       const record = { ...next }
-      delete record.image
-      if (next.image && STORED_PICTURE[which] !== next.image) {
-        ctx.storage.set(keys.image, next.image)
-        if (ctx.storage.get(keys.image, undefined) === next.image) {
-          STORED_PICTURE[which] = next.image
-        } else {
-          console.warn(`[hermes-atrium] ${lookLabel(which)}'s new picture does not fit in this plugin's storage; it shows now but will not survive a restart until a smaller one is chosen`)
+      // A preset picture is a marker, not a value: `assets/watersky.jpg` is
+      // resolved at paint time, so it costs twenty bytes and belongs in the
+      // record beside the other knobs, where a restart reads it back without a
+      // second key to keep in step. Only a real picture (an upload, a path, a
+      // URL) is large enough to want a key of its own.
+      const presetPicture = /^assets[\\/]/i.test(String(next.image || ''))
+      if (presetPicture) {
+        // Going back to a preset picture has to clear whatever was under the
+        // picture key, or readLookSkin would hand the old upload back and the
+        // reset would look like it did nothing.
+        if (STORED_PICTURE[which] !== undefined) {
+          delete STORED_PICTURE[which]
+          ctx.storage.set(keys.image, '')
+        }
+      } else {
+        delete record.image
+        if (next.image && STORED_PICTURE[which] !== next.image) {
+          ctx.storage.set(keys.image, next.image)
+          if (ctx.storage.get(keys.image, undefined) === next.image) {
+            STORED_PICTURE[which] = next.image
+          } else {
+            console.warn(`[hermes-atrium] ${lookLabel(which)}'s new picture does not fit in this plugin's storage; it shows now but will not survive a restart until a smaller one is chosen`)
+          }
         }
       }
       ctx.storage.set(keys.object, record)
@@ -7498,9 +7661,12 @@ export default {
       registerLive()
       apply()
     }
+    // Reset means "what this look was born as": the shipped preset for Gruvbox,
+    // the designed preset for a Custom slot. Returning a Custom slot to the
+    // shipped painting would throw away the look it is named after.
     const resetSkin = () => {
       const which = look.get()
-      const next = { ...SKIN_DEFAULTS, image: PAINTING_URL }
+      const next = presetSkin(which)
       LOOK_SKINS[which] = next
       skin.set(next)
       setSkin(next)
@@ -7604,7 +7770,17 @@ export default {
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
       if (patch.image === 'uploaded') delete patch.image
       else if (patch.image) patch.image = pathToUrl(patch.image)
-      const next = { ...SKIN_DEFAULTS, ...(patch.image ? {} : { image: LOOK_SKINS[which].image || skin.get().image }), ...patch }
+      // A file that still spells out nothing but the shipped Gruvbox defaults is
+      // an untouched file the previous build wrote, not an instruction to paint
+      // Gruvbox in a slot that is now a designed preset. Same rule as the stored
+      // record, for the same reason: this is the other half of the same upgrade.
+      // A real picture (the one under the look's own picture key) still wins,
+      // because a slot someone put their own photograph in is not untouched.
+      const untouched = isShippedDefaults(data)
+      const keepPicture = STORED_PICTURE[which] ? { image: LOOK_SKINS[which].image || skin.get().image } : {}
+      const next = untouched
+        ? { ...presetSkin(which), ...keepPicture }
+        : { ...presetSkin(which), ...(patch.image ? {} : { image: LOOK_SKINS[which].image || skin.get().image }), ...patch }
       if (!switchTo || look.get() !== which) {
         // Startup, or a look that is not on screen: seed the record and leave
         // what is painted alone. A look that IS on screen at startup still gets
@@ -7695,6 +7871,14 @@ export default {
         found = image.path
         owner = dir.name
         present = files.map(e => e.name.toLowerCase())
+        // Every image in the folder, by name, so a look whose picture is the
+        // `assets/<file>` marker can find its own file without storing a path.
+        // Filled here rather than guessed from the one that paints the ground:
+        // the Custom presets ship three pictures of their own.
+        for (const e of files) {
+          ASSET_IMAGES[e.name.toLowerCase()] = fileUrl(e.path)
+          ASSET_IMAGES[e.name.replace(/\.[^.]+$/, '').toLowerCase()] = fileUrl(e.path)
+        }
         break
       }
       if (found) {
@@ -7730,6 +7914,27 @@ export default {
           if (!rec || !stale(rec.image)) continue
           const next = { ...rec, image: url }
           LOOK_SKINS[which] = next
+          if (look.get() === which) { skin.set(next); setSkin(next) }
+          writeLookSkin(which, next)
+        }
+        // A slot the previous build seeded from Gruvbox still carries our
+        // painting under its picture key, and its record no longer says which
+        // slot it was. Its palette is now the preset's, so the picture has to
+        // follow, or the slot paints a preset's colours over another look's
+        // picture and reads as neither.
+        //
+        // Only these slots are touched. A slot with real edits keeps its own
+        // picture even when that picture is our painting, because choosing a
+        // picture and choosing a palette are separate acts and this must not
+        // undo the first to apply the second.
+        for (const which of CUSTOM_LOOKS) {
+          if (!HEAL_SLOTS.includes(which)) continue
+          const rec = LOOK_SKINS[which]
+          if (!rec || /^assets[\\/]/i.test(String(rec.image || ''))) continue
+          const next = { ...rec, image: presetSkin(which).image }
+          LOOK_SKINS[which] = next
+          delete STORED_PICTURE[which]
+          ctx.storage.set(SKIN_STORES[which].image, '')
           if (look.get() === which) { skin.set(next); setSkin(next) }
           writeLookSkin(which, next)
         }
@@ -8518,7 +8723,10 @@ export default {
         // show, so the status says which one and where its picture comes from,
         // not which code path is running.
         const ownPicture = typeof activeSkin.image === 'string' && activeSkin.image.startsWith('data:')
-        const pictureNote = ownPicture ? 'your own picture' : 'backwater.jpg · 4096 x 2428'
+        const presetPicture = /^assets[\\/]([^\\/]+)$/i.exec(String(activeSkin.image || ''))
+        const pictureNote = ownPicture
+          ? 'your own picture'
+          : presetPicture ? presetPicture[1] : 'backwater.jpg · 4096 x 2428'
         const status = selectedLook === 'hermes'
           ? 'Hermes appearance · Hermes Atrium appearance paused'
           : [lookNow === 'gruvbox' ? 'Gruvbox preset' : lookLabel(lookNow), pictureNote, isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
@@ -8559,7 +8767,7 @@ export default {
               style: { height: 'auto', minWidth: 0, padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', whiteSpace: 'normal', textAlign: 'left', ...(selectedLook === item.id ? { outline: '2px solid var(--ui-accent)', outlineOffset: '2px' } : {}) },
               onClick: () => selectAppearance(item.id),
               children: [
-                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: skinOf(item.id).image ? `center / cover url("${String(skinOf(item.id).image).replace(/"/g, '%22')}")` : item.preview } }),
+                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: lookPreview(skinOf(item.id).image, item.preview) } }),
                 jsxs('span', { style: { display: 'flex', justifyContent: 'space-between' }, children: [item.label, selectedLook === item.id ? jsx(Codicon, { name: 'check', size: '1rem' }) : null] }),
                 jsx('span', { className: 'text-xs text-muted-foreground', children: item.description })
               ]
