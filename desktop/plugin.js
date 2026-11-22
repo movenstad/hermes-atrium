@@ -4170,27 +4170,16 @@ export default {
       const names = async dir => {
         try { return ((await desk.readDir(dir)) || {}).entries || [] } catch { return [] }
       }
-      // Which folder is ours? The install directory is usually named after the
-      // plugin, but a user may rename it, so a folder also counts when its
-      // plugin.js declares our id. Nothing else is ever read: a picture is
-      // only taken from THIS plugin's own assets/ folder, never a neighbour's.
-      const isMine = async dir => {
-        if (dir.name.toLowerCase() === pluginDirName) return true
-        if (!desk?.readFileText) return false
-        try {
-          const res = await desk.readFileText(dir.path.replace(/[\\/]+$/, '') + sep + 'plugin.js')
-          const text = typeof res === 'string' ? res : res?.text ?? res?.content ?? ''
-          return /id:\s*['"]hermes-atrium['"]/.test(String(text))
-        } catch { return false }
-      }
+      // Which folder is ours? Hermes names an installed plugin's folder after
+      // the plugin, and copies a package's desktop/ half into a folder of the
+      // same name, so ours is found by name alone. No other plugin's folder is
+      // opened: a picture is only taken from THIS plugin's own assets/.
       const tops = await names(root)
-      const dirs = [...tops.filter(e => e.isDirectory && e.name.toLowerCase() === pluginDirName),
-        ...tops.filter(e => e.isDirectory && e.name.toLowerCase() !== pluginDirName)]
+      const dirs = tops.filter(e => e.isDirectory && e.name.toLowerCase() === pluginDirName)
       let found = null
       let owner = null
       let present = []
       for (const dir of dirs) {
-        if (!(await isMine(dir))) continue
         const here = await names(dir.path)
         if (!here.some(e => e.name === 'plugin.js')) continue
         const assetsDir = here.find(e => e.name === 'assets' && e.isDirectory)

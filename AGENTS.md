@@ -4,14 +4,21 @@ Guidance for anyone changing this repo, human or agent.
 
 ## This repo
 
-One file, `plugin.js`, is the whole plugin: plain ESM that the Hermes desktop app
-loads at runtime from `<HERMES_HOME>/desktop-plugins/hermes-atrium/` and registers
-through its own contribution areas. There is no build step and no bundler.
+One file, `desktop/plugin.js`, is the whole plugin: plain ESM that the Hermes
+desktop app loads at runtime and registers through its own contribution areas.
+There is no build step and no bundler.
+
+The repo is a Hermes plugin package: `plugin.yaml` at the root, the desktop half
+in `desktop/` (`plugin.js` plus `assets/`). Hermes copies `desktop/` into
+`<HERMES_HOME>/desktop-plugins/hermes-atrium/`, so at runtime the plugin sees
+`plugin.js` and `assets/` side by side. Work on a clone in
+`<HERMES_HOME>/plugins/hermes-atrium/`; the app only loads a root-level
+`plugin.js` from `desktop-plugins/`, so a clone placed there loads nothing.
 
 It ships a Gruvbox preset and three independent Custom slots, each with its own
 record and theme file. The Custom slots are born as designed looks of their own
 (Watersky, Goldensky, Nightsky, seeded from `LOOK_PRESETS`), so a fresh install
-has four finished appearances. It paints a picture from `assets/` behind the
+has four finished appearances. It paints a picture from its `assets/` behind the
 window, and solves a readable panel tone per reply. It makes no network requests.
 
 ## Ground rules
@@ -61,6 +68,16 @@ Each of these has already caused a silent failure here.
    accepting every name the plugin has published (`zephyr-sky`, `atrium`, now
    `hermes-atrium`).
 
+6. **Stay inside the SDK surface.** The marketplace admits a desktop plugin only
+   if it never queries the app's own markup (`data-slot`, `data-tour`, ...) from
+   `document`, never observes `document.body`, and never clicks, rewrites or
+   clones core UI (catalog rule 8). `hermes plugins validate .` refuses the
+   obvious forms; a reviewer reads the rest by hand, so don't route around the
+   regex (a variable target, `?.observe?.(`, `documentElement` in place of
+   `body`). Use the SDK's areas and `host.state`, or ask Nous for a hook. Read
+   the app's state, not its markup: CSS over its surfaces is tolerated and
+   reviewed, JS that drives them is not.
+
 ## How to change things
 
 **Adding a setting.** Add the key to `STORE_KEYS`, an atom inside `register()`, a
@@ -89,13 +106,13 @@ preset, or the old upload wins on the next read.
 `--atr-*` custom properties, `.atr-*` classes, `data-atr-*` attributes, `atr-*`
 ids. Check the prefix is unused by the host before introducing a new one.
 
-**Adding a picture.** Drop it in `assets/`. `backwater.jpg` is the default and
+**Adding a picture.** Drop it in `desktop/assets/`. `backwater.jpg` is the default and
 wins by name; any other image is used only when it is absent, and the fallback
 picks in sorted order so the choice cannot drift between launches.
 
 Four pictures are committed: `backwater.jpg` plus the three the Custom presets
 name (`watersky.jpg`, `goldensky.jpg`, `nightsky.jpg`). The rest are gitignored
-for testing, so a new shipped picture needs a `!assets/<file>` line in
+for testing, so a new shipped picture needs a `!desktop/assets/<file>` line in
 `.gitignore` and a credit in the README. Keep the shipped ones as sized JPEGs:
 the originals were 8 to 22 MB PNGs, and a repository that carries four of them
 at full resolution is one nobody wants to clone. A preset's picture is named by
@@ -130,7 +147,9 @@ panel thinner.
 
 ## Before you call it done
 
-- `npm run check` runs `node --check` on `plugin.js`.
+- `npm run check` runs `node --check` on `desktop/plugin.js`.
+- `hermes plugins validate .` is what the marketplace CI runs. It must pass,
+  and its "desktop surface review" warnings are what a reviewer will read.
 - `npm --prefix dev run test` loads the plugin in Chromium and checks that every
   look paints its own picture, that a knob persists, and that an upgrade keeps
   real edits. It also writes screenshots to `dev/.work/shots/`.

@@ -10,8 +10,10 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
-export const PLUGIN = path.join(REPO, 'plugin.js')
-export const ASSETS = path.join(REPO, 'assets')
+// The plugin ships as a package's desktop half: desktop/plugin.js and its
+// pictures. The fake install below is what Hermes copies that folder into.
+export const PLUGIN = path.join(REPO, 'desktop', 'plugin.js')
+export const ASSETS = path.join(REPO, 'desktop', 'assets')
 
 const source = () => fs.readFile(PLUGIN, 'utf8')
 
