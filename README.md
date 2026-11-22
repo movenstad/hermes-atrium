@@ -3,7 +3,7 @@
 A desktop plugin for Hermes Agent. It puts a painting, or any picture you
 choose, behind the app. It lays tinted glass over it.
 
-One look, two ways: the Gruvbox preset, and three Custom slots of your own.
+One look, two ways: the already present Gruvbox preset, and three Custom slots of your own looks. 
 
 - **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
   itself. A slider can trade the painting for your desktop wallpaper.
@@ -26,7 +26,7 @@ Copy this folder to your Hermes desktop-plugins directory:
 ```
 
 On Windows that is `%USERPROFILE%\.hermes\desktop-plugins\hermes-atrium\`. Then restart
-Hermes, or toggle the plugin in **Settings ▸ Plugins**.
+Hermes, or toggle the plugin in **Settings -> Plugins**.
 
 The folder must keep this shape: `plugin.js` at the top, pictures in `assets/`.
 The plugin finds itself by the id it declares, `hermes-atrium`, so the folder
@@ -44,9 +44,6 @@ Every picture comes from `assets/`, and only from `assets/`:
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
   never picked up.
 
-To use your own wallpaper instead, open **Settings --> Hermes Atrium** and switch on
-**Tint** under Gruvbox: the painting fades out and the desktop shows through the
-glass. The painting's own colours are kept for when you switch back.
 
 ## Reply panels
 
@@ -103,3 +100,5 @@ photograph.
 - Suggestions on a new tab, learned only from local session activity.
 
 Every one of those is a switch in **Settings --> Hermes Atrium**.
+
+## Credits
