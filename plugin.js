@@ -8099,19 +8099,61 @@ export default {
         requestAnimationFrame(() => { pageQueued = false; if (pageDead) return; markStrips(); markHas(); syncPage() })
       }
       const pageObs = new MutationObserver(schedulePage)
-      // The tab strips, the sidebar rows and the settings grid are what these
-      // marks measure. Watching document.body put a full-document sweep on every
-      // chunk the transcript committed; the transcript itself is covered by the
-      // rescan hook (a session switch or a route change is what moves a mark).
-      const PAGE_TARGETS = ["[data-panel-header]", "[data-slot='sidebar-content']", "[class*='grid-cols-[13rem_minmax(0,1fr)]']"]
+      // What these marks measure. The tab strips, the sidebar rows and the
+      // settings grid were the original three, and they missed the case that
+      // mattered: a zone's body box is a SIBLING of its `[data-panel-header]`,
+      // not a descendant, so swapping the body's contents (a plugin page out,
+      // the chat in on New session) mutated nothing being watched. The mark
+      // then stayed on the zone until some unrelated sweep happened to run,
+      // which is why the fill sometimes lingered for one try and cleared on
+      // the next.
+      //
+      // Watching the body is cheap in the way that matters: it is one node per
+      // zone, and it is NOT the transcript's subtree, so streaming a reply
+      // still costs nothing here (the body's own children are the pane hosts,
+      // which do not change per token). The transcript keeps its separate
+      // rescan hook on a session switch.
+      const PAGE_TARGETS = [
+        '[data-panel-header]',
+        '[data-zone-body]',
+        "[data-slot='sidebar-content']",
+        "[class*='grid-cols-[13rem_minmax(0,1fr)]']"
+      ]
+      // How many zones the observer set currently covers. Declared before the
+      // attach function because that function writes it; a `let` below its own
+      // writer is a TDZ trap for the next edit.
+      let attachedZones = -1
       const attachPageObs = () => {
-        const targets = PAGE_TARGETS.map(sel => document.querySelector(sel)).filter(Boolean)
+        const targets = PAGE_TARGETS.flatMap(sel => [...document.querySelectorAll(sel)])
         pageObs.disconnect()
         for (const target of targets.length ? targets : [document.body]) {
           pageObs.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected', 'data-state', 'hidden'] })
         }
+        attachedZones = document.querySelectorAll('[data-zone-body]').length
+      }
+      // Opening a preview SPLITS a new zone into the tree, and nothing above
+      // re-attaches the observer for it: the split's children are a level the
+      // page observer never saw. A zone that is never observed is a zone whose
+      // mark can only change on an unrelated sweep, which is the same class of
+      // staleness as the body swap (and the same "press it again" symptom).
+      //
+      // So watch the tree's own structure and re-attach when the ZONE COUNT
+      // changes. The count is what matters: a split/merge/resize fires this
+      // often, and re-attaching on all of them would put the whole set of
+      // targets back together many times a second while a sash is dragged.
+      const structureObs = new MutationObserver(() => {
+        if (pageDead) return
+        if (document.querySelectorAll('[data-zone-body]').length === attachedZones) return
+        attachPageObs()
+        schedulePage()
+      })
+      const attachStructureObs = () => {
+        structureObs.disconnect()
+        const tree = document.querySelector('[data-tree-split]')?.parentElement || document.querySelector('[data-tree-group]')?.parentElement
+        if (tree) structureObs.observe(tree, { childList: true, subtree: true })
       }
       attachPageObs()
+      attachStructureObs()
       // Sidebar docking and split resizing change pane geometry without a
       // window resize or a mutation in the sidebar content.
       const pageSizeObs = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePage) : null
@@ -8122,7 +8164,7 @@ export default {
       }
       attachPageSizeObs()
       rescanHooks.push(attachPageSizeObs)
-      rescanHooks.push(() => { attachPageObs(); schedulePage() })
+      rescanHooks.push(() => { attachPageObs(); attachStructureObs(); schedulePage() })
       window.addEventListener('resize', schedulePage)
       markStrips()
       markHas()
@@ -8136,6 +8178,7 @@ export default {
         document.querySelectorAll('[data-atr-strip]').forEach(el => { el.removeAttribute('data-atr-strip'); el.removeAttribute('data-atr-switch') })
         for (const a of ['data-atr-intro', 'data-atr-msgs', 'data-atr-settings', 'data-atr-setbox', 'data-atr-sbbtn', 'data-atr-nav', 'data-atr-page', 'data-atr-pagebody']) document.querySelectorAll('[' + a + ']').forEach(el => el.removeAttribute(a))
         pageObs.disconnect()
+        structureObs.disconnect()
         pageSizeObs?.disconnect()
         window.removeEventListener('resize', schedulePage)
         delete root.dataset.atrChat
