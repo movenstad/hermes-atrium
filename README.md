@@ -5,8 +5,8 @@ choose, behind the app. It lays tinted glass over it.
 
 One look, two ways: the already present Gruvbox preset, and three Custom slots of your own looks.
 
-- **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
-  itself.
+- **Gruvbox**: a landscape behind glass in the gruvbox dark palette: its warm
+  greys for the panels, its cream text tiers and its orange accent.
 - **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
   colours. Each slot keeps its own picture, palette and opacities, so three
   setups can sit ready and be switched from the status bar. They also arrive
