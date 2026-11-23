@@ -5,8 +5,8 @@ choose, behind the app. It lays tinted glass over it.
 
 One look, two ways: the already present Gruvbox preset, and three Custom slots of your own looks.
 
-- **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
-  itself.
+- **Gruvbox**: a landscape behind glass in the gruvbox dark palette: its warm
+  greys for the panels, its cream text tiers and its orange accent.
 - **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
   colours. Each slot keeps its own picture, palette and opacities, so three
   setups can sit ready and be switched from the status bar. They also arrive
@@ -67,11 +67,33 @@ from there:
   rather than painting nothing.
 
 
+## Settings
+
+**Settings --> Plugins --> Hermes Atrium** edits whichever look is selected. The
+other looks keep their own values. Every slider shows its value beside it.
+
+| Section | What is in it |
+| --- | --- |
+| Appearance | The four looks, and the **Background** and **Hermes Atrium styling** switches. |
+| Picture | **Choose image…**, the picture's path, **Reset look** and **Theme file**. Then fit (Cover or Contain), horizontal and vertical position, the scrim that darkens the picture, and Glass blur. |
+| Opacity | How much of the picture the sidebar, cards, your messages and pages let through. |
+| Colours | The palette in three groups: surfaces, text, and prose and accent. Folded by default. |
+| Reply panels | The panel behind every reply, with its five dials under **Tune panel**. |
+| Layout & motion | Spacious margins and app animations. |
+
+Glass saturation and Glass brightness sit under Glass blur and are greyed out
+while blur is 0. They filter the blurred layer, which is only drawn when there
+is a blur to draw.
+
+The picture's path box takes a file on your computer (`~/Pictures/x.jpg`) and
+applies it when you press Enter or leave the box. A web address is refused,
+because the plugin makes no network requests.
+
 ## Reply panels
 
-**Settings --> Hermes Atrium --> Chat & motion --> Reply panels** gives every reply a solid
+**Settings --> Hermes Atrium --> Reply panels** gives every reply a solid
 panel, so prose never sits directly on the picture. With it on, five sliders
-appear:
+appear under **Tune panel**:
 
 | Slider | What it does |
 | --- | --- |
@@ -100,7 +122,7 @@ Each one arrives as a designed look rather than an empty slot:
 | Custom 2 | Goldensky | `goldensky.jpg` | Dusk clouds behind warm plum-brown glass, apricot accent |
 | Custom 3 | Nightsky | `nightsky.jpg` | A starfield behind indigo glass, warm gold accent |
 
-Every value is still yours to change, and **Reset** returns a slot to the look
+Every value is still yours to change, and **Reset look** returns a slot to the look
 it started as. A slot that already holds values of its own is left alone by an
 upgrade, so a picture you chose survives.
 
@@ -136,7 +158,8 @@ Hermes desktop plugins run inside the app with the app's own access, so this is
 the full list of what Atrium does outside drawing the window.
 
 - **Network**: none. No request of any kind, no telemetry, no fonts or images
-  from the web. Every picture it paints is a file on your computer.
+  from the web. Every picture it paints is a file on your computer; a web
+  address given as a picture, in Settings or in a theme file, is refused.
 - **Its own folder**: it lists `desktop-plugins/hermes-atrium/assets/` to find
   the shipped pictures. It opens no other plugin's folder.
 - **Three theme files outside its folder**: `hermes-atrium-theme.json`,
@@ -145,8 +168,8 @@ the full list of what Atrium does outside drawing the window.
   look or press **Theme file**, and reads them back so edits made in an editor
   take effect. **Theme file** also asks the system to show the file in your file
   manager.
-- **A picture path you choose**: a theme file can name a picture anywhere on
-  disk (`~/Pictures/x.jpg`). That file is read by the app's renderer to paint
+- **A picture path you choose**: the picture box in Settings or a theme file
+  can name a picture anywhere on disk (`~/Pictures/x.jpg`). That file is read by the app's renderer to paint
   it, and nothing else is done with it.
 - **Pictures you upload**: kept in the app's local storage, under this plugin's
   own keys, together with your settings and the three looks.

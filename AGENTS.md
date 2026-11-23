@@ -183,7 +183,10 @@ solver composites the scrim, the glass and the reply panel over the picture's
 own pixels, so a palette that looks fine on a swatch can still land under AA
 behind the reading column. `dev/measure-palettes.mjs` runs that same chain and
 prints the worst contrast every surface reaches; it fails on body text under AA
-and on a faint tier quieter than Gruvbox's own. It reads the palettes out of
+and on a faint tier that breaks Gruvbox's hierarchy (Gruvbox's ratio for that
+tier, scaled to how the look's own body text compares to Gruvbox's). A failing
+tier is printed with the nearest colour that clears it, blended toward the
+look's own ink. It reads the palettes out of
 `plugin.js`, so it measures what ships rather than a copy. When you change one of
 `pictureBackdrop`, `replyPanelTone` or `replyMaterial` in `plugin.js`, change its
 mirror there too.

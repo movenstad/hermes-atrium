@@ -182,7 +182,9 @@ function replyMaterial(ink, tint, samples, dials) {
 function measure(skin, source, panelDials) {
   const deeper = hexRgb(skin.deeper), ground = hexRgb(skin.ground), ink = hexRgb(skin.ink)
   const cardTint = blend(deeper, ink, 0.04)   // sideCard: deeper mixed 4% toward ink
-  const chrome = Number.isFinite(Number(skin.chrome)) ? Number(skin.chrome) : 0.74
+  // The chat pane's ground is fixed at 0.88 now (sheetCss `density`); it is no
+  // longer a skin knob.
+  const chrome = 0.88
   const cardA = Number.isFinite(Number(skin.card)) ? Number(skin.card) : 0.78
   const bubbleA = Number.isFinite(Number(skin.bubble)) ? Number(skin.bubble) : 0.78
   const pageA = Number.isFinite(Number(skin.page)) ? Number(skin.page) : 0.86
@@ -224,14 +226,43 @@ function measure(skin, source, panelDials) {
     page: worstOn(groundsUnder(ground, pageA), ink),
     accentText: contrast(deeper, hexRgb(skin.accent)),
     tiers: Object.fromEntries(['ink2', 'ink3', 'quiet', 'ink4', 'link', 'code', 'quote']
-      .map(k => [k, worstOn(chromeGrounds, hexRgb(skin[k]))]))
+      .map(k => [k, worstOn(chromeGrounds, hexRgb(skin[k]))])),
+    // Kept so a failing tier can be solved against the same grounds it failed on.
+    tierGround: chromeGrounds
   }
+}
+
+// The nearest colour that clears `bar` on these grounds: the tier blended toward
+// the look's own ink, the smallest step that gets there. Moving toward ink keeps
+// the tier in its palette's hue and keeps the tiers in order, since every one of
+// them moves toward the same colour. Returns null when even the ink falls short.
+function nearestClearing(color, ink, grounds, bar) {
+  const worst = rgb => Math.min(...grounds.map(g => contrast(rgb, g)))
+  if (worst(color) >= bar) return color
+  if (worst(ink) < bar) return null
+  let lo = 0, hi = 1
+  for (let i = 0; i < 24; i += 1) {
+    const mid = (lo + hi) / 2
+    if (worst(blend(color, ink, mid)) >= bar) hi = mid; else lo = mid
+  }
+  // Rounding to hex can land a hair under; step until the hex itself clears.
+  let out = hexRgb(rgbHex(blend(color, ink, hi)))
+  for (let t = hi; worst(out) < bar && t < 1; t = Math.min(1, t + 0.002)) out = hexRgb(rgbHex(blend(color, ink, t)))
+  return out
 }
 
 // ── output ──────────────────────────────────────────────────────────────────
 // The bar is Gruvbox's own numbers, not the WCAG minimum, for the faint tiers:
 // they are labels and timestamps, and the shipped look is what "quiet enough,
 // still readable" has meant in this plugin since the beginning.
+//
+// It is Gruvbox's hierarchy, not its absolute ratios. A look over a brighter
+// picture has a lighter worst-case ground, so its body text reaches less than
+// Gruvbox's does; holding its quiet tiers to Gruvbox's absolute numbers then
+// demands that ink2 match the body text, which erases the hierarchy the tiers
+// exist for. So each tier's bar is Gruvbox's ratio scaled by how this look's
+// body text compares to Gruvbox's, and never more than Gruvbox's own number.
+const tierBar = (base, m, t) => Math.min(base.tiers[t], base.tiers[t] * m.chrome / base.chrome)
 const TIER_NAMES = ['ink2', 'ink3', 'quiet', 'ink4', 'link', 'code', 'quote']
 const pad = (s, n) => String(s).padEnd(n)
 const num = v => (v ?? 0).toFixed(2)
@@ -273,28 +304,37 @@ async function main() {
     console.log(`${pad(r.label, 12)}${pad(r.file, 18)}${pad(num(m.panel.ratio), 7)}${pad(num(m.chrome), 8)}${pad(num(m.card), 7)}${pad(num(m.bubble), 8)}${pad(num(m.page), 7)}${pad(num(m.accentText), 8)}${num(m.panel.alpha)}`)
   }
 
-  console.log(`\nFaint text tiers on the chrome pane (Gruvbox's own numbers are the bar)`)
-  console.log(`${pad('look', 12)}${TIER_NAMES.map(t => pad(t, 7)).join('')}`)
-  for (const r of rows) console.log(`${pad(r.label, 12)}${TIER_NAMES.map(t => pad(num(r.m.tiers[t]), 7)).join('')}`)
-  if (base) console.log(`${pad('bar', 12)}${TIER_NAMES.map(t => pad(num(base.tiers[t]), 7)).join('')}`)
+  console.log(`\nFaint text tiers on the chrome pane, as ratio/bar (the bar is Gruvbox's hierarchy, scaled to the look's own body text)`)
+  console.log(`${pad('look', 12)}${TIER_NAMES.map(t => pad(t, 12)).join('')}`)
+  for (const r of rows) console.log(`${pad(r.label, 12)}${TIER_NAMES.map(t => pad(base ? `${num(r.m.tiers[t])}/${num(tierBar(base, r.m, t))}` : num(r.m.tiers[t]), 12)).join('')}`)
 
   // Fail only on things that are bugs rather than taste: body text below AA, or
   // a tier that has fallen under the shipped look's own value.
   const problems = []
+  const suggestions = []
   for (const r of rows) {
     if (r.m.panel.ratio < TARGET) problems.push(`${r.label}: ink on the reply panel is ${num(r.m.panel.ratio)}:1, under AA`)
     if (r.m.chrome < TARGET) problems.push(`${r.label}: ink on the chrome pane is ${num(r.m.chrome)}:1, under AA`)
     if (r.id === 'gruvbox' || !base) continue
     for (const t of TIER_NAMES) {
-      if (r.m.tiers[t] + 0.02 < base.tiers[t]) problems.push(`${r.label}: ${t} is ${num(r.m.tiers[t])}:1, under Gruvbox's ${num(base.tiers[t])}:1`)
+      const bar = tierBar(base, r.m, t)
+      if (r.m.tiers[t] + 0.02 < bar) {
+        problems.push(`${r.label}: ${t} is ${num(r.m.tiers[t])}:1, under its bar of ${num(bar)}:1`)
+        const fix = nearestClearing(hexRgb(r.skin[t]), hexRgb(r.skin.ink), r.m.tierGround, bar)
+        suggestions.push(`${r.label}: ${t} ${r.skin[t]} -> ${fix ? rgbHex(fix) : '(even the ink falls short; change the ground)'}`)
+      }
     }
   }
   if (problems.length) {
     console.log('\nBelow the bar:')
     for (const p of problems) console.log(`  ${p}`)
+    if (suggestions.length) {
+      console.log('\nNearest colours that clear it (each tier blended toward its own ink):')
+      for (const line of suggestions) console.log(`  ${line}`)
+    }
     process.exitCode = 1
   } else {
-    console.log('\nEvery look clears AA on the reading column, and no faint tier is quieter than Gruvbox.')
+    console.log('\nEvery look clears AA on the reading column, and every faint tier keeps Gruvbox\'s hierarchy.')
   }
   console.log(`\nThe panel solver this mirrors: ${MIRRORED.join(', ')} (grep these in plugin.js).`)
   console.log(`Run from ${REPO}.`)
