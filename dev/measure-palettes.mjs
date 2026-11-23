@@ -130,7 +130,7 @@ function backdropSample(source, skin) {
 }
 
 // ── replyMaterial / replyPanelTone, mirrored ────────────────────────────────
-function panelTone(ink, tint, samples, dials) {
+function panelTone(ink, tint, samples, dials, lift = [255, 255, 255]) {
   const dark = contrast(ink, tint) >= TARGET ? tint : [9 * 0.1, 13 * 0.1, 22 * 0.1]
   const light = composite(tint, [255, 255, 255], 0.97)
   const base = contrast(ink, dark) >= contrast(ink, light) ? dark : light
@@ -139,8 +139,10 @@ function panelTone(ink, tint, samples, dials) {
   const cap = Math.min(1, Math.max(0, dials.tone))
   const stop = clampRgb(base)
   if (contrast(ink, stop) < TARGET) return stop
-  const toward = separation(clampRgb(composite(base, [255, 255, 255], cap))) >= separation(clampRgb(composite(base, [0, 0, 0], cap)))
-    ? [255, 255, 255] : [0, 0, 0]
+  // The light step goes toward the look's Edges colour, as in plugin.js.
+  const up = luminance(lift) > luminance(base) ? lift : base
+  const toward = separation(clampRgb(composite(base, up, cap))) >= separation(clampRgb(composite(base, [0, 0, 0], cap)))
+    ? up : [0, 0, 0]
   let best = { tone: stop, sep: separation(stop) }
   for (let i = 1; i <= 40; i += 1) {
     const rgb = clampRgb(composite(base, toward, (i / 40) * cap))
@@ -152,9 +154,9 @@ function panelTone(ink, tint, samples, dials) {
   return best.tone
 }
 
-function replyMaterial(ink, tint, samples, dials) {
+function replyMaterial(ink, tint, samples, dials, lift) {
   const before = Math.min(...samples.map(rgb => contrast(ink, rgb)))
-  const color = panelTone(ink, tint, samples, dials)
+  const color = panelTone(ink, tint, samples, dials, lift)
   const at = alpha => Math.min(...samples.map(rgb => contrast(ink, composite(rgb, color, alpha))))
   let solved = 0
   if (before < TARGET) {
@@ -215,7 +217,7 @@ function measure(skin, source, panelDials) {
 
   const chromeGrounds = groundsUnder(ground, chrome)
   const samples = backdropSample(source, skin)
-  const material = replyMaterial(ink, ground, samples, panelDials)
+  const material = replyMaterial(ink, ground, samples, panelDials, hexRgb(skin.edge))
   const panelGrounds = samples.map(s => composite(s, material.color, material.alpha))
   return {
     panel: { ratio: worstOn(panelGrounds, ink), alpha: material.alpha, tone: rgbHex(material.color) },
@@ -274,7 +276,7 @@ async function main() {
   const chrome = await findChrome()
 
   // Gruvbox is the baseline every other look is judged against.
-  const gruvbox = { ...SKIN_DEFAULTS, image: 'assets/backwater.jpg' }
+  const gruvbox = { ...SKIN_DEFAULTS, image: 'assets/charles-william-wyllie-the-backwater.jpg' }
   const looks = [
     { id: 'gruvbox', label: 'Gruvbox', skin: gruvbox },
     ...Object.entries(LOOK_PRESETS).map(([id, p]) => ({ id, label: p.name, skin: { ...SKIN_DEFAULTS, ...p.skin } }))
