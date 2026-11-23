@@ -211,9 +211,9 @@ async function main() {
 
   // Every Custom slot paints its own picture and its own ground.
   for (const [look, file, ground] of [
-    ['custom', 'watersky.jpg', '#1b3350'],
-    ['custom2', 'goldensky.jpg', '#2e2022'],
-    ['custom3', 'nightsky.jpg', '#211d3d']
+    ['custom', 'johan-christian-dahl-the-watzmann.jpg', '#1c2836'],
+    ['custom2', 'johan-christian-dahl-stalheim.jpg', '#2f2b22'],
+    ['custom3', 'johan-christian-dahl-view-of-dresden-by-moonlight.jpg', '#14191f']
   ]) {
     await setLook(look)
     await open()
@@ -248,10 +248,10 @@ async function main() {
     return { label, present: !!el, text: el ? el.textContent : '', style: swatch ? swatch.getAttribute('style') || '' : '' }
   }))
   for (const g of gallery) check(`gallery tile ${g.label}`, g.present, g.text.replace(/\s+/g, ' ').slice(0, 70))
-  check('Custom 1 names Watersky', gallery[1].text.includes('Watersky'), gallery[1].text.slice(0, 40))
-  check('Custom 2 names Goldensky', gallery[2].text.includes('Goldensky'), gallery[2].text.slice(0, 40))
-  check('Custom 3 names Nightsky', gallery[3].text.includes('Nightsky'), gallery[3].text.slice(0, 40))
-  check('Custom 2 tile previews goldensky.jpg', gallery[2].style.includes('goldensky.jpg'), gallery[2].style.slice(0, 100))
+  check('Custom 1 names Watzmann', gallery[1].text.includes('Watzmann'), gallery[1].text.slice(0, 40))
+  check('Custom 2 names Stalheim', gallery[2].text.includes('Stalheim'), gallery[2].text.slice(0, 40))
+  check('Custom 3 names Dresden', gallery[3].text.includes('Dresden'), gallery[3].text.slice(0, 40))
+  check('Custom 2 tile previews johan-christian-dahl-stalheim.jpg', gallery[2].style.includes('johan-christian-dahl-stalheim.jpg'), gallery[2].style.slice(0, 100))
 
   // A knob writes the marker and the palette to the record and the theme file.
   const moved = await view.evaluate(() => {
@@ -264,9 +264,9 @@ async function main() {
   check('found the Cards opacity control', moved)
   await view.waitForTimeout(400)
   const rec = await readRecord('skin2')
-  check('record keeps the preset marker', rec?.image === 'assets/goldensky.jpg', String(rec?.image))
+  check('record keeps the preset marker', rec?.image === 'assets/johan-christian-dahl-stalheim.jpg', String(rec?.image))
   check('record took the knob', Number(rec?.card) === 0.95, String(rec?.card))
-  check('record keeps its own palette', rec?.ground === '#2e2022' && rec?.accent === '#eeae8a', `${rec?.ground} ${rec?.accent}`)
+  check('record keeps its own palette', rec?.ground === '#2f2b22' && rec?.accent === '#d9b45a', `${rec?.ground} ${rec?.accent}`)
   // The page's dependent and retired controls.
   const controls = await view.evaluate(() => {
     const root = document.getElementById('atrium-settings')
@@ -289,7 +289,7 @@ async function main() {
   })
   await view.waitForTimeout(200)
   const afterUrl = await readRecord('skin2')
-  check('a web address is refused as a picture', afterUrl?.image === 'assets/goldensky.jpg', String(afterUrl?.image))
+  check('a web address is refused as a picture', afterUrl?.image === 'assets/johan-christian-dahl-stalheim.jpg', String(afterUrl?.image))
   check('a preset picture stores no picture key',await view.evaluate(() => localStorage.getItem('hermes.plugin.hermes-atrium.skinImage2')) === null)
   const fileText = await view.evaluate(() => {
     const p = [...window.__bridge.files.keys()].find(k => k.endsWith('hermes-atrium-theme-2.json'))
@@ -299,7 +299,7 @@ async function main() {
   if (fileText) {
     let parsed = null
     try { parsed = JSON.parse(fileText) } catch {}
-    check('theme file carries the preset', parsed?.ground === '#2e2022' && parsed?.image === 'assets/goldensky.jpg', parsed ? `${parsed.ground} ${parsed.image}` : 'unparsable')
+    check('theme file carries the preset', parsed?.ground === '#2f2b22' && parsed?.image === 'assets/johan-christian-dahl-stalheim.jpg', parsed ? `${parsed.ground} ${parsed.image}` : 'unparsable')
   }
 
   // Reset returns the slot to its own preset.
@@ -317,8 +317,8 @@ async function main() {
     const raw = localStorage.getItem('hermes.plugin.hermes-atrium.skin2')
     return { rec: raw ? JSON.parse(raw) : null, pic: pic ? decodeURI(pic[1]).split('/').pop() : null }
   })
-  check('Reset restores the preset picture', afterReset.rec?.image === 'assets/goldensky.jpg' && afterReset.pic === 'goldensky.jpg', `${afterReset.rec?.image} / ${afterReset.pic}`)
-  check('Reset restores the preset opacity', Number(afterReset.rec?.card) === 0.82, String(afterReset.rec?.card))
+  check('Reset restores the preset picture', afterReset.rec?.image === 'assets/johan-christian-dahl-stalheim.jpg' && afterReset.pic === 'johan-christian-dahl-stalheim.jpg', `${afterReset.rec?.image} / ${afterReset.pic}`)
+  check('Reset restores the preset opacity', Number(afterReset.rec?.card) === 0.84, String(afterReset.rec?.card))
 
   // An upload overrides the marker, and Reset clears it again.
   await view.evaluate(() => {
@@ -350,11 +350,11 @@ async function main() {
     rec: JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.skin2') || 'null')
   }))
   check('Reset clears the uploaded picture key', cleared.key === null || cleared.key === JSON.stringify(''), String(cleared.key).slice(0, 20))
-  check('Reset returns to the preset marker', cleared.rec?.image === 'assets/goldensky.jpg', String(cleared.rec?.image))
+  check('Reset returns to the preset marker', cleared.rec?.image === 'assets/johan-christian-dahl-stalheim.jpg', String(cleared.rec?.image))
 
   // The upgrade path: an install from the previous build.
   const prevDefault = {
-    image: 'file:///fake/home/.hermes/desktop-plugins/hermes-atrium/assets/backwater.jpg',
+    image: 'file:///fake/home/.hermes/desktop-plugins/hermes-atrium/assets/charles-william-wyllie-the-backwater.jpg',
     fit: 'cover', posX: 46, posY: 45, scrim: 0.31, blur: 0, saturate: 1.3, brightness: 0.9,
     chrome: 0.74, sidebar: 0, card: 0.78, bubble: 0.78, page: 0.86,
     ground: '#16261e', deeper: '#0c1612', cardTint: '#1d3328', bubbleTint: '#2b4636',
@@ -378,10 +378,50 @@ async function main() {
       pic: pic ? decodeURI(pic[1]).split('/').pop() : null
     }
   })
-  check('upgrade adopts the preset in an untouched slot', upgraded.r2?.ground === '#2e2022' && upgraded.r2?.image === 'assets/goldensky.jpg', `${upgraded.r2?.ground} ${upgraded.r2?.image}`)
-  check('upgrade paints the preset picture', upgraded.pic === 'goldensky.jpg', String(upgraded.pic))
+  check('upgrade adopts the preset in an untouched slot', upgraded.r2?.ground === '#2f2b22' && upgraded.r2?.image === 'assets/johan-christian-dahl-stalheim.jpg', `${upgraded.r2?.ground} ${upgraded.r2?.image}`)
+  check('upgrade paints the preset picture', upgraded.pic === 'johan-christian-dahl-stalheim.jpg', String(upgraded.pic))
   check('upgrade keeps a real edit', upgraded.r3?.ground === '#101820' && upgraded.r3?.accent === '#ff8800', `${upgraded.r3?.ground} ${upgraded.r3?.accent}`)
-  check('upgrade keeps the edited slot\'s own picture', String(upgraded.r3?.image || '').endsWith('backwater.jpg'), String(upgraded.r3?.image))
+  check('upgrade keeps the edited slot\'s own picture', String(upgraded.r3?.image || '').endsWith('charles-william-wyllie-the-backwater.jpg'), String(upgraded.r3?.image))
+
+  // The Canva presets earlier builds seeded are retired. A slot still holding
+  // one untouched adopts its Dahl preset; an edited slot keeps its palette but
+  // its retired picture marker moves to the slot's current painting.
+  const oldWatersky = {
+    image: 'assets/watersky.jpg', fit: 'cover', posX: 50, posY: 46,
+    scrim: 0.34, card: 0.90, bubble: 0.82, page: 0.92,
+    ground: '#1b3350', deeper: '#0a182e', cardTint: '#24445f', bubbleTint: '#2e567a',
+    edge: '#5480a8', accent: '#7fc6fa',
+    ink: '#f6fbff', ink2: '#dbe8f6', ink3: '#c4d6e9', quiet: '#a9bed4', ink4: '#8fa5bb',
+    link: '#96d2f9', code: '#f6cc9e', quote: '#9ee3d8'
+  }
+  await view.evaluate(([a, b]) => {
+    localStorage.setItem('hermes.plugin.hermes-atrium.skin', JSON.stringify(a))
+    localStorage.setItem('hermes.plugin.hermes-atrium.skin3', JSON.stringify(b))
+    localStorage.setItem('hermes.plugin.hermes-atrium.skinImage3', JSON.stringify(''))
+    localStorage.setItem('hermes.plugin.hermes-atrium.look', JSON.stringify('custom'))
+  }, [oldWatersky, { ...oldWatersky, image: 'assets/nightsky.jpg', accent: '#ff8800' }])
+  await open()
+  const retired = await view.evaluate(() => {
+    const base = document.getElementById('atr-chrome-base')?.textContent || ''
+    const bg = base.slice(base.indexOf('html::before'))
+    const pic = /url\("(file:[^"]+)"\);/.exec(bg)
+    return {
+      r1: JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.skin') || 'null'),
+      pic: pic ? decodeURI(pic[1]).split('/').pop() : null
+    }
+  })
+  check('a retired preset upgrades to its Dahl preset', retired.r1?.ground === '#1c2836' && retired.r1?.image === 'assets/johan-christian-dahl-the-watzmann.jpg', `${retired.r1?.ground} ${retired.r1?.image}`)
+  check('the upgraded slot paints its painting', retired.pic === 'johan-christian-dahl-the-watzmann.jpg', String(retired.pic))
+  await setLook('custom3')
+  await open()
+  const retiredEdit = await view.evaluate(() => {
+    const base = document.getElementById('atr-chrome-base')?.textContent || ''
+    const bg = base.slice(base.indexOf('html::before'))
+    const pic = /url\("(file:[^"]+)"\);/.exec(bg)
+    return { r3: JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.skin3') || 'null'), pic: pic ? decodeURI(pic[1]).split('/').pop() : null }
+  })
+  check('an edited retired slot keeps its edit', retiredEdit.r3?.accent === '#ff8800', String(retiredEdit.r3?.accent))
+  check('a retired picture marker moves to the slot painting', retiredEdit.pic === 'johan-christian-dahl-view-of-dresden-by-moonlight.jpg', String(retiredEdit.pic))
 
   // Gruvbox moves from the old green surfaces to gruvbox's own greys, but only
   // where a surface was still at the old default.

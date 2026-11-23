@@ -37,7 +37,7 @@ It fails the run on the two things that are bugs rather than taste: body text
 under AA on the reading column, and a faint tier quieter than Gruvbox's own on
 the same surface. Colour that is merely different is not a failure.
 
-Pass a look to check just one: `npm --prefix dev run measure -- watersky`.
+Pass a look to check just one: `npm --prefix dev run measure -- stalheim`.
 
 ## test-plugin.mjs
 
