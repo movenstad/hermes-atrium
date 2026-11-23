@@ -255,20 +255,42 @@ async function main() {
 
   // A knob writes the marker and the palette to the record and the theme file.
   const moved = await view.evaluate(() => {
-    const rows = [...document.querySelectorAll('#atrium-settings input[type=range]')]
-    const row = rows.find(r => r.closest('div')?.textContent.trim().startsWith('Card opacity'))
+    const row = document.querySelector('#atrium-settings input[type=range][aria-label="Cards"]')
     if (!row) return false
     row.value = '0.95'
     row.dispatchEvent(new Event('change', { bubbles: true }))
     return true
   })
-  check('found the Card opacity control', moved)
+  check('found the Cards opacity control', moved)
   await view.waitForTimeout(400)
   const rec = await readRecord('skin2')
   check('record keeps the preset marker', rec?.image === 'assets/goldensky.jpg', String(rec?.image))
   check('record took the knob', Number(rec?.card) === 0.95, String(rec?.card))
   check('record keeps its own palette', rec?.ground === '#2e2022' && rec?.accent === '#eeae8a', `${rec?.ground} ${rec?.accent}`)
-  check('a preset picture stores no picture key', await view.evaluate(() => localStorage.getItem('hermes.plugin.hermes-atrium.skinImage2')) === null)
+  // The page's dependent and retired controls.
+  const controls = await view.evaluate(() => {
+    const root = document.getElementById('atrium-settings')
+    const range = label => root.querySelector(`input[type=range][aria-label="${label}"]`)
+    return {
+      blur: range('Glass blur')?.value,
+      saturateOff: range('Glass saturation')?.hasAttribute('disabled'),
+      brightnessOff: range('Glass brightness')?.hasAttribute('disabled'),
+      tint: root.textContent.includes('Tint the accent'),
+      chatPane: root.textContent.includes('Chat pane opacity')
+    }
+  })
+  check('saturation and brightness are greyed out at blur 0', controls.blur === '0' && controls.saturateOff && controls.brightnessOff, JSON.stringify(controls))
+  check('retired controls are gone', !controls.tint && !controls.chatPane)
+  // A web address typed into the picture box is refused, not painted.
+  await view.evaluate(() => {
+    const box = document.querySelector('#atrium-settings input[aria-label="Picture path"]')
+    box.value = 'https://example.com/x.jpg'
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+  })
+  await view.waitForTimeout(200)
+  const afterUrl = await readRecord('skin2')
+  check('a web address is refused as a picture', afterUrl?.image === 'assets/goldensky.jpg', String(afterUrl?.image))
+  check('a preset picture stores no picture key',await view.evaluate(() => localStorage.getItem('hermes.plugin.hermes-atrium.skinImage2')) === null)
   const fileText = await view.evaluate(() => {
     const p = [...window.__bridge.files.keys()].find(k => k.endsWith('hermes-atrium-theme-2.json'))
     return p ? window.__bridge.files.get(p) : null
@@ -282,7 +304,7 @@ async function main() {
 
   // Reset returns the slot to its own preset.
   const reset = await view.evaluate(() => {
-    const b = [...document.querySelectorAll('#atrium-settings button')].find(x => x.textContent.trim() === 'Reset')
+    const b = [...document.querySelectorAll('#atrium-settings button')].find(x => x.textContent.trim() === 'Reset look')
     if (!b) return false
     b.click(); return true
   })
@@ -317,7 +339,7 @@ async function main() {
   check('an uploaded picture wins over the marker', !!uploaded && uploaded.startsWith('data:image'), String(uploaded).slice(0, 30))
   await view.evaluate(() => window.__mountSettings())
   const resetUpload = await view.evaluate(() => {
-    const b = [...document.querySelectorAll('#atrium-settings button')].find(x => x.textContent.trim() === 'Reset')
+    const b = [...document.querySelectorAll('#atrium-settings button')].find(x => x.textContent.trim() === 'Reset look')
     if (!b) return false
     b.click(); return true
   })
@@ -360,6 +382,24 @@ async function main() {
   check('upgrade paints the preset picture', upgraded.pic === 'goldensky.jpg', String(upgraded.pic))
   check('upgrade keeps a real edit', upgraded.r3?.ground === '#101820' && upgraded.r3?.accent === '#ff8800', `${upgraded.r3?.ground} ${upgraded.r3?.accent}`)
   check('upgrade keeps the edited slot\'s own picture', String(upgraded.r3?.image || '').endsWith('backwater.jpg'), String(upgraded.r3?.image))
+
+  // Gruvbox moves from the old green surfaces to gruvbox's own greys, but only
+  // where a surface was still at the old default.
+  await view.evaluate(rec => {
+    localStorage.setItem('hermes.plugin.hermes-atrium.gruvboxSkin', JSON.stringify(rec))
+    localStorage.setItem('hermes.plugin.hermes-atrium.look', JSON.stringify('gruvbox'))
+  }, { ...prevDefault, blur: 5, edge: '#123456' })
+  await open()
+  const gruv = await view.evaluate(() => {
+    const base = document.getElementById('atr-chrome-base')?.textContent || ''
+    const g = /--theme-neutral-chrome: rgba\((\d+), (\d+), (\d+)/.exec(base)
+    return {
+      rec: JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.gruvboxSkin') || 'null'),
+      painted: g ? '#' + [g[1], g[2], g[3]].map(v => Number(v).toString(16).padStart(2, '0')).join('') : null
+    }
+  })
+  check('Gruvbox upgrade takes the real gruvbox ground', gruv.rec?.ground === '#282828' && gruv.rec?.deeper === '#1d2021' && gruv.painted === '#282828', `${gruv.rec?.ground} ${gruv.rec?.deeper} painted ${gruv.painted}`)
+  check('Gruvbox upgrade keeps a chosen surface and other knobs', gruv.rec?.edge === '#123456' && Number(gruv.rec?.blur) === 5, `${gruv.rec?.edge} blur ${gruv.rec?.blur}`)
 
   // Screenshots from clean storage, for a human eye. The page is http and the
   // sheet names file:// urls, so those are pointed at the server for the shot

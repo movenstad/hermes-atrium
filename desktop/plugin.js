@@ -34,7 +34,7 @@
  *   §8  PLUGIN REGISTRATION (register: settings, timers, observers)
  */
 
-import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, setAccentOverride, ToggleRow, useValue } from '@hermes/plugin-sdk'
+import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ToggleRow, useValue } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 // ══ §1 SETUP, SKIN, PAINTING & MATERIALS ═══════════════════════════════════
@@ -46,7 +46,7 @@ const DIRECTIVE_AREA = 'transcript.directives'
 // its own record, so every look keeps an independent picture and palette.
 // `skin`/`skinImage` are Custom 1's, and they can never move: they are the keys
 // the first Custom preset has always written. Custom 2 and 3 are numbered.
-const STORE_KEYS = { auto: 'auto', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', motion: 'motion', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage' }
+const STORE_KEYS = { auto: 'auto', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', motion: 'motion', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage' }
 
 // Keys earlier builds stored and nothing reads any more. They are removed at
 // load because the app and every plugin share one local store of about 10 MB,
@@ -57,7 +57,7 @@ const STORE_KEYS = { auto: 'auto', tint: 'tint', sky: 'sky', chrome: 'chrome', r
 // several megabytes that no build reads. Only keys that build is known to have
 // written are removed, never a whole prefix, so a different plugin that happens
 // to share the old id keeps its data.
-const RETIRED_KEYS = ['pins', 'collapseWork', 'statusDock', 'statusDockOpen', 'statusPin', 'shelf', 'library', 'libraryOpen', 'home', 'homeCard', 'recents', 'liveStarts', 'turnTimes', 'glassBackdrop', 'gruvboxTint']
+const RETIRED_KEYS = ['pins', 'collapseWork', 'statusDock', 'statusDockOpen', 'statusPin', 'shelf', 'library', 'libraryOpen', 'home', 'homeCard', 'recents', 'liveStarts', 'turnTimes', 'glassBackdrop', 'gruvboxTint', 'tint']
 const LEGACY_STORE_IDS = ['atrium']
 const LEGACY_STORE_KEYS = [...Object.values(STORE_KEYS), ...RETIRED_KEYS, 'away', 'hermesTheme']
 
@@ -123,7 +123,6 @@ const SKIN_DEFAULTS = {
   blur: 0,
   saturate: 1.3,
   brightness: 0.90,
-  chrome: 0.74,
   sidebar: 0,
   card: 0.78,
   bubble: 0.78,
@@ -138,11 +137,16 @@ const SKIN_DEFAULTS = {
   // about 0.90 it is a panel you can see the painting through; above about
   // 0.94 it is a slab. It starts at the tier the host itself uses.
   page: 0.86,
-  ground: '#16261e',
-  deeper: '#0c1612',
-  cardTint: '#1d3328',
-  bubbleTint: '#2b4636',
-  edge: '#4f7360',
+  // The surfaces are gruvbox's own dark backgrounds (morhetz/gruvbox, medium
+  // contrast): bg0 for the reading ground, bg0_h for the sidebar and the
+  // deepest fills, bg1 for cards, bg2 for your messages (Pmenu) and bg3 for
+  // edges and selection (VertSplit, Visual). Earlier builds shipped a green
+  // set here instead; see RETIRED_GRUVBOX_SURFACES.
+  ground: '#282828',
+  deeper: '#1d2021',
+  cardTint: '#3c3836',
+  bubbleTint: '#504945',
+  edge: '#665c54',
   accent: '#fe8019',
   ink: '#fbf1c7',
   ink2: '#ebdbb2',
@@ -162,26 +166,31 @@ const SKIN_DEFAULTS = {
   code: '#d3869b',
   quote: '#8ec07c'
 }
+// [key, label, min, max, step, readout]. The readout is what Settings prints
+// beside the slider; setSkin only reads the range.
+const pct = v => `${Math.round(v * 100)}%`
+const times = v => `${Number(v).toFixed(2)}x`
 const SKIN_SLIDERS = [
-  ['scrim', 'Picture scrim', 0, 0.9, 0.01],
-  ['blur', 'Glass blur (px)', 0, 40, 1],
-  ['saturate', 'Glass saturation', 0.5, 2, 0.05],
-  ['brightness', 'Glass brightness', 0.5, 1.1, 0.01],
-  ['chrome', 'Chat pane opacity', 0.4, 1, 0.01],
+  ['scrim', 'Picture scrim', 0, 0.9, 0.01, pct],
+  ['blur', 'Glass blur', 0, 40, 1, v => `${v} px`],
+  // Both act on the blurred layer (a backdrop-filter on html::after), which is
+  // only painted while blur is above 0, so Settings greys them out at 0.
+  ['saturate', 'Glass saturation', 0.5, 2, 0.05, times],
+  ['brightness', 'Glass brightness', 0.5, 1.1, 0.01, times],
   // Sidebar opacity starts at zero, and zero means clear: the rail behind the
   // cards is transparent and the gaps show the picture. The range is 0..1 and
   // the wash is `sidebar * 0.5`, so the old 0.74 position is still reachable at
   // 0.74 and now reads as the 0.37 wash it always painted. It used to start at
   // 0.4 with the floor remapped to clear, which meant the number under the
   // slider was never the number it used, and zero was not selectable at all.
-  ['sidebar', 'Sidebar opacity', 0, 1, 0.01],
-  ['card', 'Card opacity', 0.4, 1, 0.01],
-  ['bubble', 'Your message opacity', 0.4, 1, 0.01],
+  ['sidebar', 'Sidebar', 0, 1, 0.01, pct],
+  ['card', 'Cards', 0.4, 1, 0.01, pct],
+  ['bubble', 'Your messages', 0.4, 1, 0.01, pct],
   // The floor is 0.5 rather than 0: a page carries dense small type with no
   // reply panel solving a tone for it, so a clear page would put labels
   // straight back on the picture, which is the bug this surface exists to fix.
   // 1 is a solid sheet for anyone who wants the pages opaque.
-  ['page', 'Page opacity', 0.5, 1, 0.01]
+  ['page', 'Pages', 0.5, 1, 0.01, pct]
 ]
 const SKIN_COLORS = [
   ['ground', 'Chat ground'],
@@ -230,11 +239,12 @@ const isCustomLook = id => id !== 'gruvbox'
 // The palettes are measured rather than picked by eye, against each picture's
 // own pixels, through the same compositing the reply-panel solver runs. At the
 // shipped panel dials, ink on the solved reply panel reaches 9.4:1 on Watersky,
-// 12.3:1 on Goldensky and 9.7:1 on Nightsky, and no faint tier is quieter than
-// Gruvbox's own on the chrome ground (the closest is Goldensky's faintest at
-// 3.70:1 against Gruvbox's 3.66:1). `npm --prefix dev run measure` reproduces
-// every one of those numbers and fails the run if a change drops below them, so
-// treat this comment as the summary and that script as the source.
+// 12.3:1 on Goldensky and 9.7:1 on Nightsky, and every faint tier keeps
+// Gruvbox's hierarchy on the chrome ground: its ratio, scaled to how the look's
+// own body text compares to Gruvbox's. `npm --prefix dev run measure`
+// reproduces every one of those numbers and fails the run if a change drops
+// below them, so treat this comment as the summary and that script as the
+// source.
 //
 // The scrims are heavier than Gruvbox's 0.31 because two of these pictures are
 // bright: Watersky is a 190-250 luma wash of blue concrete, and behind the
@@ -249,10 +259,10 @@ const LOOK_PRESETS = {
     description: 'Blue concrete, cool glass',
     skin: {
       image: 'assets/watersky.jpg', fit: 'cover', posX: 50, posY: 46,
-      scrim: 0.34, chrome: 0.86, card: 0.90, bubble: 0.82, page: 0.92,
+      scrim: 0.34, card: 0.90, bubble: 0.82, page: 0.92,
       ground: '#1b3350', deeper: '#0a182e', cardTint: '#24445f', bubbleTint: '#2e567a',
       edge: '#5480a8', accent: '#7fc6fa',
-      ink: '#f6fbff', ink2: '#dbe8f6', ink3: '#c4d6e9', quiet: '#a9bed4', ink4: '#8ea4bb',
+      ink: '#f6fbff', ink2: '#dbe8f6', ink3: '#c4d6e9', quiet: '#a9bed4', ink4: '#8fa5bb',
       link: '#96d2f9', code: '#f6cc9e', quote: '#9ee3d8'
     }
   },
@@ -261,10 +271,10 @@ const LOOK_PRESETS = {
     description: 'Dusk clouds, warm glass',
     skin: {
       image: 'assets/goldensky.jpg', fit: 'cover', posX: 50, posY: 50,
-      scrim: 0.26, chrome: 0.78, card: 0.82, bubble: 0.78, page: 0.87,
+      scrim: 0.26, card: 0.82, bubble: 0.78, page: 0.87,
       ground: '#2e2022', deeper: '#150d0f', cardTint: '#3e2d2e', bubbleTint: '#4e3737',
       edge: '#75564f', accent: '#eeae8a',
-      ink: '#faf1ea', ink2: '#e9d8cd', ink3: '#d6c0b3', quiet: '#c4aa9c', ink4: '#aa968c',
+      ink: '#faf1ea', ink2: '#ebdbd1', ink3: '#d9c4b7', quiet: '#c6ad9f', ink4: '#ac998f',
       link: '#c3b6dd', code: '#eabf92', quote: '#d2b0cb'
     }
   },
@@ -273,7 +283,7 @@ const LOOK_PRESETS = {
     description: 'Starfield, indigo glass',
     skin: {
       image: 'assets/nightsky.jpg', fit: 'cover', posX: 50, posY: 32,
-      scrim: 0.24, chrome: 0.78, card: 0.82, bubble: 0.78, page: 0.88,
+      scrim: 0.24, card: 0.82, bubble: 0.78, page: 0.88,
       ground: '#211d3d', deeper: '#0b0a1c', cardTint: '#2c274e', bubbleTint: '#3a3363',
       edge: '#585086', accent: '#f4d08a',
       ink: '#f0edff', ink2: '#d6d0f0', ink3: '#bdb5dd', quiet: '#c0b8db', ink4: '#a49cc0',
@@ -285,6 +295,14 @@ const LOOK_PRESETS = {
 // names. Spelled out in one place so readLookSkin, resetSkin and the previous
 // record all agree on what "before you touched it" means.
 const presetSkin = which => ({ ...SKIN_DEFAULTS, ...(LOOK_PRESETS[which]?.skin || {}) })
+
+// The surfaces earlier builds shipped as Gruvbox: a green tinted from the
+// painting, not gruvbox's own greys. Records written by those builds still hold
+// them. They count as shipped defaults (so an untouched Custom slot is still
+// recognised), and in the Gruvbox look a surface still at one of these values is
+// moved to the real gruvbox colour, while a surface you changed stays yours.
+const RETIRED_GRUVBOX_SURFACES = { ground: '#16261e', deeper: '#0c1612', cardTint: '#1d3328', bubbleTint: '#2b4636', edge: '#4f7360' }
+const isRetiredSurface = (key, value) => Boolean(RETIRED_GRUVBOX_SURFACES[key]) && String(value).toLowerCase() === RETIRED_GRUVBOX_SURFACES[key]
 
 // Whether a stored Custom record holds nothing but the shipped Gruvbox defaults,
 // which is what the previous build wrote the first time any knob moved. Only the
@@ -298,7 +316,7 @@ const isShippedDefaults = record => Object.keys(SKIN_DEFAULTS).every(key => {
   const a = record[key], b = SKIN_DEFAULTS[key]
   if (a === undefined) return true
   if (typeof b === 'number') return Number(a) === b
-  return String(a) === String(b)
+  return String(a).toLowerCase() === String(b).toLowerCase() || isRetiredSurface(key, a)
 })
 
 // A picture that names a file in the plugin's own assets/ is resolved here, at
@@ -322,6 +340,15 @@ const skinImage = () => assetImage(SKIN.image) || PAINTING_URL
 // one stray `;` or `}` would break every rule after it. Colours must be hex and
 // numbers are clamped to what the sliders allow; anything else keeps its default.
 const SKIN_HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+// A picture is a local file, an upload or a shipped asset, never an address on
+// the network: painting one would make the app fetch it, and the plugin promises
+// it makes no network requests. Any scheme other than file: and data: is refused
+// (http, https, ftp, ...), and so is a protocol-relative `//host`. A scheme
+// needs two letters or more, so a Windows drive (`C:\`) is still a path.
+const remotePicture = v => {
+  const t = String(v || '').trim()
+  return t.startsWith('//') || (/^[a-z][a-z0-9+.-]+:/i.test(t) && !/^(?:file|data):/i.test(t))
+}
 const setSkin = next => {
   const out = { ...SKIN_DEFAULTS }
   for (const key of Object.keys(next || {})) {
@@ -339,7 +366,7 @@ const setSkin = next => {
       const n = Number(v)
       if (Number.isFinite(n)) out[key] = Math.min(100, Math.max(0, n))
     } else if (key === 'image') {
-      if (typeof v === 'string' && v) out[key] = v
+      if (typeof v === 'string' && v && !remotePicture(v)) out[key] = v
     }
   }
   SKIN = out
@@ -370,7 +397,9 @@ const materialVars = () => {
     `  --atr-m-solid: rgb(${tri(mixHex(deep, ground, 0.6))});`,
     `  --atr-m-tab: rgba(${hexTriple(bub)}, 0.86);`,
     `  --atr-m-pin-a: rgba(${hexTriple(ground)}, ${(g('sidebar') * 0.68).toFixed(3)}); --atr-m-pin-b: rgba(${hexTriple(deep)}, ${(g('sidebar') * 0.78).toFixed(3)});`,
-    `  --atr-m-comp-a: rgba(${hexTriple(bub)}, ${(g('chrome') * 0.62).toFixed(3)}); --atr-m-comp-b: rgba(${hexTriple(card)}, ${(g('chrome') * 0.70).toFixed(3)});`,
+    // The composer used to follow the retired Chat pane opacity slider. 0.78 is
+    // the middle of what the four looks set it to, so it keeps its weight.
+    `  --atr-m-comp-a: rgba(${hexTriple(bub)}, ${(0.78 * 0.62).toFixed(3)}); --atr-m-comp-b: rgba(${hexTriple(card)}, ${(0.78 * 0.70).toFixed(3)});`,
     `  --atr-m-bub-a: rgba(${hexTriple(bub)}, ${(g('bubble') * 0.60).toFixed(3)}); --atr-m-bub-b: rgba(${hexTriple(card)}, ${(g('bubble') * 0.68).toFixed(3)});`,
     `  --atr-m-sheet: rgba(${tri(mixHex(deep, ground, 0.5))}, ${(g('card') * 0.92).toFixed(3)});`,
     `  --atr-m-on: ${deep};`,
@@ -529,7 +558,10 @@ const pictureBackdrop = (bounds, filtered = true) => {
   const pixels = source.pixels.data, samples = [], deeper = hexRgb(SKIN.deeper)
   const scrim = skinNumber(SKIN.scrim, 0.31)
   const blend = (a, b, t) => [0, 1, 2].map(i => a[i] * (1 - t) + b[i] * t)
-  const chat = filtered && document.documentElement.matches?.("html[data-atr-chat='1']")
+  // The filter and its own scrim live on html::after, which the sheet only
+  // emits when Glass blur is above 0 (see sheetCss). Modelling them at blur 0
+  // solved the panel against a darker backdrop than the one on screen.
+  const chat = filtered && skinNumber(SKIN.blur, 0) > 0 && document.documentElement.matches?.("html[data-atr-chat='1']")
   const applyBackdrop = (rgb, sx, sy) => {
     // Transparent image pixels reveal the CSS background color before either scrim.
     if (rgb.length > 3) rgb = blend(rgb, deeper, 1 - rgb[3] / 255)
@@ -612,12 +644,12 @@ const SESSION_TAB_CSS = [
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 48%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #282828) 48%, transparent) !important;',
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 68%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #282828) 68%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .uppercase {",
@@ -1460,7 +1492,12 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   const NIGHT = zf.night
   // The reading pane and the cards hold the picture back differently; the
   // sidebar's own numbers live in `sideCard` below.
-  const density = String(skinNumber(SKIN.chrome, 0.88))
+  // The chat pane's ground. It used to be a slider, but the chat pane itself
+  // is cleared to the picture, and the host mixes 74% of the theme's own
+  // background (also 0.88) into this token, so the slider moved the few
+  // surfaces that still show it by a few percent at most. It is fixed at the
+  // background's alpha so the two halves of the host's mix agree.
+  const density = '0.88'
   const cardDensity = String(skinNumber(SKIN.card, 0.96))
   const glassPct = a => `${Math.round(a)}%`
   // The brightest ink the sheet asks for; the skin's own text colour.
@@ -1507,7 +1544,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   const sections = [[
     ...(backdrop ? [
     'html {',
-    `  background-color: #1d2021;`,
+    // Under the picture, and all that shows while it loads: the look's own
+    // deepest ground, not one look's colour for all of them.
+    `  background-color: ${SKIN.deeper};`,
     '}',
     // The app's own ground is `body { background: var(--ui-chat-surface-background) }`,
     // and that chrome colour is a color-mix whose second input is an OPAQUE
@@ -3368,21 +3407,33 @@ function PhaseChip({ appearance, onSelect }) {
 
 
 // ── The Atrium mark ─────────────────────────────────────────────────────────
-// An atrium is the open, day-lit room at the heart of a house: a square court
-// with a column at each corner. The glyph is that plan — four columns round an
-// open centre — which also reads as a card in a frame, the plugin's own shape.
-// Two cuts of one drawing: a one-colour glyph for the Settings rail (it rides
-// the codicon slot as a CSS mask, so it takes the rail's own colour and hover
-// states like every core icon), and the same plan stroked bare for the top of
-// the settings page.
+// An atrium is the day-lit room at the heart of a house, and what this plugin
+// does is give Hermes a view: a picture behind the app, seen through glass.
+// So the mark is an arched window on a sill with a landscape in it. Two cuts of
+// one drawing:
+//   - the rail glyph rides the codicon slot as a CSS mask, so it is one colour
+//     and takes the rail's own ink and hover states like every core icon. At
+//     16px a sun in the arch reads as an eye, so this cut has mountains only.
+//   - the header mark is drawn in currentColor, with the pane and the sun in the
+//     look's accent, so the mark changes colour with the look the way the
+//     panels do. The pane is a faint wash of the accent: the tinted glass.
+const ATRIUM_ARCH = 'M5 21V10.5a7 7 0 0 1 14 0V21'
 const ATRIUM_GLYPH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-  + '<path fill="#000" fill-opacity=".38" d="M2.6 2.6h18.8v18.8H2.6zm1.8 1.8v15.2h15.2V4.4z"/>'
-  + '<path fill="#000" d="M6.2 6.2h3.8v3.8H6.2zM14 6.2h3.8v3.8H14zM6.2 14h3.8v3.8H6.2zM14 14h3.8v3.8H14z"/>'
+  + `<defs><clipPath id="a"><path d="${ATRIUM_ARCH}z"/></clipPath></defs>`
+  + '<g clip-path="url(#a)"><path fill="#000" d="M4 21v-3.2l4.6-5.3 3.3 3.6 2.4-2.6 5.7 6.2V22H4z"/></g>'
+  + `<path fill="none" stroke="#000" stroke-width="1.9" stroke-linejoin="round" d="${ATRIUM_ARCH}"/>`
+  + '<path fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" d="M3 21h18"/>'
   + '</svg>'
-// the same plan, stroked bare in currentColor, for the top of the settings page
 const ATRIUM_MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" style="display:block" aria-hidden="true">'
-  + '<path fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" d="M2.6 2.6h18.8v18.8H2.6z"/>'
-  + '<g fill="currentColor"><rect x="6.2" y="6.2" width="3.8" height="3.8"/><rect x="14" y="6.2" width="3.8" height="3.8"/><rect x="6.2" y="14" width="3.8" height="3.8"/><rect x="14" y="14" width="3.8" height="3.8"/></g>'
+  + `<defs><clipPath id="atr-mark-arch"><path d="${ATRIUM_ARCH}z"/></clipPath></defs>`
+  + `<path d="${ATRIUM_ARCH}z" style="fill:var(--atr-accent, currentColor)" fill-opacity=".16"/>`
+  + '<g clip-path="url(#atr-mark-arch)">'
+  + '<path fill="currentColor" fill-opacity=".45" d="M4 17.6c2.4-2.3 4.7-3 7.1-1.7 2.5 1.3 5 .5 7.9-2.3V22H4z"/>'
+  + '<path fill="currentColor" fill-opacity=".9" d="M4 20.2c3.1-1.9 6.6-2.3 10-.9 2.1.9 3.7.7 6-.5V22H4z"/>'
+  + '</g>'
+  + '<circle cx="14.4" cy="9.4" r="1.9" style="fill:var(--atr-accent, currentColor)"/>'
+  + `<path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" d="${ATRIUM_ARCH}"/>`
+  + '<path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M3 21h18"/>'
   + '</svg>'
 
 const ATRIUM_ICON_CSS = [
@@ -3498,7 +3549,6 @@ export default {
     const appearance = atom(away ? 'hermes' : storedLook())
     const appearanceAssets = atom(0)
     const wake = () => { away = false; ctx.storage.set('away', false) }
-    const tint = atom(stored(STORE_KEYS.tint) === true)
     // Two independent switches. `backdropOn` shows the picture; `chrome` is
     // Atrium's sheet of glass, type and controls. They were once welded together
     // because both lived in one <style>.
@@ -3535,7 +3585,6 @@ export default {
 
     const persist = () => {
       ctx.storage.set(STORE_KEYS.auto, auto.get())
-      ctx.storage.set(STORE_KEYS.tint, tint.get())
       ctx.storage.set(STORE_KEYS.sky, backdropOn.get())
       ctx.storage.set(STORE_KEYS.chrome, chromeOn.get())
       ctx.storage.set(STORE_KEYS.replyGround, replyGround.get())
@@ -3808,7 +3857,6 @@ export default {
       repaint()
       if (away) return
       requestTheme(THEME_NAME)
-      if (tint.get()) setAccentOverride(SKIN.accent)
     }
     apply()
 
@@ -3819,7 +3867,7 @@ export default {
     // preset, each Custom look is that data after your edits, and no look has a
     // palette another lacks.
     function registerLive() {
-      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'chrome', 'sidebar', 'card', 'bubble', 'page'].map(k => SKIN[k]).join()
+      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'sidebar', 'card', 'bubble', 'page'].map(k => SKIN[k]).join()
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
@@ -3839,7 +3887,7 @@ export default {
         if (!picked) return
         if (!isOurTheme(picked)) {
           ctx.storage.set('hermesTheme', picked)
-          if (!away) { away = true; ctx.storage.set('away', true); clearSheet(); setAccentOverride(null) }
+          if (!away) { away = true; ctx.storage.set('away', true); clearSheet() }
           appearance.set('hermes')
           replyRefreshKey = ''
           renderReplyGround()
@@ -3958,6 +4006,18 @@ export default {
       const preset = presetSkin(which)
       const untouched = !raw || typeof raw !== 'object' || isShippedDefaults(raw)
       const out = untouched ? { ...preset } : { ...preset, ...raw }
+      // Only knobs the skin still has. A retired one (`chrome`, the old Chat pane
+      // opacity) would otherwise ride along in the record and be written back.
+      for (const key of Object.keys(out)) if (!(key in SKIN_DEFAULTS)) delete out[key]
+      // Gruvbox's surfaces move from the old green to gruvbox's own greys, one
+      // key at a time, so a surface someone chose is left alone.
+      if (which === 'gruvbox' && raw && typeof raw === 'object') {
+        const moved = Object.keys(RETIRED_GRUVBOX_SURFACES).filter(key => isRetiredSurface(key, raw[key]))
+        if (moved.length) {
+          for (const key of moved) out[key] = SKIN_DEFAULTS[key]
+          ctx.storage.set(keys.object, { ...raw, ...Object.fromEntries(moved.map(key => [key, SKIN_DEFAULTS[key]])) })
+        }
+      }
       const picture = stored(keys.image)
       if (typeof picture === 'string' && picture.length > 32) {
         out.image = picture
@@ -4038,7 +4098,7 @@ export default {
         away = true
         ctx.storage.set('away', true)
         appearance.set('hermes')
-        clearSheet(); setAccentOverride(null)
+        clearSheet()
         requestTheme(stored('hermesTheme') && !isOurTheme(stored('hermesTheme')) ? stored('hermesTheme') : 'nous')
         replyRefreshKey = ''
         renderReplyGround()
@@ -4163,14 +4223,15 @@ export default {
       const t = String(v || '')
       if (t.startsWith('data:')) return 'uploaded'
       if (!t.startsWith('file://')) return t
-      const abs = decodeURI(t.slice(7))
+      // `file:///C:/x` decodes to `/C:/x`; a Windows path has no leading slash.
+      const abs = decodeURI(t.slice(7)).replace(/^\/(?=[A-Za-z]:\/)/, '')
       return homeDir && abs.startsWith(homeDir + '/') ? '~' + abs.slice(homeDir.length) : abs
     }
     // A skin key that needs its own sentence in the file. `page` is the one
     // knob whose name does not say what it paints: it is the ground under the
     // panes whose content draws none of its own (a plugin route, the Bots
     // roster, a preview), not the pages the app ships itself.
-    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path (~/Pictures/x.jpg), a URL, or "uploaded" to keep the picture from Settings. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path to a picture on this computer (~/Pictures/x.jpg), a shipped one (assets/goldensky.jpg), or "uploaded" to keep the picture from Settings; web addresses are ignored, because the plugin makes no network requests. Glass saturation and brightness only apply while blur is above 0. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
@@ -4226,7 +4287,7 @@ export default {
       if (!data || typeof data !== 'object') return
       const patch = {}
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
-      if (patch.image === 'uploaded') delete patch.image
+      if (patch.image === 'uploaded' || remotePicture(patch.image)) delete patch.image
       else if (patch.image) patch.image = pathToUrl(patch.image)
       // A file that still spells out nothing but the shipped Gruvbox defaults is
       // an untouched file the previous build wrote, not an instruction to paint
@@ -4668,14 +4729,54 @@ export default {
     }
 
     // ── the picture + glass editor ───────────────────────────────────────────
-    // Plain inputs on purpose: a range, a colour swatch, a file picker and a URL
-    // box cover every knob the skin has, and none of them depend on a Tailwind
-    // class that may not exist in the app's compiled sheet.
-    const SkinRow = (label, control) =>
-      jsxs('div', { className: 'flex items-center justify-between gap-3 py-1', children: [
-        jsx('span', { className: 'text-[length:var(--conversation-text-font-size)] text-(--ui-text-secondary)', children: label }),
-        control
-      ]})
+    // Plain inputs on purpose: a range, a colour swatch and a file picker cover
+    // every knob the skin has, and none of them depend on a Tailwind class that
+    // may not exist in the app's compiled sheet.
+    //
+    // A row is a label (with an optional note under it) and a control. `indent`
+    // marks a knob that depends on the one above it; `disabled` greys the label
+    // with the control so the dependency reads at a glance.
+    const SkinRow = (label, control, opts = {}) =>
+      jsxs('div', {
+        className: 'flex items-center justify-between gap-3 py-1',
+        style: opts.indent ? { paddingInlineStart: '1.25rem' } : undefined,
+        children: [
+          jsxs('span', {
+            className: 'min-w-0 text-[length:var(--conversation-text-font-size)] text-(--ui-text-secondary)',
+            style: opts.disabled ? { opacity: 0.45 } : undefined,
+            children: [
+              label,
+              opts.note ? jsx('span', { className: 'block text-[0.75rem] leading-4 text-(--ui-text-tertiary)', children: opts.note }) : null
+            ]
+          }),
+          control
+        ]
+      })
+    // A slider with its value printed beside it, so a knob always says where it
+    // is. The readout has a fixed width so the sliders line up down the page.
+    const Range = ({ label, value, min, max, step, format, disabled = false, onChange }) =>
+      jsxs('div', {
+        className: 'flex shrink-0 items-center gap-3',
+        style: disabled ? { opacity: 0.45 } : undefined,
+        children: [
+          jsx('input', {
+            type: 'range', min, max, step, value, disabled, 'aria-label': label,
+            style: { width: '10rem', accentColor: 'var(--atr-accent, var(--ui-accent, currentColor))', cursor: disabled ? 'not-allowed' : undefined },
+            onChange: event => onChange(Number(event.target.value))
+          }),
+          jsx('span', {
+            className: 'text-[0.75rem] text-(--ui-text-tertiary)',
+            style: { width: '3.75rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+            children: format(value)
+          })
+        ]
+      })
+    // One button style for every action on the page, so the picture's row reads
+    // as one toolbar rather than three kinds of control.
+    const ACTION = {
+      className: 'rounded-md px-2 py-1 text-[0.75rem]',
+      style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))', whiteSpace: 'nowrap', cursor: 'pointer' }
+    }
 
     // ── Panel dials ───────────────────────────────────────────────────────────
     // Five sliders rather than a single opacity: `solid` is the floor everyone
@@ -4683,11 +4784,11 @@ export default {
     // backdrop or the edge disappearing. `tone`/`edge` are what make the panel a
     // card; they are exposed because a Custom picture can need a nudge.
     const PANEL_SLIDERS = [
-      ['solid', 'Solidity', 0, 1, 0.01, v => `${Math.round(v * 100)}% floor`],
-      ['max', 'Maximum opacity', 0, 1, 0.01, v => `${Math.round(v * 100)}% ceiling`],
-      ['tone', 'Panel tone', 0, 1, 0.01, v => v === 0 ? 'matches backdrop' : `${Math.round(v * 100)}% away`],
-      ['edge', 'Edge definition', 1, 3, 0.05, v => `${v.toFixed(2)}:1`],
-      ['pad', 'Inner padding', 0, 1.6, 0.05, v => `${v.toFixed(2)} rem`]
+      ['solid', 'Solidity', 0, 1, 0.01, pct, 'The floor: a panel is never thinner than this.'],
+      ['max', 'Maximum opacity', 0, 1, 0.01, pct, 'The ceiling, used only over a bright backdrop.'],
+      ['tone', 'Panel tone', 0, 1, 0.01, v => v === 0 ? 'matches' : pct(v), 'How far the panel steps away from the backdrop.'],
+      ['edge', 'Edge definition', 1, 3, 0.05, v => `${v.toFixed(2)}:1`, 'How visible the edge is against the picture.'],
+      ['pad', 'Inner padding', 0, 1.6, 0.05, v => `${v.toFixed(2)} rem`, 'Room between the text and the edge.']
     ]
     const PanelTuning = ({ onDone }) => {
       const cfg = useValue(panelSettings)
@@ -4698,21 +4799,14 @@ export default {
       }
       return jsxs('div', {
         className: 'mt-1 mb-2 flex flex-col gap-0.5',
-        style: { paddingInlineStart: '1.25rem' },
         children: [
-          ...PANEL_SLIDERS.map(([key, label, min, max, step, fmt]) =>
-            SkinRow(`${label} — ${fmt(cfg[key])}`, jsx('input', {
-              type: 'range', min, max, step, value: cfg[key],
-              'aria-label': label,
-              style: { width: '10rem', accentColor: 'var(--atr-accent, var(--ui-accent, currentColor))' },
-              onChange: event => push({ [key]: Number(event.target.value) })
-            }))
+          ...PANEL_SLIDERS.map(([key, label, min, max, step, format, note]) =>
+            SkinRow(label, Range({ label, value: cfg[key], min, max, step, format, onChange: v => push({ [key]: v }) }), { note })
           ),
           jsx('div', {
             className: 'flex justify-end pt-1',
-            children: jsx(Button, {
-              size: 'sm',
-              variant: 'ghost',
+            children: jsx('button', {
+              type: 'button', ...ACTION,
               onClick: () => { panelSettings.set({ ...PANEL_DEFAULTS }); persist(); onDone?.() },
               children: 'Reset panel'
             })
@@ -4721,76 +4815,137 @@ export default {
       })
     }
 
+    // What the path box says when it refuses a value. Kept in an atom so the
+    // message survives the re-render the refusal itself does not cause.
+    const pictureRefusal = atom('')
+    // What the box shows for a picture. The shipped painting is held as its
+    // resolved file URL, which is a long install path nobody chose; it reads as
+    // the marker every other shipped picture uses. The commit compares against
+    // this same text, so leaving the box untouched never rewrites the record.
+    const shownPath = image => (image === PAINTING_URL ? `assets/${PAINTING_FILE}` : urlToPath(image))
+    // The box commits on Enter or when focus leaves it, never per keystroke: a
+    // half-typed path is not a picture, and every commit rewrites the look's
+    // record and its theme file.
+    const commitPicturePath = raw => {
+      const t = String(raw || '').trim()
+      if (!t || t === shownPath(skin.get().image)) { pictureRefusal.set(''); return }
+      if (remotePicture(t)) {
+        pictureRefusal.set('Web addresses are not used: Hermes Atrium makes no network requests. Use a picture on this computer.')
+        return
+      }
+      pictureRefusal.set('')
+      pushSkin({ image: /^assets[\\/]/i.test(t) ? t : pathToUrl(t) })
+    }
+
+    const SkinSlider = (cfg, key, opts = {}) => {
+      const [, label, min, max, step, format] = SKIN_SLIDERS.find(s => s[0] === key)
+      return SkinRow(label, Range({ label, value: cfg[key], min, max, step, format, disabled: opts.disabled, onChange: v => pushSkin({ [key]: v }) }), opts)
+    }
+
+    // The picture: where it comes from, how it sits in the window, how much it is
+    // held back, and the soft-focus glass over it.
     const SkinPicture = () => {
       const cfg = useValue(skin)
+      const refusal = useValue(pictureRefusal)
       const isUpload = typeof cfg.image === 'string' && cfg.image.startsWith('data:')
-      return jsxs('div', { className: 'mt-1 flex flex-wrap items-center gap-2 pb-2', children: [
-        jsx('label', {
-          className: 'cursor-pointer rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          children: [
+      const shown = isUpload ? '' : shownPath(cfg.image)
+      const blurOff = !(skinNumber(cfg.blur, 0) > 0)
+      const fit = cfg.fit === 'contain' ? 'contain' : 'cover'
+      const fitButton = (value, label) => jsx(Button, {
+        size: 'sm', variant: fit === value ? 'secondary' : 'outline',
+        'aria-pressed': fit === value,
+        onClick: () => pushSkin({ fit: value }),
+        children: label
+      }, value)
+      return jsxs('div', { className: 'flex flex-col gap-0.5', children: [
+        jsxs('div', { className: 'mt-1 flex flex-wrap items-center gap-2 pb-1', children: [
+          jsxs('label', { ...ACTION, children: [
             'Choose image…',
             jsx('input', {
               type: 'file', accept: 'image/*', style: { display: 'none' },
               onChange: event => {
                 const file = event.target.files && event.target.files[0]
+                pictureRefusal.set('')
                 void useImageFile(file)
                 event.target.value = ''
               }
             })
-          ]
-        }),
-        jsx('input', {
-          type: 'text',
-          value: isUpload ? '' : String(cfg.image || ''),
-          placeholder: isUpload ? '(uploaded image)' : 'image URL or file path',
-          className: 'rounded-md bg-transparent px-2 py-1 text-[0.75rem]',
-          style: { flex: '1 1 12rem', minWidth: '10rem', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          onChange: event => {
-            const value = event.target.value.trim()
-            if (value) pushSkin({ image: value })
-          }
-        }),
-        jsx('button', {
-          type: 'button',
-          className: 'rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          title: 'Return this look to the shipped picture, colours and opacities. The other looks are untouched.',
-          onClick: () => resetSkin(),
-          children: 'Reset'
-        }),
-        // Every Custom look has a theme file of its own; under Gruvbox the
-        // button would open a file that is not on screen, which is the
-        // confusion this redesign is meant to end.
-        isCustomLook(look.get()) ? jsx('button', {
-          type: 'button',
-          className: 'rounded-md px-2 py-1 text-[0.75rem]',
-          style: { border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
-          title: `~/.hermes/${SKIN_STORES[look.get()].file}: every colour, opacity and filter of ${lookLabel(look.get())}, as one editable file`,
-          onClick: () => { openConfig(look.get()) },
-          children: 'Theme file'
-        }) : null
+          ]}),
+          // Uncontrolled, keyed on the picture: it shows the current one, holds
+          // what you type until you commit it, and resets when the look or the
+          // picture changes underneath it.
+          jsx('input', {
+            key: `${look.get()}|${shown}`,
+            type: 'text',
+            defaultValue: shown,
+            placeholder: isUpload ? '(uploaded image)' : 'path to a picture on this computer',
+            'aria-label': 'Picture path',
+            spellCheck: false,
+            className: 'rounded-md bg-transparent px-2 py-1 text-[0.75rem]',
+            style: { flex: '1 1 12rem', minWidth: '10rem', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))' },
+            onKeyDown: event => { if (event.key === 'Enter') commitPicturePath(event.currentTarget.value) },
+            onBlur: event => commitPicturePath(event.currentTarget.value)
+          }),
+          jsx('button', {
+            type: 'button', ...ACTION,
+            title: 'Return this look to the picture, colours and opacities it was born with. The other looks are untouched.',
+            onClick: () => { pictureRefusal.set(''); resetSkin() },
+            children: 'Reset look'
+          }),
+          // Every Custom look has a theme file of its own; under Gruvbox the
+          // button would open a file that is not on screen.
+          isCustomLook(look.get()) ? jsx('button', {
+            type: 'button', ...ACTION,
+            title: `~/.hermes/${SKIN_STORES[look.get()].file}: every colour, opacity and filter of ${lookLabel(look.get())}, as one editable file`,
+            onClick: () => { openConfig(look.get()) },
+            children: 'Theme file'
+          }) : null
+        ]}),
+        refusal ? jsx('p', { role: 'alert', className: 'pb-1 text-[0.75rem]', style: { color: DESTRUCTIVE }, children: refusal }) : null,
+        SkinRow('Fit', jsxs('div', { className: 'flex gap-1', role: 'group', 'aria-label': 'Fit', children: [fitButton('cover', 'Cover'), fitButton('contain', 'Contain')] }),
+          { note: 'Cover fills the window; Contain shows the whole picture.' }),
+        SkinRow('Horizontal position', Range({ label: 'Horizontal position', value: skinNumber(cfg.posX, 46), min: 0, max: 100, step: 1, format: v => `${v}%`, onChange: v => pushSkin({ posX: v }) })),
+        SkinRow('Vertical position', Range({ label: 'Vertical position', value: skinNumber(cfg.posY, 45), min: 0, max: 100, step: 1, format: v => `${v}%`, onChange: v => pushSkin({ posY: v }) })),
+        SkinSlider(cfg, 'scrim', { note: 'Darkens the picture so the panels over it stay readable.' }),
+        SkinSlider(cfg, 'blur', { note: blurOff ? 'Turn blur up to use saturation and brightness.' : 'Soft focus behind the chat.' }),
+        SkinSlider(cfg, 'saturate', { indent: true, disabled: blurOff }),
+        SkinSlider(cfg, 'brightness', { indent: true, disabled: blurOff })
       ]})
     }
 
-    const SkinEditor = () => {
+    // How much of the picture each kind of surface lets through.
+    const SkinOpacity = () => {
       const cfg = useValue(skin)
-      const slider = ([key, label, min, max, step]) =>
-        SkinRow(label, jsx('input', {
-          type: 'range', min, max, step, value: cfg[key],
-          style: { width: '10rem', accentColor: 'var(--atr-accent, var(--ui-accent, currentColor))' },
-          onChange: event => pushSkin({ [key]: Number(event.target.value) })
-        }))
-      const swatch = ([key, label]) =>
-        SkinRow(label, jsx('input', {
-          type: 'color', value: cfg[key],
-          style: { width: '2.25rem', height: '1.5rem', padding: '0', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))', borderRadius: '0.375rem', background: 'transparent' },
-          onChange: event => pushSkin({ [key]: event.target.value })
-        }))
-      return jsxs('div', { className: 'mt-1 flex flex-col gap-0.5', children: [
-        ...SKIN_SLIDERS.map(slider),
-        ...SKIN_COLORS.map(swatch)
-      ]})
+      return jsx('div', { className: 'flex flex-col gap-0.5', children: ['sidebar', 'card', 'bubble', 'page'].map(key => SkinSlider(cfg, key)) })
+    }
+
+    // The palette, as a grid of swatches in three groups rather than one long
+    // list. The keys and labels are SKIN_COLORS'; this only arranges them.
+    const COLOR_GROUPS = [
+      ['Surfaces', ['ground', 'deeper', 'cardTint', 'bubbleTint', 'edge']],
+      ['Text', ['ink', 'ink2', 'ink3', 'quiet', 'ink4']],
+      ['Prose & accent', ['accent', 'link', 'code', 'quote']]
+    ]
+    const SkinColors = () => {
+      const cfg = useValue(skin)
+      const labelOf = key => SKIN_COLORS.find(c => c[0] === key)?.[1] || key
+      return jsx('div', { className: 'flex flex-col gap-3 pt-1 pb-2', children: COLOR_GROUPS.map(([title, keys]) => jsxs('div', { children: [
+        jsx('div', { className: 'pb-1 text-[0.75rem] text-(--ui-text-tertiary)', children: title }),
+        jsx('div', {
+          style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(10rem, 1fr))', gap: '0.375rem 0.75rem' },
+          children: keys.map(key => jsxs('label', {
+            className: 'flex cursor-pointer items-center gap-2 text-[length:var(--conversation-text-font-size)] text-(--ui-text-secondary)',
+            children: [
+              jsx('input', {
+                type: 'color', value: cfg[key], 'aria-label': labelOf(key),
+                style: { width: '2rem', height: '1.375rem', flex: 'none', padding: '0', border: '1px solid var(--atr-edge, var(--ui-stroke-tertiary, rgba(255,255,255,0.16)))', borderRadius: '0.375rem', background: 'transparent', cursor: 'pointer' },
+                onChange: event => pushSkin({ [key]: event.target.value })
+              }),
+              jsx('span', { className: 'min-w-0 truncate', children: labelOf(key) })
+            ]
+          }, key))
+        })
+      ]}, title)) })
     }
 
     ctx.registerSettingsPage?.({
@@ -4801,7 +4956,6 @@ export default {
         useValue(appearanceAssets)
         const activeSkin = useValue(skin)
         const selectedLook = useValue(appearance)
-        const isTint = useValue(tint)
         const isBackdrop = useValue(backdropOn)
         const isChrome = useValue(chromeOn)
         const isReplyGround = useValue(replyGround)
@@ -4825,7 +4979,7 @@ export default {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
           style: { background: 'var(--atr-glass-sunk, var(--ui-bg-tertiary))', boxShadow: 'var(--atr-lift, none)' },
           children: [
-            // the bare mark, in the page's own ink: no card, no shadow
+            // the bare mark, in the page's own ink with the look's accent: no card, no shadow
             jsx('div', {
               className: 'shrink-0 text-foreground',
               style: { width: '2.5rem', height: '2.5rem', flex: 'none', marginTop: '0.15rem' },
@@ -4837,9 +4991,9 @@ export default {
                 jsx('div', { className: 'text-[1.05rem] font-semibold text-foreground', children: 'Hermes Atrium' }),
                 jsx('p', {
                   className: 'mt-1 text-[0.8125rem] leading-5 text-(--ui-text-secondary)',
-                  children: 'A glossy Atrium for Hermes: a painting or a picture of your own behind the app, '
-                    + 'tints every panel to match, and gives each reply a panel of its own. It also adds wide tabs '
-                    + 'and snippet cards you can copy.'
+                  children: 'A picture behind Hermes, and glass over it. Choose the painting it ships with or a '
+                    + 'photo of your own: the panels take their colours from it, and every reply sits on a panel '
+                    + 'that keeps the text easy to read. Wide tabs and copyable snippet cards come with it.'
                 }),
                 jsx('p', { className: 'mt-2 text-[0.75rem] text-(--ui-text-tertiary)', children: `Now: ${status}` })
               ]
@@ -4884,39 +5038,26 @@ export default {
         // thing: a saved skin. Every control below edits whichever look is
         // selected, and the others keep their own values.
         //
-        // The colour/glass block is a `section` with `collapse`, not a
-        // hand-rolled <details>: that one helper is what gives the other menus
-        // (Fine-tune appearance, Chat & motion, Snippets) their icon and type,
-        // so building it by hand drifted to 0.75rem tertiary text with no
-        // icon. Reusing the helper keeps every disclosure row the same shape.
-        const skinSection = selectedLook !== 'hermes'
-          ? section('paintcan', 'Picture & glass', [
-            jsx(SkinPicture, {}),
-            section('color-mode', 'Colour, glass and fit', [jsx(SkinEditor, {})], { collapse: true })
-          ])
-          : null
+        // The page reads top to bottom in the order you would build a look: the
+        // picture and how it sits, how much each surface lets it through, the
+        // palette, then the chat itself. Only the palette and the panel dials
+        // start folded, because they are the two long lists you tune once.
+        const editing = selectedLook !== 'hermes'
+        const pictureSection = editing ? section('file-media', 'Picture', [jsx(SkinPicture, {})]) : null
+        const opacitySection = editing ? section('layers', 'Opacity', [jsx(SkinOpacity, {})]) : null
+        const colourSection = editing ? section('symbol-color', 'Colours', [jsx(SkinColors, {})], { collapse: true }) : null
 
-        const lightSection = selectedLook !== 'hermes' ? section('symbol-color', 'Fine-tune appearance', [
-          jsx(ToggleRow, {
-            checked: isTint,
-            description: 'Use this look’s accent for links, buttons and selection.',
-            label: 'Tint the accent',
-            onChange: on => {
-              tint.set(on)
-              persist()
-              if (on) apply(); else setAccentOverride(null)
-            }
-          })
-        ], { collapse: true }) : null
-
-        const chatSection = section('comment-discussion', 'Chat & motion', [
+        const replySection = section('comment-discussion', 'Reply panels', [
           jsx(ToggleRow, {
             checked: isReplyGround,
             description: 'Give every reply a solid panel of its own, so the text never sits directly on the picture. Off leaves the prose bare.',
             label: 'Reply panels',
             onChange: on => { replyGround.set(on); persist(); repaint() }
           }),
-          isReplyGround ? jsx(PanelTuning, { onDone: () => repaint() }) : null,
+          isReplyGround ? section('settings', 'Tune panel', [jsx(PanelTuning, { onDone: () => repaint() })], { collapse: true }) : null
+        ])
+
+        const layoutSection = section('layout', 'Layout & motion', [
           jsx(ToggleRow, {
             checked: isMargins,
             description: 'A narrower reading column with wide margins, lined up with the message box.',
@@ -4929,7 +5070,7 @@ export default {
           }),
           jsx(ToggleRow, {
             checked: isMotion,
-            description: 'Short fades and slides on menus, the history list, the composer, and message actions. Off makes every interaction instant. Also follows your system\'s reduced-motion setting.',
+            description: 'Short fades and slides on menus, the history list, the composer, and message actions. Off makes every interaction instant. Also follows your system’s reduced-motion setting.',
             label: 'App animations',
             onChange: on => {
               motion.set(on)
@@ -4937,9 +5078,9 @@ export default {
               applyMotion(on)
             }
           })
-        ], { collapse: true })
+        ])
 
-        return jsxs('div', { children: [header, lookSection, skinSection, lightSection, chatSection].filter(Boolean) })
+        return jsxs('div', { children: [header, lookSection, pictureSection, opacitySection, colourSection, replySection, layoutSection].filter(Boolean) })
       }
     })
 
@@ -4957,7 +5098,6 @@ export default {
       document.getElementById('atr-reply-ground')?.remove()
       document.getElementById(REPLY_PROBE_ID)?.remove()
       pictureReady = () => {}
-      setAccentOverride(null)
       unpinWordmark()
       if (typeof window !== 'undefined') window.removeEventListener?.('resize', onResize)
       if (typeof document !== 'undefined' && document.documentElement) {
