@@ -6,7 +6,7 @@ choose, behind the app. It lays tinted glass over it.
 One look, two ways: the already present Gruvbox preset, and three Custom slots of your own looks.
 
 - **Gruvbox**: a landscape behind dark, warm glass. Tints from the painting
-  itself. A slider can trade the painting for your desktop wallpaper.
+  itself.
 - **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
   colours. Each slot keeps its own picture, palette and opacities, so three
   setups can sit ready and be switched from the status bar. They also arrive
@@ -14,44 +14,56 @@ One look, two ways: the already present Gruvbox preset, and three Custom slots o
   looks over the pictures below, and you can change any of it.
 
 **No network access of any kind**. Nothing in
-this plugin leaves your computer.
+this plugin leaves your computer. What it does read and write on your computer
+is listed under [What it touches on your computer](#what-it-touches-on-your-computer).
 
 ## Install
 
-Copy this folder to your Hermes desktop-plugins directory:
-
 ```
-~/.hermes/desktop-plugins/hermes-atrium/
-├── plugin.js
-└── assets/
-    ├── backwater.jpg
-    ├── watersky.jpg
-    ├── goldensky.jpg
-    └── nightsky.jpg
+hermes plugins install hermes-atrium
 ```
 
-On Windows that is `%USERPROFILE%\.hermes\desktop-plugins\hermes-atrium\`. Then restart
-Hermes, or toggle the plugin in **Settings -> Plugins**.
+Then enable it in **Settings -> Plugins** (or answer yes when the installer
+asks).
 
-The folder must keep this shape: `plugin.js` at the top, pictures in `assets/`.
-The plugin finds itself by the id it declares, `hermes-atrium`, so the folder
-itself can be renamed.
+The repository is a Hermes plugin package: `plugin.yaml` at the top and the
+desktop half in `desktop/`.
+
+```
+hermes-atrium/
+├── plugin.yaml
+└── desktop/
+    ├── plugin.js
+    └── assets/
+        ├── backwater.jpg
+        ├── watersky.jpg
+        ├── goldensky.jpg
+        └── nightsky.jpg
+```
+
+Hermes copies `desktop/` into its desktop-plugins folder as
+`desktop-plugins/hermes-atrium/`, which is where the plugin runs from. To work
+on it, clone the repository into the `plugins` folder of your Hermes home
+(`~/.hermes/plugins/hermes-atrium/`; on Windows
+`%LOCALAPPDATA%\hermes\plugins\hermes-atrium\` for the desktop app). Hermes
+re-copies `desktop/` when it changes, and the app reloads the plugin.
 
 ## Pictures
 
-Every picture comes from `assets/`, and only from `assets/`:
+Every picture comes from `desktop/assets/` (`assets/` once installed), and only
+from there:
 
 - `backwater.jpg` is the painting the theme ships with, and it wins by name. It
   is what Gruvbox paints, and what any look falls back to.
 - `watersky.jpg`, `goldensky.jpg` and `nightsky.jpg` are the three Custom
   presets' pictures. Each is named by its slot rather than picked by order, so a
   slot keeps its picture even when you add files to the folder.
-- Any other image dropped in `assets/` is used only if those files are missing,
+- Any other image dropped in the assets folder is used only if those files are missing,
   so the folder can hold test pictures without them becoming the default (`.jpg`,
   `.png`, `.webp`, `.avif`). Those four are committed; the rest are ignored by
   git.
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
-  never picked up. A slot whose picture has gone falls back to `backwater.jpg`
+  never picked up, and no other plugin's folder is opened to look. A slot whose picture has gone falls back to `backwater.jpg`
   rather than painting nothing.
 
 
@@ -92,7 +104,8 @@ Every value is still yours to change, and **Reset** returns a slot to the look
 it started as. A slot that already holds values of its own is left alone by an
 upgrade, so a picture you chose survives.
 
-Each look also has its own editable file beside `plugin.js`:
+Each look also has its own editable file in your Hermes home folder, the one
+that holds `desktop-plugins`:
 
 | Look | File |
 | --- | --- |
@@ -114,18 +127,43 @@ photograph.
 
 ## What it also adds
 
-- A floating sessions sidebar that slides open and shut.
-- Wide, legible tabs, with keyboard bindings to move between them.
-- Finished turns fold their thinking and tool steps into one line.
-- Snippet cards you can pin, drag onto a shelf, or keep in a library.
-- A status panel at the foot of the sidebar in Simple mode.
-- Suggestions on a new tab, learned only from local session activity.
+- Wide, legible tabs.
+- Snippet cards with a copy button.
 
-Every one of those is a switch in **Settings --> Hermes Atrium**.
+## What it touches on your computer
+
+Hermes desktop plugins run inside the app with the app's own access, so this is
+the full list of what Atrium does outside drawing the window.
+
+- **Network**: none. No request of any kind, no telemetry, no fonts or images
+  from the web. Every picture it paints is a file on your computer.
+- **Its own folder**: it lists `desktop-plugins/hermes-atrium/assets/` to find
+  the shipped pictures. It opens no other plugin's folder.
+- **Three theme files outside its folder**: `hermes-atrium-theme.json`,
+  `hermes-atrium-theme-2.json` and `hermes-atrium-theme-3.json` in your Hermes
+  home folder, one per Custom look. It writes one when you move a knob on that
+  look or press **Theme file**, and reads them back so edits made in an editor
+  take effect. **Theme file** also asks the system to show the file in your file
+  manager.
+- **A picture path you choose**: a theme file can name a picture anywhere on
+  disk (`~/Pictures/x.jpg`). That file is read by the app's renderer to paint
+  it, and nothing else is done with it.
+- **Pictures you upload**: kept in the app's local storage, under this plugin's
+  own keys, together with your settings and the three looks.
+- **Background work**: one timer, every two seconds, that checks whether a theme
+  file changed. It stops when the plugin is disabled.
+- **Reading the app's state**: it follows which chat is focused (to tell a fresh
+  draft from a conversation) and the active theme. It does not read messages.
+- **No credentials, no shell commands, no processes.**
+
+It reaches these files through the desktop app's own file bridge, because the
+plugin SDK's folder access covers neither a plugin's installed folder (where the
+pictures ship) nor the Hermes home folder (where the theme files have always
+lived).
 
 ## Credits
 
-The three photographs in `assets/` are third-party work, used under the Canva
+The three photographs in `desktop/assets/` are third-party work, used under the Canva
 free-content licence. `backwater.jpg` is a reproduction of a public-domain
 painting. None of them is covered by this repository's own licence.
 

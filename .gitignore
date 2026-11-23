@@ -4,11 +4,11 @@
 # every look, and the three Custom slots are born as designed presets that name
 # their own file (watersky.jpg, goldensky.jpg, nightsky.jpg). Anything else in
 # here is a picture for trying things out, and is not committed.
-assets/*
-!assets/backwater.jpg
-!assets/watersky.jpg
-!assets/goldensky.jpg
-!assets/nightsky.jpg
+desktop/assets/*
+!desktop/assets/backwater.jpg
+!desktop/assets/watersky.jpg
+!desktop/assets/goldensky.jpg
+!desktop/assets/nightsky.jpg
 
 # Dev tooling. The two scripts are committed as an aid to whoever changes a
 # preset palette or the look machinery; everything they generate is not, and
