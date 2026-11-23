@@ -10,7 +10,7 @@
  * and opacities) and **Custom 1**, **Custom 2** and **Custom 3** are three
  * independent records of the same knobs, kept as you leave them, each optionally
  * driven by its own hermes-atrium-theme*.json. The three Custom slots are also
- * born as designed looks of their own (Watersky, Goldensky, Nightsky, see
+ * born as designed looks of their own (Watzmann, Stalheim, Dresden, see
  * LOOK_PRESETS), so a fresh install has four finished appearances rather than
  * one and three blank ones. There is no weather, no feed and
  * no network access of any kind: nothing leaves the computer, ever.
@@ -95,7 +95,7 @@ const GROUND_THEME = 'hermes-atrium-gruvbox'
 // Resolved at startup from wherever the plugin is installed (assets/ in a
 // clone, or next to plugin.js); see resolvePluginFiles.
 let PAINTING_URL = 'data:,'
-const PAINTING_FILE = 'backwater.jpg'
+const PAINTING_FILE = 'charles-william-wyllie-the-backwater.jpg'
 
 // The one colour that is not a skin value: gruvbox's red, kept for destructive
 // actions so a delete button reads as a warning in either look. Everything
@@ -238,22 +238,76 @@ const isCustomLook = id => id !== 'gruvbox'
 //
 // The palettes are measured rather than picked by eye, against each picture's
 // own pixels, through the same compositing the reply-panel solver runs. At the
-// shipped panel dials, ink on the solved reply panel reaches 9.4:1 on Watersky,
-// 12.3:1 on Goldensky and 9.7:1 on Nightsky, and every faint tier keeps
+// shipped panel dials, ink on the solved reply panel reaches 12.1:1 on Watzmann,
+// 11.9:1 on Stalheim and 17.0:1 on Dresden, and every faint tier keeps
 // Gruvbox's hierarchy on the chrome ground: its ratio, scaled to how the look's
 // own body text compares to Gruvbox's. `npm --prefix dev run measure`
 // reproduces every one of those numbers and fails the run if a change drops
 // below them, so treat this comment as the summary and that script as the
 // source.
 //
-// The scrims are heavier than Gruvbox's 0.31 because two of these pictures are
-// bright: Watersky is a 190-250 luma wash of blue concrete, and behind the
-// reading column it measures 110 luma before the scrim. Without the scrim the
-// solved panel would be the only thing separating prose from its picture, and
-// the sidebar cards would read as lit panels rather than glass. Blur stays at 0
-// like every other look: a still picture gains nothing from a full-window
+// The three are paintings by Johan Christian Dahl, in the public domain: a light
+// look (the Watzmann's snow and pale sky), a middle one (Stalheim's storm over
+// sunlit meadow) and a dark one (Dresden by moonlight). Each is positioned to
+// show its own subject: the Watzmann from the top edge, so the peaks and sky
+// sit behind the window and the dark foreground rocks fall away; Stalheim near
+// the top, for the rainbow and the valley; Dresden from the bottom edge, for the
+// river, the bridge and the moon's reflection.
+//
+// The scrims are lighter than Gruvbox's 0.31 so the paintings keep their own
+// light; the solved reply panel carries the contrast behind prose. Watzmann has
+// none at all and lighter cards: its painting is bright, so one deep blue for
+// every surface is enough to hold the text. Dresden's edge matches its ground,
+// so its reply panels stay near-black instead of lifting over the dark picture
+// (see replyPanelTone). Blur stays
+// at 0 like every other look: a still picture gains nothing from a full-window
 // compositor pass on every scroll.
 const LOOK_PRESETS = {
+  custom: {
+    name: 'Watzmann',
+    description: 'Alpine snow, deep blue glass',
+    skin: {
+      image: 'assets/johan-christian-dahl-the-watzmann.jpg', fit: 'cover', posX: 50, posY: 0,
+      scrim: 0, card: 0.70, bubble: 0.80, page: 0.85,
+      ground: '#1c2836', deeper: '#1c2836', cardTint: '#1c2836', bubbleTint: '#1c2836',
+      edge: '#7f97b0', accent: '#eaa98f',
+      ink: '#f7f9fc', ink2: '#e2e8f0', ink3: '#cdd6e2', quiet: '#b4c0cf', ink4: '#9eabbc',
+      link: '#a8cdf0', code: '#f0c2a8', quote: '#b8d4a8'
+    }
+  },
+  custom2: {
+    name: 'Stalheim',
+    description: 'Storm and meadow, olive glass',
+    skin: {
+      image: 'assets/johan-christian-dahl-stalheim.jpg', fit: 'cover', posX: 50, posY: 20,
+      scrim: 0.26, card: 0.84, bubble: 0.80, page: 0.88,
+      ground: '#2f2b22', deeper: '#17150f', cardTint: '#3d382c', bubbleTint: '#4c4636',
+      edge: '#7a6f55', accent: '#d9b45a',
+      ink: '#f6f1e4', ink2: '#e6dcc6', ink3: '#d2c6ab', quiet: '#bfb193', ink4: '#a49a82',
+      link: '#a9c3d6', code: '#e3a98a', quote: '#b5c98a'
+    }
+  },
+  custom3: {
+    name: 'Dresden',
+    description: 'Moonlit Elbe, near-black glass',
+    skin: {
+      image: 'assets/johan-christian-dahl-view-of-dresden-by-moonlight.jpg', fit: 'cover', posX: 50, posY: 100,
+      scrim: 0.09, card: 0.55, bubble: 0.80, page: 0.80,
+      ground: '#14191f', deeper: '#0c1016', cardTint: '#14191f', bubbleTint: '#14191f',
+      edge: '#14191f', accent: '#e8b26a',
+      ink: '#eef2f7', ink2: '#d3dae4', ink3: '#bcc5d2', quiet: '#a8b3c2', ink4: '#8e9aab',
+      link: '#8fbbe6', code: '#e9a87e', quote: '#98c7b8'
+    }
+  }
+}
+// The presets earlier builds seeded the slots with, before the Dahl paintings.
+// Every install that opened a Custom slot wrote one of these into its record
+// (the theme file sync seeds it), so without this table an upgrade would keep
+// the old palette over a picture that no longer ships. A record that still
+// holds nothing but its slot's retired preset counts as untouched, and a record
+// that kept a retired picture marker gets the slot's current picture instead
+// of falling back to the shipped painting.
+const RETIRED_PRESETS = {
   custom: {
     name: 'Watersky',
     description: 'Blue concrete, cool glass',
@@ -311,13 +365,35 @@ const isRetiredSurface = (key, value) => Boolean(RETIRED_GRUVBOX_SURFACES[key]) 
 // A record whose only difference is the previous build's resolved path for our
 // own painting therefore still counts as untouched, and readLookSkin puts the
 // preset's picture back.
-const isShippedDefaults = record => Object.keys(SKIN_DEFAULTS).every(key => {
+const isShippedDefaults = (record, which) => Object.keys(SKIN_DEFAULTS).every(key => {
   if (key === 'image') return true
   const a = record[key], b = SKIN_DEFAULTS[key]
   if (a === undefined) return true
   if (typeof b === 'number') return Number(a) === b
   return String(a).toLowerCase() === String(b).toLowerCase() || isRetiredSurface(key, a)
-})
+}) || isRetiredPreset(record, which)
+
+// Whether a record holds nothing but the preset an earlier build seeded this
+// slot with. Same test as above, against the retired preset's knobs.
+const isRetiredPreset = (record, which) => {
+  const old = RETIRED_PRESETS[which]?.skin
+  if (!old || !record || typeof record !== 'object') return false
+  return Object.keys(SKIN_DEFAULTS).every(key => {
+    if (key === 'image') return true
+    const a = record[key], b = key in old ? old[key] : SKIN_DEFAULTS[key]
+    if (a === undefined) return true
+    if (typeof b === 'number') return Number(a) === b
+    return String(a).toLowerCase() === String(b).toLowerCase()
+  })
+}
+
+// A picture marker for a file that no longer ships (`assets/watersky.jpg`)
+// becomes the slot's current preset picture. Left alone it would resolve to
+// nothing and paint the Gruvbox painting under a palette chosen for another.
+const RETIRED_MARKERS = Object.values(RETIRED_PRESETS).map(p => p.skin.image.toLowerCase())
+const currentMarker = (which, image) => RETIRED_MARKERS.includes(String(image || '').replace(/\\/g, '/').toLowerCase())
+  ? (LOOK_PRESETS[which]?.skin.image || image)
+  : image
 
 // A picture that names a file in the plugin's own assets/ is resolved here, at
 // paint time, from whatever the folder scan found. Anything else (an upload, a
@@ -1232,7 +1308,14 @@ const REPLY_PAD = () => `${panel.pad}rem`
 // thicker pane of the same light. The direction is chosen ONCE (whichever way
 // the full step separates better), so a higher `edge` can never make the result
 // less separated: legibility is a hard filter, separation is what is maximised.
-const replyPanelTone = (ink, tint, samples) => {
+//
+// The light step goes toward `lift`, the look's own Edges colour, not toward
+// white. Over a dark picture the step is always upward, and toward white it
+// turned a near-black look's panels a flat grey that no colour in its palette
+// could change. Toward the edge colour the panel stays in the look's own family,
+// and a look whose edge is no lighter than its ground keeps its panels dark.
+// Ink contrast is still checked at every step, so this never costs legibility.
+const replyPanelTone = (ink, tint, samples, lift = [255, 255, 255]) => {
   // The opposite pole comes from the existing tint/ink ramp. Custom dark ink
   // needs the light end; reusing the normal dark glass would reduce contrast.
   const dark = replyContrast(ink, tint) >= REPLY_TARGET ? tint : ZF_INK.map(v => v * 0.1)
@@ -1245,11 +1328,12 @@ const replyPanelTone = (ink, tint, samples) => {
   const need = REPLY_SEPARATION()
   const stop = clampRgb(base)
   if (!legible(stop)) return replyContrast(ink, stop) >= REPLY_TARGET ? stop : [255, 255, 255]
+  const up = replyLuminance(lift) > replyLuminance(base) ? lift : base
   // One direction for the whole search: the one whose furthest reach separates
   // best. A near-black ground can only lighten, a near-white one only darken.
-  const toward = separation(clampRgb(replyComposite(base, [255, 255, 255], cap)))
+  const toward = separation(clampRgb(replyComposite(base, up, cap)))
     >= separation(clampRgb(replyComposite(base, [0, 0, 0], cap)))
-    ? [255, 255, 255] : [0, 0, 0]
+    ? up : [0, 0, 0]
   // Walk out until the edge target is met (or legibility runs out); keep the
   // last passing tone, so the result is the least step that satisfies `edge`.
   let best = { tone: stop, sep: separation(stop) }
@@ -1262,9 +1346,9 @@ const replyPanelTone = (ink, tint, samples) => {
   }
   return best.tone
 }
-const replyMaterial = (ink, tint, samples) => {
+const replyMaterial = (ink, tint, samples, lift) => {
   const before = Math.min(...samples.map(rgb => replyContrast(ink, rgb)))
-  const color = replyPanelTone(ink, tint, samples)
+  const color = replyPanelTone(ink, tint, samples, lift)
   const contrastAt = alpha => Math.min(...samples.map(rgb => replyContrast(ink, replyComposite(rgb, color, alpha))))
   // The least fill that reaches REPLY_TARGET; 0 is "the backdrop already passes".
   let solved = 0
@@ -3831,7 +3915,7 @@ export default {
         samples = pictureBackdrop(native.bounds, chromeOn.get())
       }
       if (!samples.length) samples = [hexRgb(SKIN.ground)]
-      const css = replyGroundCss(replyMaterial(ink, styled ? material.tint : native.tint, samples))
+      const css = replyGroundCss(replyMaterial(ink, styled ? material.tint : native.tint, samples, styled ? hexRgb(SKIN.edge) : undefined))
       if (!css) { sheet?.remove(); return }
       if (!sheet) {
         const el = document.createElement('style')
@@ -4004,8 +4088,9 @@ export default {
       // would appear to have done nothing. Any real edit, however small, differs
       // from the defaults and is left alone.
       const preset = presetSkin(which)
-      const untouched = !raw || typeof raw !== 'object' || isShippedDefaults(raw)
+      const untouched = !raw || typeof raw !== 'object' || isShippedDefaults(raw, which)
       const out = untouched ? { ...preset } : { ...preset, ...raw }
+      out.image = currentMarker(which, out.image)
       // Only knobs the skin still has. A retired one (`chrome`, the old Chat pane
       // opacity) would otherwise ride along in the record and be written back.
       for (const key of Object.keys(out)) if (!(key in SKIN_DEFAULTS)) delete out[key]
@@ -4054,7 +4139,7 @@ export default {
     const writeLookSkin = (which, next) => {
       const keys = SKIN_STORES[which] || SKIN_STORES.custom
       const record = { ...next }
-      // A preset picture is a marker, not a value: `assets/watersky.jpg` is
+      // A preset picture is a marker, not a value: `assets/johan-christian-dahl-stalheim.jpg` is
       // resolved at paint time, so it costs twenty bytes and belongs in the
       // record beside the other knobs, where a restart reads it back without a
       // second key to keep in step. Only a real picture (an upload, a path, a
@@ -4231,7 +4316,7 @@ export default {
     // knob whose name does not say what it paints: it is the ground under the
     // panes whose content draws none of its own (a plugin route, the Bots
     // roster, a preview), not the pages the app ships itself.
-    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path to a picture on this computer (~/Pictures/x.jpg), a shipped one (assets/goldensky.jpg), or "uploaded" to keep the picture from Settings; web addresses are ignored, because the plugin makes no network requests. Glass saturation and brightness only apply while blur is above 0. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path to a picture on this computer (~/Pictures/x.jpg), a shipped one (assets/johan-christian-dahl-stalheim.jpg), or "uploaded" to keep the picture from Settings; web addresses are ignored, because the plugin makes no network requests. Glass saturation and brightness only apply while blur is above 0. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
@@ -4288,14 +4373,14 @@ export default {
       const patch = {}
       for (const key of Object.keys(SKIN_DEFAULTS)) if (data[key] !== undefined && data[key] !== null && data[key] !== '') patch[key] = data[key]
       if (patch.image === 'uploaded' || remotePicture(patch.image)) delete patch.image
-      else if (patch.image) patch.image = pathToUrl(patch.image)
+      else if (patch.image) patch.image = currentMarker(which, pathToUrl(patch.image))
       // A file that still spells out nothing but the shipped Gruvbox defaults is
       // an untouched file the previous build wrote, not an instruction to paint
       // Gruvbox in a slot that is now a designed preset. Same rule as the stored
       // record, for the same reason: this is the other half of the same upgrade.
       // A real picture (the one under the look's own picture key) still wins,
       // because a slot someone put their own photograph in is not untouched.
-      const untouched = isShippedDefaults(data)
+      const untouched = isShippedDefaults(data, which)
       const keepPicture = STORED_PICTURE[which] ? { image: LOOK_SKINS[which].image || skin.get().image } : {}
       const next = untouched
         ? { ...presetSkin(which), ...keepPicture }
@@ -4325,7 +4410,7 @@ export default {
     // Every picture the plugin draws comes from its own `assets/` folder, and
     // nowhere else.
     //
-    // `backwater.jpg` is the one the plugin ships with, and it wins by name.
+    // `charles-william-wyllie-the-backwater.jpg` is the one the plugin ships with, and it wins by name.
     // Anything else in `assets/` is used only if that file is absent, so extra
     // images can sit there for testing without ever becoming the default.
     //
@@ -4334,7 +4419,7 @@ export default {
     // launches, or between machines, which looks like the picture randomly
     // resetting itself.
     const IMAGE_RE = /\.(?:jpe?g|png|webp|avif)$/i
-    const PICTURE_NAMES = ['backwater.jpg', 'backwater.jpeg', 'backwater.png', 'backwater.webp']
+    const PICTURE_NAMES = ['charles-william-wyllie-the-backwater.jpg', 'charles-william-wyllie-the-backwater.jpeg', 'charles-william-wyllie-the-backwater.png', 'charles-william-wyllie-the-backwater.webp']
     const pluginDirName = 'hermes-atrium'
     // The directory part of a path, keeping the native separator.
     const assetsDirOf = p => String(p || '').replace(/[\\/][^\\/]*$/, '')
@@ -4970,7 +5055,7 @@ export default {
         const presetPicture = /^assets[\\/]([^\\/]+)$/i.exec(String(activeSkin.image || ''))
         const pictureNote = ownPicture
           ? 'your own picture'
-          : presetPicture ? presetPicture[1] : 'backwater.jpg · 4096 x 2428'
+          : presetPicture ? presetPicture[1] : `${PAINTING_FILE} · 4096 x 2428`
         const status = selectedLook === 'hermes'
           ? 'Hermes appearance · Hermes Atrium appearance paused'
           : [lookNow === 'gruvbox' ? 'Gruvbox preset' : lookLabel(lookNow), pictureNote, isChrome ? 'Hermes Atrium styling' : 'Hermes styling'].join('  ·  ')
