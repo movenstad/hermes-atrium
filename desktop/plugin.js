@@ -46,7 +46,20 @@ const DIRECTIVE_AREA = 'transcript.directives'
 // its own record, so every look keeps an independent picture and palette.
 // `skin`/`skinImage` are Custom 1's, and they can never move: they are the keys
 // the first Custom preset has always written. Custom 2 and 3 are numbered.
-const STORE_KEYS = { auto: 'auto', pins: 'pins', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', collapseWork: 'collapseWork', motion: 'motion', statusDock: 'statusDock', statusDockOpen: 'statusDockOpen', statusPin: 'statusPin', shelf: 'shelf', library: 'library', libraryOpen: 'libraryOpen', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage', home: 'home', homeCard: 'homeCard', recents: 'recents' }
+const STORE_KEYS = { auto: 'auto', tint: 'tint', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', motion: 'motion', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage' }
+
+// Keys earlier builds stored and nothing reads any more. They are removed at
+// load because the app and every plugin share one local store of about 10 MB,
+// and Hermes saves its open tabs and pane layout there. Its writes fail
+// silently when the store is full, so a full store means a relaunch forgets
+// which sessions were open. The old ids are the names this plugin published
+// before (see LEGACY_THEMES); their records held whole pictures as data URLs,
+// several megabytes that no build reads. Only keys these builds are known to
+// have written are removed, never a whole prefix, so a different plugin that
+// happens to share an old id keeps its data.
+const RETIRED_KEYS = ['pins', 'collapseWork', 'statusDock', 'statusDockOpen', 'statusPin', 'shelf', 'library', 'libraryOpen', 'home', 'homeCard', 'recents', 'liveStarts', 'turnTimes', 'glassBackdrop', 'gruvboxTint']
+const LEGACY_STORE_IDS = ['atrium', 'zephyr']
+const LEGACY_STORE_KEYS = [...Object.values(STORE_KEYS), ...RETIRED_KEYS, 'away', 'hermesTheme', 'aurora', 'glSky', 'liveWeather', 'lookWeather', 'phasePin', 'previewPanels', 'quality', 'skyPhase', 'solar', 'weather']
 
 // ── Gruvbox ──────────────────────────────────────────────────────────────────
 // Dressed from gruvbox's own element table, not from "brown and orange". Every
@@ -3300,6 +3313,14 @@ export default {
     if (isTransparentHermesWindow()) return
 
     const stored = key => ctx.storage.get(key, undefined)
+
+    // Give back the space earlier builds took (see RETIRED_KEYS). The old ids
+    // are outside ctx.storage's scope, so their keys are removed by full name.
+    for (const key of RETIRED_KEYS) { try { ctx.storage.remove?.(key) } catch {} }
+    try {
+      const area = typeof window !== 'undefined' ? window.localStorage : null
+      if (area) for (const id of LEGACY_STORE_IDS) for (const key of LEGACY_STORE_KEYS) area.removeItem(`hermes.plugin.${id}.${key}`)
+    } catch { /* storage unavailable: nothing to give back */ }
 
     // the rail glyph (see "The Atrium mark")
     let iconStyle = null
