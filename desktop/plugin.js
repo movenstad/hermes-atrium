@@ -980,7 +980,10 @@ const polishCss = () => [
   // every other surface wears (--atr-glass): a plain white wash over the
   // painting reads as a different, lighter thing than the cards beside it.
   ...[
-    "html body div[data-slot='composer-surface'][data-slot][class] { background: linear-gradient(var(--atr-m-comp-a), var(--atr-m-comp-b)) !important; backdrop-filter: blur(18px) saturate(1.25) brightness(1.08) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 10px 30px rgba(0, 0, 0, 0.22) !important; }",
+    // Inset rings only. A `0 10px 30px` drop shadow here outranked the
+    // inset-only lift every other card wears and spread a dark band 30px
+    // round the bar, which read as a tinted box behind it.
+    "html body div[data-slot='composer-surface'][data-slot][class] { background: linear-gradient(var(--atr-m-comp-a), var(--atr-m-comp-b)) !important; backdrop-filter: blur(18px) saturate(1.25) brightness(1.08) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06) !important; }",
     "html body :is(.composer-human-message, [class*='composer-human-message']):not(.composer-human-message-container) { background: linear-gradient(var(--atr-m-bub-a), var(--atr-m-bub-b)) !important; box-shadow: inset 0 1px 0 rgba(var(--atr-hi), 0.07), inset 0 0 0 1px rgba(var(--atr-hi), 0.06), 0 6px 20px rgba(0, 0, 0, 0.16) !important; border-color: transparent !important; }",
   ],
   // No live backdrop blur on a full-height sheet: the frosted glass it sat
@@ -2244,6 +2247,22 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  max-width: var(--atr-col-w) !important;',
     '  --composer-width: var(--atr-col-w);',
     '}',
+    // Default margins: the host centres the composer on the whole chat zone,
+    // 1rem in from each side, while the thread's column sits 1.5rem in and
+    // stops short of its own scrollbar. So the bar stuck out past the
+    // messages, further on the right than the left. It is pinned instead to
+    // the zone's edges with the same 0.25rem inset as the Terminal tab under
+    // it, and the right inset also clears the thin scrollbar (~11px), so the
+    // bar is wider than the messages by the same amount on both sides. The
+    // 5px each side is the root's transparent grab margin around the surface.
+    "html:not([data-atr-margins='spacious']) [data-slot='composer-dock']:not([data-popped-out]):not([data-hud-shell] *) {",
+    '  left: calc(0.25rem - 5px) !important;',
+    '  right: calc(0.25rem + 11px - 5px) !important;',
+    '  width: auto !important;',
+    '  max-width: none !important;',
+    '  translate: none !important;',
+    '  transform: none !important;',
+    '}',
     "html[data-atr-margins='spacious'] [data-slot='composer-bounds'],",
     "html[data-atr-margins='spacious'] [data-slot='thread'],",
     "html[data-atr-margins='spacious'] [data-slot='aui_thread-viewport'] {",
@@ -2530,6 +2549,36 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // 0.625rem matches the right sidebar and the chat's first message.
     '[data-window-top] [data-atr-pagebody] {',
     '  margin-top: 0.625rem !important;',
+    '}',
+    // Where the window controls leave no room, the host drops a top zone's
+    // tabs to their own 28px row under the titlebar (the strip turns
+    // `absolute bottom-0`; Scheduled jobs beside the window buttons is the
+    // usual case). There the tab, not the card, is the top edge. The row is
+    // lowered 0.375rem so the tab's top lands on the same 0.625rem line as
+    // everything else, the tab is 24px so it fits the row, and the card drops
+    // by the same 0.375rem so it starts exactly where the tab ends and the
+    // two read as one piece. The sidebar's own switch strip is excluded.
+    "[data-window-top] [data-panel-header] [data-zone-tabstrip][class~='absolute']:not([data-atr-strip]) {",
+    '  bottom: -0.375rem;',
+    '  z-index: 1;',
+    '}',
+    "[data-window-top] [data-panel-header] [data-zone-tabstrip][class~='absolute']:not([data-atr-strip]) [role='tab'][data-tree-tab] {",
+    '  height: 24px !important;',
+    '  min-height: 24px !important;',
+    '}',
+    "[data-window-top]:has([data-panel-header] [data-zone-tabstrip][class~='absolute']:not([data-atr-strip])) [data-atr-pagebody] {",
+    '  margin-top: 0.375rem !important;',
+    '}',
+    // A zone minimized at the top of the window is a narrow rail the host pads
+    // down by exactly the titlebar height, so it started flush with the band.
+    // 0.375rem, not the cards' 0.625rem: with the same margin the rail's
+    // visible top landed lower than the cards beside it, so this one was
+    // matched by eye on Windows. The rail is `h-full`, so the
+    // height gives the gap back; otherwise the zone's overflow clip would cut
+    // off its bottom corners.
+    "[data-window-top] > :has(> [role='tablist'][aria-orientation='vertical']) {",
+    '  margin-top: 0.375rem !important;',
+    '  height: calc(100% - 0.375rem) !important;',
     '}',
     // Overlays (Settings, Command Center, Agents, Cron, Profiles…): a light
     // scrim so the painting stays present, and one raised glass card on it.
@@ -3298,7 +3347,18 @@ function PhaseChip({ appearance, onSelect }) {
   const selected = useValue(appearance)
   const choices = [...LOOK_IDS.map(id => [id, lookLabel(id)]), ['hermes', 'Hermes appearance']]
   return jsxs(Select, { value: selected, onValueChange: onSelect, children: [
-    jsx(SelectTrigger, { 'aria-label': 'Hermes Hermes Atrium appearance', className: 'h-7 w-auto text-xs', children: jsx(SelectValue, {}) }),
+    // 18px inside the status bar's 20px row (`h-5`). The control's default
+    // `h-7` stood 4px proud of the bar at top and bottom. Sized inline rather
+    // than by class: a plugin only gets the utilities the app's own sheet
+    // already compiled, and the app ships no 18px height class.
+    jsx(SelectTrigger, {
+      'aria-label': 'Hermes Hermes Atrium appearance',
+      className: 'w-auto text-xs',
+      // Type matches the bar's own items (0.6875rem, regular, tertiary ink)
+      // rather than the control's heavier default, so it reads as one of them.
+      style: { height: '18px', minHeight: 0, alignSelf: 'center', paddingBlock: 0, paddingInline: '6px', gap: '4px', fontSize: '0.6875rem', fontWeight: 400, color: 'var(--ui-text-tertiary)' },
+      children: jsx(SelectValue, {})
+    }),
     jsx(SelectContent, { children: choices.map(([id, label]) => jsx(SelectItem, { value: id, children: label }, id)) })
   ] })
 }
