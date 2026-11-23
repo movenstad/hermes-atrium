@@ -3392,21 +3392,33 @@ function PhaseChip({ appearance, onSelect }) {
 
 
 // ── The Atrium mark ─────────────────────────────────────────────────────────
-// An atrium is the open, day-lit room at the heart of a house: a square court
-// with a column at each corner. The glyph is that plan — four columns round an
-// open centre — which also reads as a card in a frame, the plugin's own shape.
-// Two cuts of one drawing: a one-colour glyph for the Settings rail (it rides
-// the codicon slot as a CSS mask, so it takes the rail's own colour and hover
-// states like every core icon), and the same plan stroked bare for the top of
-// the settings page.
+// An atrium is the day-lit room at the heart of a house, and what this plugin
+// does is give Hermes a view: a picture behind the app, seen through glass.
+// So the mark is an arched window on a sill with a landscape in it. Two cuts of
+// one drawing:
+//   - the rail glyph rides the codicon slot as a CSS mask, so it is one colour
+//     and takes the rail's own ink and hover states like every core icon. At
+//     16px a sun in the arch reads as an eye, so this cut has mountains only.
+//   - the header mark is drawn in currentColor, with the pane and the sun in the
+//     look's accent, so the mark changes colour with the look the way the
+//     panels do. The pane is a faint wash of the accent: the tinted glass.
+const ATRIUM_ARCH = 'M5 21V10.5a7 7 0 0 1 14 0V21'
 const ATRIUM_GLYPH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-  + '<path fill="#000" fill-opacity=".38" d="M2.6 2.6h18.8v18.8H2.6zm1.8 1.8v15.2h15.2V4.4z"/>'
-  + '<path fill="#000" d="M6.2 6.2h3.8v3.8H6.2zM14 6.2h3.8v3.8H14zM6.2 14h3.8v3.8H6.2zM14 14h3.8v3.8H14z"/>'
+  + `<defs><clipPath id="a"><path d="${ATRIUM_ARCH}z"/></clipPath></defs>`
+  + '<g clip-path="url(#a)"><path fill="#000" d="M4 21v-3.2l4.6-5.3 3.3 3.6 2.4-2.6 5.7 6.2V22H4z"/></g>'
+  + `<path fill="none" stroke="#000" stroke-width="1.9" stroke-linejoin="round" d="${ATRIUM_ARCH}"/>`
+  + '<path fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round" d="M3 21h18"/>'
   + '</svg>'
-// the same plan, stroked bare in currentColor, for the top of the settings page
 const ATRIUM_MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" style="display:block" aria-hidden="true">'
-  + '<path fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" d="M2.6 2.6h18.8v18.8H2.6z"/>'
-  + '<g fill="currentColor"><rect x="6.2" y="6.2" width="3.8" height="3.8"/><rect x="14" y="6.2" width="3.8" height="3.8"/><rect x="6.2" y="14" width="3.8" height="3.8"/><rect x="14" y="14" width="3.8" height="3.8"/></g>'
+  + `<defs><clipPath id="atr-mark-arch"><path d="${ATRIUM_ARCH}z"/></clipPath></defs>`
+  + `<path d="${ATRIUM_ARCH}z" style="fill:var(--atr-accent, currentColor)" fill-opacity=".16"/>`
+  + '<g clip-path="url(#atr-mark-arch)">'
+  + '<path fill="currentColor" fill-opacity=".45" d="M4 17.6c2.4-2.3 4.7-3 7.1-1.7 2.5 1.3 5 .5 7.9-2.3V22H4z"/>'
+  + '<path fill="currentColor" fill-opacity=".9" d="M4 20.2c3.1-1.9 6.6-2.3 10-.9 2.1.9 3.7.7 6-.5V22H4z"/>'
+  + '</g>'
+  + '<circle cx="14.4" cy="9.4" r="1.9" style="fill:var(--atr-accent, currentColor)"/>'
+  + `<path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" d="${ATRIUM_ARCH}"/>`
+  + '<path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" d="M3 21h18"/>'
   + '</svg>'
 
 const ATRIUM_ICON_CSS = [
@@ -4943,7 +4955,7 @@ export default {
           className: 'mb-6 flex items-start gap-4 rounded-[0.9rem] p-4',
           style: { background: 'var(--atr-glass-sunk, var(--ui-bg-tertiary))', boxShadow: 'var(--atr-lift, none)' },
           children: [
-            // the bare mark, in the page's own ink: no card, no shadow
+            // the bare mark, in the page's own ink with the look's accent: no card, no shadow
             jsx('div', {
               className: 'shrink-0 text-foreground',
               style: { width: '2.5rem', height: '2.5rem', flex: 'none', marginTop: '0.15rem' },
@@ -4955,9 +4967,9 @@ export default {
                 jsx('div', { className: 'text-[1.05rem] font-semibold text-foreground', children: 'Hermes Atrium' }),
                 jsx('p', {
                   className: 'mt-1 text-[0.8125rem] leading-5 text-(--ui-text-secondary)',
-                  children: 'A glossy Atrium for Hermes: a painting or a picture of your own behind the app, '
-                    + 'tints every panel to match, and gives each reply a panel of its own. It also adds wide tabs '
-                    + 'and snippet cards you can copy.'
+                  children: 'A picture behind Hermes, and glass over it. Choose the painting it ships with or a '
+                    + 'photo of your own: the panels take their colours from it, and every reply sits on a panel '
+                    + 'that keeps the text easy to read. Wide tabs and copyable snippet cards come with it.'
                 }),
                 jsx('p', { className: 'mt-2 text-[0.75rem] text-(--ui-text-tertiary)', children: `Now: ${status}` })
               ]
