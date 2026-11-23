@@ -52,14 +52,14 @@ const STORE_KEYS = { auto: 'auto', tint: 'tint', sky: 'sky', chrome: 'chrome', r
 // load because the app and every plugin share one local store of about 10 MB,
 // and Hermes saves its open tabs and pane layout there. Its writes fail
 // silently when the store is full, so a full store means a relaunch forgets
-// which sessions were open. The old ids are the names this plugin published
-// before (see LEGACY_THEMES); their records held whole pictures as data URLs,
-// several megabytes that no build reads. Only keys these builds are known to
-// have written are removed, never a whole prefix, so a different plugin that
-// happens to share an old id keeps its data.
+// which sessions were open. The old id is the name this plugin first published
+// under (see LEGACY_THEMES); its records held whole pictures as data URLs,
+// several megabytes that no build reads. Only keys that build is known to have
+// written are removed, never a whole prefix, so a different plugin that happens
+// to share the old id keeps its data.
 const RETIRED_KEYS = ['pins', 'collapseWork', 'statusDock', 'statusDockOpen', 'statusPin', 'shelf', 'library', 'libraryOpen', 'home', 'homeCard', 'recents', 'liveStarts', 'turnTimes', 'glassBackdrop', 'gruvboxTint']
-const LEGACY_STORE_IDS = ['atrium', 'zephyr']
-const LEGACY_STORE_KEYS = [...Object.values(STORE_KEYS), ...RETIRED_KEYS, 'away', 'hermesTheme', 'aurora', 'glSky', 'liveWeather', 'lookWeather', 'phasePin', 'previewPanels', 'quality', 'skyPhase', 'solar', 'weather']
+const LEGACY_STORE_IDS = ['atrium']
+const LEGACY_STORE_KEYS = [...Object.values(STORE_KEYS), ...RETIRED_KEYS, 'away', 'hermesTheme']
 
 // ── Gruvbox ──────────────────────────────────────────────────────────────────
 // Dressed from gruvbox's own element table, not from "brown and orange". Every
@@ -3123,12 +3123,12 @@ const lookPreview = (image, fallback) => {
   return url ? `center / cover url("${String(url).replace(/"/g, '%22')}")` : fallback
 }
 // Every theme name Hermes Atrium owns; anything else is the user's own pick.
-// The legacy names are the ones this plugin published before it was renamed
-// (`zephyr-sky` pre-Atrium, `atrium` in the first Atrium build). An install
-// that upgrades keeps whichever it had in the app's appearance store until the
-// next pick, so they must keep counting as ours or the plugin would park itself
-// on the first launch after a rename.
-const LEGACY_THEMES = ['zephyr-sky', 'atrium']
+// The legacy name is the one the first Atrium build published (`atrium`),
+// before the plugin took the id `hermes-atrium`. An install that upgrades
+// keeps that name in the app's appearance store until the next pick, so it must
+// keep counting as ours or the plugin would park itself on the first launch
+// after a rename.
+const LEGACY_THEMES = ['atrium']
 // Hermes paints an accent override as a derived theme named
 // `<base>-accent-<hex>` (accentedTheme in the app's themes/context.tsx), and a
 // saved accent is installed under the same name. That is still our theme with
@@ -3335,7 +3335,7 @@ export default {
     // Our own leftovers from an instance that died before registering its
     // disposer: a stale canvas or starfield is a full-screen layer at z-index
     // -1, so it would sit on top of the sheet.
-    for (const staleId of ['atr-gl-sky', 'atr-gl-sky-style', 'atr-aurora-stars', 'zephyr-sky-style', 'zephyr-chrome-base', 'zephyr-chrome-details', ...SHEET_IDS]) {
+    for (const staleId of ['atr-gl-sky', 'atr-gl-sky-style', 'atr-aurora-stars', ...SHEET_IDS]) {
       let stale = document.getElementById(staleId)
       while (stale) {
         if (stale.parentNode) stale.parentNode.removeChild(stale)

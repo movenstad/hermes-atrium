@@ -65,7 +65,7 @@ Each of these has already caused a silent failure here.
 5. **Renaming the plugin id or theme name is a migration.** The app remembers the
    last chosen theme. If the plugin stops recognising that name at launch it
    treats it as a Hermes theme and parks itself, so `isOurTheme` must keep
-   accepting every name the plugin has published (`zephyr-sky`, `atrium`, now
+   accepting every name the plugin has published (`atrium`, now
    `hermes-atrium`).
 
 6. **Stay inside the SDK surface.** The marketplace admits a desktop plugin only
