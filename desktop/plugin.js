@@ -2022,6 +2022,14 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `${STRIP_HOOK} {`,
     '  height: auto;',
     '  padding: 0 0.625rem;',
+    // The 24px switch pinned to the bottom of the 62px band starts 4px under
+    // the titlebar, but the right sidebar and the preview card start 0.625rem
+    // under it. Lowering the strip 0.375rem puts all three tops on one line. It
+    // eats into the gap above the first sidebar card, which has room to give.
+    // z-index keeps the zone body, which comes later in the DOM, from
+    // painting over the 6px that now hangs below the header.
+    '  bottom: -0.375rem;',
+    '  z-index: 1;',
     '}',
     // The history panel gives up a little floor, so a short window yields list
     // height to the switch instead of clipping it.
@@ -2031,7 +2039,12 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `${SWITCH_HOOK} > [role='tablist'] {`,
     '  position: relative;',
     '  width: 100%;',
-    '  min-height: 1.75rem;',
+    // 24px in the 28px tab row. The strip is pinned to the row's bottom, so a
+    // switch as tall as the row put its top edge flush against the titlebar
+    // band and it read as part of the window chrome. The 4px left over is the
+    // gap between the two.
+    '  height: 1.5rem;',
+    '  min-height: 0;',
     '  margin-inline: auto;',
     // No inset at all: the pill covers a whole half of the track, edge to edge,
     // so the switch has no uncovered sliver at either end.
@@ -2075,6 +2088,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'] {`,
     '  flex: 1 1 0;',
     '  min-width: 0;',
+    '  height: 100%;',
+    '  min-height: 0;',
     '  position: relative;',
     '  z-index: 1;',
     '  margin: 0;',
@@ -2507,6 +2522,15 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  box-shadow: var(--atr-lift) !important;',
     '  box-sizing: border-box !important;',
     '}',
+    // A zone at the top of the window carries its tabs in the titlebar band,
+    // and its body starts right at the band's lower edge, 2px under the
+    // active tab. The card and the tab ran together and the card read as
+    // reaching into the titlebar. The body is a flex child, so the margin
+    // takes height off the card rather than pushing it past the bottom.
+    // 0.625rem matches the right sidebar and the chat's first message.
+    '[data-window-top] [data-atr-pagebody] {',
+    '  margin-top: 0.625rem !important;',
+    '}',
     // Overlays (Settings, Command Center, Agents, Cron, Profiles…): a light
     // scrim so the painting stays present, and one raised glass card on it.
     '[data-overlay-surface] {',
@@ -2529,9 +2553,29 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     // The right sidebar (files, review, terminal host) matches the left column.
     "aside[class*='bg-(--ui-sidebar-surface-background)'][class*='pt-(--titlebar-height)'] {",
+    // The host makes this a full-height slab whose padding covers the titlebar,
+    // so the glass ran up behind the window controls and met the window edges
+    // square. It becomes a card like the left column's instead: it starts under
+    // the titlebar band with the same 0.625rem gap as the preview card and the
+    // chat's first message, so the three tops line up. It keeps a 0.5rem gap
+    // to the window edge, runs to the bottom of its slot so it ends level with
+    // the preview pane beside it, and wears the cards' radius. The 0.375rem
+    // inside is the same gap the host leaves under the titlebar in the left
+    // sidebar.
+    '  box-sizing: border-box;',
+    '  margin-top: calc(var(--titlebar-height, 0px) + 0.625rem) !important;',
+    '  height: calc(100% - var(--titlebar-height, 0px) - 0.625rem) !important;',
+    '  width: calc(100% - 0.5rem) !important;',
+    '  padding-top: 0.375rem !important;',
+    '  border-radius: var(--atr-radius) !important;',
+    '  border: 1px solid var(--atr-edge) !important;',
     '  background: var(--atr-glass) !important;',
-    '  border-color: var(--atr-edge) !important;',
     '  box-shadow: none !important;',
+    '}',
+    // The gap goes on the window side: the right edge normally, the left when
+    // the user has flipped the panes (the host swaps border-l for border-r).
+    "aside[class*='bg-(--ui-sidebar-surface-background)'][class*='pt-(--titlebar-height)'][class~='border-r'] {",
+    '  margin-left: 0.5rem !important;',
     '}',
     // Persistent frost off. Hermes ships backdrop-blur on the composer surface
     // and the status-stack cards (composerSurfaceGlass, 0.75rem) plus a few
