@@ -18,7 +18,7 @@ placed there loads nothing.
 
 It ships a Gruvbox preset and three independent Custom slots, each with its own
 record and theme file. The Custom slots are born as designed looks of their own
-(Watersky, Goldensky, Nightsky, seeded from `LOOK_PRESETS`), so a fresh install
+(Watzmann, Stalheim, Dresden, seeded from `LOOK_PRESETS`), so a fresh install
 has four finished appearances. It paints a picture from its `assets/` behind the
 window, and solves a readable panel tone per reply. It makes no network requests.
 
@@ -166,12 +166,13 @@ preset, or the old upload wins on the next read.
 `--atr-*` custom properties, `.atr-*` classes, `data-atr-*` attributes, `atr-*`
 ids. Check the prefix is unused by the host before introducing a new one.
 
-**Adding a picture.** Drop it in `desktop/assets/`. `backwater.jpg` is the
+**Adding a picture.** Drop it in `desktop/assets/`. `charles-william-wyllie-the-backwater.jpg` is the
 default and wins by name; any other image is used only when it is absent, and the
 fallback picks in sorted order so the choice cannot drift between launches.
 
-Four pictures are committed: `backwater.jpg` plus the three the Custom presets
-name (`watersky.jpg`, `goldensky.jpg`, `nightsky.jpg`). The rest are gitignored
+Four pictures are committed: `charles-william-wyllie-the-backwater.jpg` plus the three the Custom presets
+name (`johan-christian-dahl-the-watzmann.jpg`, `johan-christian-dahl-stalheim.jpg`,
+`johan-christian-dahl-view-of-dresden-by-moonlight.jpg`). The rest are gitignored
 for testing, so a new shipped picture needs a `!desktop/assets/<file>` line in
 `.gitignore` and a credit in the README with a licence that allows
 redistribution. Keep the shipped ones as sized JPEGs, a few hundred KB to a few

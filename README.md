@@ -10,8 +10,9 @@ One look, two ways: the already present Gruvbox preset, and three Custom slots o
 - **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
   colours. Each slot keeps its own picture, palette and opacities, so three
   setups can sit ready and be switched from the status bar. They also arrive
-  finished: **Watersky**, **Goldensky** and **Nightsky** are three designed
-  looks over the pictures below, and you can change any of it.
+  finished: **Watzmann**, **Stalheim** and **Dresden** are three designed
+  looks over public-domain paintings by Johan Christian Dahl (a light, a middle
+  and a dark one), and you can change any of it.
 
 **No network access of any kind**. Nothing in
 this plugin leaves your computer. What it does read and write on your computer
@@ -35,10 +36,10 @@ hermes-atrium/
 └── desktop/
     ├── plugin.js
     └── assets/
-        ├── backwater.jpg
-        ├── watersky.jpg
-        ├── goldensky.jpg
-        └── nightsky.jpg
+        ├── charles-william-wyllie-the-backwater.jpg
+        ├── johan-christian-dahl-the-watzmann.jpg
+        ├── johan-christian-dahl-stalheim.jpg
+        └── johan-christian-dahl-view-of-dresden-by-moonlight.jpg
 ```
 
 Hermes copies `desktop/` into its desktop-plugins folder as
@@ -53,17 +54,17 @@ re-copies `desktop/` when it changes, and the app reloads the plugin.
 Every picture comes from `desktop/assets/` (`assets/` once installed), and only
 from there:
 
-- `backwater.jpg` is the painting the theme ships with, and it wins by name. It
+- `charles-william-wyllie-the-backwater.jpg` is the painting the theme ships with, and it wins by name. It
   is what Gruvbox paints, and what any look falls back to.
-- `watersky.jpg`, `goldensky.jpg` and `nightsky.jpg` are the three Custom
-  presets' pictures. Each is named by its slot rather than picked by order, so a
+- `johan-christian-dahl-the-watzmann.jpg`, `johan-christian-dahl-stalheim.jpg` and
+  `johan-christian-dahl-view-of-dresden-by-moonlight.jpg` are the three Custom presets' pictures. Each is named by its slot rather than picked by order, so a
   slot keeps its picture even when you add files to the folder.
 - Any other image dropped in the assets folder is used only if those files are missing,
   so the folder can hold test pictures without them becoming the default (`.jpg`,
   `.png`, `.webp`, `.avif`). Those four are committed; the rest are ignored by
   git.
 - A picture sitting next to `plugin.js`, or in another plugin's folder, is
-  never picked up, and no other plugin's folder is opened to look. A slot whose picture has gone falls back to `backwater.jpg`
+  never picked up, and no other plugin's folder is opened to look. A slot whose picture has gone falls back to `charles-william-wyllie-the-backwater.jpg`
   rather than painting nothing.
 
 
@@ -118,13 +119,16 @@ Each one arrives as a designed look rather than an empty slot:
 
 | Look | Starts as | Picture | Reads as |
 | --- | --- | --- | --- |
-| Custom 1 | Watersky | `watersky.jpg` | Pale blue concrete behind cool navy glass, sky blue accent |
-| Custom 2 | Goldensky | `goldensky.jpg` | Dusk clouds behind warm plum-brown glass, apricot accent |
-| Custom 3 | Nightsky | `nightsky.jpg` | A starfield behind indigo glass, warm gold accent |
+| Custom 1 | Watzmann | `johan-christian-dahl-the-watzmann.jpg` | Snow peaks and pale sky behind clear, deep blue glass, alpenglow accent |
+| Custom 2 | Stalheim | `johan-christian-dahl-stalheim.jpg` | A storm and a rainbow over sunlit meadows behind olive-brown glass, gold accent |
+| Custom 3 | Dresden | `johan-christian-dahl-view-of-dresden-by-moonlight.jpg` | The Elbe by moonlight behind near-black glass, lantern amber accent |
 
 Every value is still yours to change, and **Reset look** returns a slot to the look
 it started as. A slot that already holds values of its own is left alone by an
-upgrade, so a picture you chose survives.
+upgrade, so a picture you chose survives. Earlier versions shipped three photo
+presets (Watersky, Goldensky, Nightsky). A slot still holding one of those
+unchanged moves to the new painting's look; a slot you edited keeps your
+colours, and only its retired picture is swapped for the slot's new painting.
 
 Each look also has its own editable file in your Hermes home folder, the one
 that holds `desktop-plugins`:
@@ -186,22 +190,23 @@ lived).
 
 ## Credits
 
-The three photographs in `desktop/assets/` are third-party work, used under the Canva
-free-content licence. `backwater.jpg` is a reproduction of a public-domain
+Every picture in `desktop/assets/` is a reproduction of a public-domain
 painting. None of them is covered by this repository's own licence.
 
 | File | Used by | Artist | Source |
 | --- | --- | --- | --- |
-| `watersky.jpg` | Custom 1, Watersky | Kseniya Lapteva, via Pexels | [Canva](https://www.canva.com/photos/MAEn9AE87zQ-close-up-shot-of-a-blue-concrete-wall/) |
-| `goldensky.jpg` | Custom 2, Goldensky | Pozhidaeva, via Pixabay | [Canva](https://www.canva.com/photos/MAFONKRvWLM/) |
-| `nightsky.jpg` | Custom 3, Nightsky | StockSnap, via Pixabay | [Canva](https://www.canva.com/photos/MADQ5BgDQLU-starry-night-sky/) |
-| `backwater.jpg` | Gruvbox, and every fallback | Charles William Wyllie, *The Backwater* | [WikiArt](https://www.wikiart.org/en/charles-william-wyllie/the-backwater) |
+| `johan-christian-dahl-the-watzmann.jpg` | Custom 1, Watzmann | Johan Christian Dahl, *The Watzmann* (1825) | [WikiArt](https://www.wikiart.org/en/johan-christian-dahl/der-watzmann-1825) |
+| `johan-christian-dahl-stalheim.jpg` | Custom 2, Stalheim | Johan Christian Dahl, *Stalheim* (1842) | [WikiArt](https://www.wikiart.org/en/johan-christian-dahl/stalheim-1842) |
+| `johan-christian-dahl-view-of-dresden-by-moonlight.jpg` | Custom 3, Dresden | Johan Christian Dahl, *View of Dresden by Moonlight* | [WikiArt](https://www.wikiart.org/en/johan-christian-dahl/view-of-dresden-by-moonlight) |
+| `charles-william-wyllie-the-backwater.jpg` | Gruvbox, and every fallback | Charles William Wyllie, *The Backwater* | [WikiArt](https://www.wikiart.org/en/charles-william-wyllie/the-backwater) |
 
-`backwater.jpg` is a photograph of a painting rather than a scan. The three
-`Canva` pictures are also copies rather than originals: each was resized to 3200
-pixels wide and re-encoded as a JPEG so the repository stays a sane size.
+All four are public-domain paintings: Wyllie died in 1923 and Dahl in 1857, so
+their work is out of copyright everywhere. The three Dahl pictures are kept at
+the resolution they were downloaded at (4096 to 5532 pixels wide, 1.5 to 5.1 MB
+each).
 
-Each preset's design leans on its own photograph: the palette, scrim and glass
+Each preset's design leans on its own painting: the palette, scrim and glass
 weights were measured against that picture's pixels rather than chosen in the
-abstract. `watersky.jpg` is the blue concrete wash, `goldensky.jpg` the dusk
-sky, `nightsky.jpg` the starfield over the treeline.
+abstract. Each is also framed to its subject: the Watzmann from its top edge
+(peaks and sky), Stalheim near the top (the rainbow and valley), Dresden from
+its bottom edge (the river and the moon's reflection).
