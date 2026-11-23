@@ -383,6 +383,24 @@ async function main() {
   check('upgrade keeps a real edit', upgraded.r3?.ground === '#101820' && upgraded.r3?.accent === '#ff8800', `${upgraded.r3?.ground} ${upgraded.r3?.accent}`)
   check('upgrade keeps the edited slot\'s own picture', String(upgraded.r3?.image || '').endsWith('backwater.jpg'), String(upgraded.r3?.image))
 
+  // Gruvbox moves from the old green surfaces to gruvbox's own greys, but only
+  // where a surface was still at the old default.
+  await view.evaluate(rec => {
+    localStorage.setItem('hermes.plugin.hermes-atrium.gruvboxSkin', JSON.stringify(rec))
+    localStorage.setItem('hermes.plugin.hermes-atrium.look', JSON.stringify('gruvbox'))
+  }, { ...prevDefault, blur: 5, edge: '#123456' })
+  await open()
+  const gruv = await view.evaluate(() => {
+    const base = document.getElementById('atr-chrome-base')?.textContent || ''
+    const g = /--theme-neutral-chrome: rgba\((\d+), (\d+), (\d+)/.exec(base)
+    return {
+      rec: JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.gruvboxSkin') || 'null'),
+      painted: g ? '#' + [g[1], g[2], g[3]].map(v => Number(v).toString(16).padStart(2, '0')).join('') : null
+    }
+  })
+  check('Gruvbox upgrade takes the real gruvbox ground', gruv.rec?.ground === '#282828' && gruv.rec?.deeper === '#1d2021' && gruv.painted === '#282828', `${gruv.rec?.ground} ${gruv.rec?.deeper} painted ${gruv.painted}`)
+  check('Gruvbox upgrade keeps a chosen surface and other knobs', gruv.rec?.edge === '#123456' && Number(gruv.rec?.blur) === 5, `${gruv.rec?.edge} blur ${gruv.rec?.blur}`)
+
   // Screenshots from clean storage, for a human eye. The page is http and the
   // sheet names file:// urls, so those are pointed at the server for the shot
   // only; this changes nothing the assertions above read.

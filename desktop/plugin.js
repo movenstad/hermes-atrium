@@ -137,11 +137,16 @@ const SKIN_DEFAULTS = {
   // about 0.90 it is a panel you can see the painting through; above about
   // 0.94 it is a slab. It starts at the tier the host itself uses.
   page: 0.86,
-  ground: '#16261e',
-  deeper: '#0c1612',
-  cardTint: '#1d3328',
-  bubbleTint: '#2b4636',
-  edge: '#4f7360',
+  // The surfaces are gruvbox's own dark backgrounds (morhetz/gruvbox, medium
+  // contrast): bg0 for the reading ground, bg0_h for the sidebar and the
+  // deepest fills, bg1 for cards, bg2 for your messages (Pmenu) and bg3 for
+  // edges and selection (VertSplit, Visual). Earlier builds shipped a green
+  // set here instead; see RETIRED_GRUVBOX_SURFACES.
+  ground: '#282828',
+  deeper: '#1d2021',
+  cardTint: '#3c3836',
+  bubbleTint: '#504945',
+  edge: '#665c54',
   accent: '#fe8019',
   ink: '#fbf1c7',
   ink2: '#ebdbb2',
@@ -291,6 +296,14 @@ const LOOK_PRESETS = {
 // record all agree on what "before you touched it" means.
 const presetSkin = which => ({ ...SKIN_DEFAULTS, ...(LOOK_PRESETS[which]?.skin || {}) })
 
+// The surfaces earlier builds shipped as Gruvbox: a green tinted from the
+// painting, not gruvbox's own greys. Records written by those builds still hold
+// them. They count as shipped defaults (so an untouched Custom slot is still
+// recognised), and in the Gruvbox look a surface still at one of these values is
+// moved to the real gruvbox colour, while a surface you changed stays yours.
+const RETIRED_GRUVBOX_SURFACES = { ground: '#16261e', deeper: '#0c1612', cardTint: '#1d3328', bubbleTint: '#2b4636', edge: '#4f7360' }
+const isRetiredSurface = (key, value) => Boolean(RETIRED_GRUVBOX_SURFACES[key]) && String(value).toLowerCase() === RETIRED_GRUVBOX_SURFACES[key]
+
 // Whether a stored Custom record holds nothing but the shipped Gruvbox defaults,
 // which is what the previous build wrote the first time any knob moved. Only the
 // knobs are judged: `image` lives under its own per-look key, so a picture the
@@ -303,7 +316,7 @@ const isShippedDefaults = record => Object.keys(SKIN_DEFAULTS).every(key => {
   const a = record[key], b = SKIN_DEFAULTS[key]
   if (a === undefined) return true
   if (typeof b === 'number') return Number(a) === b
-  return String(a) === String(b)
+  return String(a).toLowerCase() === String(b).toLowerCase() || isRetiredSurface(key, a)
 })
 
 // A picture that names a file in the plugin's own assets/ is resolved here, at
@@ -631,12 +644,12 @@ const SESSION_TAB_CSS = [
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 48%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #282828) 48%, transparent) !important;',
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #16261e) 68%, transparent) !important;',
+  '  background: color-mix(in srgb, var(--atr-tint, #282828) 68%, transparent) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .uppercase {",
@@ -1531,7 +1544,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
   const sections = [[
     ...(backdrop ? [
     'html {',
-    `  background-color: #1d2021;`,
+    // Under the picture, and all that shows while it loads: the look's own
+    // deepest ground, not one look's colour for all of them.
+    `  background-color: ${SKIN.deeper};`,
     '}',
     // The app's own ground is `body { background: var(--ui-chat-surface-background) }`,
     // and that chrome colour is a color-mix whose second input is an OPAQUE
@@ -3994,6 +4009,15 @@ export default {
       // Only knobs the skin still has. A retired one (`chrome`, the old Chat pane
       // opacity) would otherwise ride along in the record and be written back.
       for (const key of Object.keys(out)) if (!(key in SKIN_DEFAULTS)) delete out[key]
+      // Gruvbox's surfaces move from the old green to gruvbox's own greys, one
+      // key at a time, so a surface someone chose is left alone.
+      if (which === 'gruvbox' && raw && typeof raw === 'object') {
+        const moved = Object.keys(RETIRED_GRUVBOX_SURFACES).filter(key => isRetiredSurface(key, raw[key]))
+        if (moved.length) {
+          for (const key of moved) out[key] = SKIN_DEFAULTS[key]
+          ctx.storage.set(keys.object, { ...raw, ...Object.fromEntries(moved.map(key => [key, SKIN_DEFAULTS[key]])) })
+        }
+      }
       const picture = stored(keys.image)
       if (typeof picture === 'string' && picture.length > 32) {
         out.image = picture
