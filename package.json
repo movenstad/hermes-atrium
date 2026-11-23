@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Hermes Atrium: a painting or your own picture behind Hermes, with a panel behind every reply.",
   "scripts": {
-    "check": "node --check plugin.js"
+    "check": "node --check desktop/plugin.js"
   },
   "license": "MIT"
 }

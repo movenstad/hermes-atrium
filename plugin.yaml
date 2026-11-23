@@ -3,7 +3,7 @@ manifest_version: 2
 version: "1.0.0"
 description: "A painting or your own picture behind Hermes, tinted glass over it, and a panel behind every reply"
 license: "MIT"
-requires_hermes: ">=0.21.3"
+requires_hermes: ">=0.23.3"
 tags:
   - desktop
   - themes

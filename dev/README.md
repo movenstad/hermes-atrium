@@ -1,8 +1,8 @@
 # dev/
 
 Two local tools for the parts of this plugin that cannot be checked by reading
-the code. Neither is part of the plugin: the app loads `plugin.js` and
-`assets/`, nothing here. They live in the repo because both were written twice
+the code. Neither is part of the plugin: the app loads `desktop/plugin.js` and
+`desktop/assets/`, nothing here. They live in the repo because both were written twice
 already, and the second time is where the arithmetic slips.
 
 ```
