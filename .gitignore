@@ -16,3 +16,12 @@ desktop/assets/*
 dev/.work/
 dev/node_modules/
 dev/package-lock.json
+
+# Local and agent files. Secrets and per-machine tool settings never belong in
+# the repository; these are listed here rather than only in a local exclude so
+# a fresh clone or a new worktree is covered too.
+.env
+.env.*
+*.pem
+*.key
+.claude/
