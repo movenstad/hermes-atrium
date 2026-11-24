@@ -3737,7 +3737,7 @@ function isTransparentHermesWindow(search = typeof location !== 'undefined' ? lo
 export default {
   id: 'hermes-atrium',
   name: 'Hermes Atrium',
-  description: 'A painting or your own picture behind Hermes, tinted glass over it, reply panels, snippet cards and calmer chat.',
+  description: 'Customizable themes for Hermes: a painting or your own picture behind the app, tinted glass surfaces, reply panels and calmer chat.',
 
   register(ctx) {
     // Hermes's transparent helper windows (the popped-out pet, the HUD, quick
@@ -5347,9 +5347,9 @@ export default {
                 jsx('div', { className: 'text-[1.05rem] font-semibold text-foreground', children: 'Hermes Atrium' }),
                 jsx('p', {
                   className: 'mt-1 text-[0.8125rem] leading-5 text-(--ui-text-secondary)',
-                  children: 'A picture behind Hermes, and glass over it. Choose the painting it ships with or a '
-                    + 'photo of your own: the panels take their colours from it, and every reply sits on a panel '
-                    + 'that keeps the text easy to read. Wide tabs and copyable snippet cards come with it.'
+                  children: 'Customizable themes for Hermes. Choose the painting it ships with or a '
+                    + 'photo of your own: the sidebar, cards and composer turn into tinted glass, and every reply '
+                    + 'sits on a panel that keeps the text easy to read.'
                 }),
                 jsx('p', { className: 'mt-2 text-[0.75rem] text-(--ui-text-tertiary)', children: `Now: ${status}` })
               ]
