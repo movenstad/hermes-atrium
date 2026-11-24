@@ -31,7 +31,9 @@ that touches the app.
 - **Ask before committing or pushing.** Stage and show the diff first.
 - Don't reformat or rename regions you aren't changing. The file is big enough
   that a wide diff is expensive to review.
-- Don't commit generated output, screenshots or test scaffolding.
+- Don't commit generated output, screenshots or test scaffolding. The one
+  exception is `docs/images/`, which holds the README's pictures as sized JPEGs
+  or PNGs (a few hundred KB each).
 
 ## Marketplace compliance
 
