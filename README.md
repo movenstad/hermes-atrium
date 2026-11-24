@@ -100,8 +100,8 @@ the first message fades it back.
 | Level | What it does in a conversation |
 | --- | --- |
 | Off | Nothing. The picture looks the same as everywhere else. |
-| Soft | A light blur, slightly less colour, slightly darker. The default. |
-| Medium | A stronger blur, quieter colour, darker. |
+| Soft | A light blur, slightly less colour, slightly darker. |
+| Medium | A stronger blur, quieter colour, darker. The default. |
 | Strong | A heavy blur and muted colour, darkest behind the reading column. |
 | Solid | Strong, and every reply sits on an opaque panel. |
 
