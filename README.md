@@ -3,16 +3,15 @@
 A desktop plugin for Hermes Agent. It puts a painting, or any picture you
 choose, behind the app. It lays tinted glass over it.
 
-One look, two ways: the already present Gruvbox preset, and three Custom slots of your own looks.
+The presets:
 
-- **Gruvbox**: a landscape behind glass in the gruvbox dark palette: its warm
-  greys for the panels, its cream text tiers and its orange accent.
-- **Custom 1, 2 and 3**: the same machinery driven by your own pictures and
-  colours. Each slot keeps its own picture, palette and opacities, so three
-  setups can sit ready and be switched from the status bar. They also arrive
-  finished: **Watzmann**, **Stalheim** and **Dresden** are three designed
-  looks over public-domain paintings by Johan Christian Dahl (a light, a middle
-  and a dark one), and you can change any of it.
+- **Gruvbox**: The backwater by Charles William Wyllie with the gruvbox colors for text and the rest.
+- **Custom 1, 2 and 3**: Each slot keeps its own picture, palette and opacities,
+  so three setups can be switched from the bottom status bar. They also arrive
+  "finished": **Watzmann**, **Stalheim** and **Dresden** are three designed
+  looks over public-domain paintings by Johan Christian Dahl and you can change any of it.
+
+In practice every preset can be changed to what you want.
 
 **No network access of any kind**. Nothing in
 this plugin leaves your computer. What it does read and write on your computer
@@ -80,7 +79,7 @@ other looks keep their own values. Every slider shows its value beside it.
 | Opacity | How much of the picture the sidebar, cards, your messages and pages let through. |
 | Colours | The palette in three groups: surfaces, text, and prose and accent. Folded by default. |
 | Reply panels | The panel behind every reply, with its five dials under **Tune panel**. |
-| Layout & motion | Spacious margins and app animations. |
+| Layout & motion | Reading focus, spacious margins and app animations. |
 
 Glass saturation and Glass brightness sit under Glass blur and are greyed out
 while blur is 0. They filter the blurred layer, which is only drawn when there
@@ -89,6 +88,27 @@ is a blur to draw.
 The picture's path box takes a file on your computer (`~/Pictures/x.jpg`) and
 applies it when you press Enter or leave the box. A web address is refused,
 because the plugin makes no network requests.
+
+## Reading focus
+
+**Settings --> Hermes Atrium --> Layout & motion --> Reading focus** calms the
+picture behind a conversation, for anyone who finds a painting too detailed to
+read over. It applies to every look, and only while a chat is open: a fresh
+draft, or a new session tab with no messages yet, keeps the picture sharp, and
+the first message fades it back.
+
+| Level | What it does in a conversation |
+| --- | --- |
+| Off | Nothing. The picture looks the same as everywhere else. |
+| Soft | A light blur, slightly less colour, slightly darker. |
+| Medium | A stronger blur, quieter colour, darker. The default. |
+| Strong | A heavy blur and muted colour, darkest behind the reading column. |
+| Solid | Strong, and every reply sits on an opaque panel. |
+
+Blur alone leaves the colour and contrast that make a picture busy, so every
+level also lowers both. The blurred picture is made once, when the look or the
+level changes, so it costs nothing while you scroll. A look's own Glass blur
+still works, and Reading focus uses whichever blur is stronger.
 
 ## Reply panels
 
@@ -177,10 +197,16 @@ the full list of what Atrium does outside drawing the window.
   it, and nothing else is done with it.
 - **Pictures you upload**: kept in the app's local storage, under this plugin's
   own keys, together with your settings and the three looks.
+- **The blurred picture Reading focus paints**: made in memory from the look's
+  picture, a few tens of kilobytes, and never stored. Only the chosen level is
+  saved.
 - **Background work**: one timer, every two seconds, that checks whether a theme
   file changed. It stops when the plugin is disabled.
 - **Reading the app's state**: it follows which chat is focused (to tell a fresh
-  draft from a conversation) and the active theme. It does not read messages.
+  draft from a conversation) and the active theme. It also adds an empty,
+  invisible entry to Hermes's empty-chat slot, which tells it when the focused
+  session has no messages yet; it waits a moment (150 ms) before acting on that,
+  so a chat that is still loading does not flicker. It does not read messages.
 - **No credentials, no shell commands, no processes.**
 
 It reaches these files through the desktop app's own file bridge, because the

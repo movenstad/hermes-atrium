@@ -8,6 +8,8 @@
 // filter runs when it is not zero, and the reply-panel solver then picks a tone
 // and an alpha from the samples it finds behind the reading column. Printing
 // that chain is the only way to know whether a palette clears AA on a picture,
+// and every Reading focus level is run through it too, because each one changes
+// the backdrop the panel is solved against
 // because a colour that looks fine on a swatch still lands under 4.5:1 once the
 // glass is over it.
 //
@@ -88,8 +90,10 @@ async function pictureGrid(chrome, file) {
 
 // ── pictureBackdrop, mirrored ───────────────────────────────────────────────
 // Returns the single mean sample the plugin's solver sees behind the reading
-// column, which is what the panel tone and alpha are solved from.
-function backdropSample(source, skin) {
+// column, which is what the panel tone and alpha are solved from. `focus` is a
+// READING_FOCUS level, measured in a conversation with its blurred copy made
+// (the normal path); chatGlass in plugin.js folds the look's own glass into it.
+function backdropSample(source, skin, focus = null) {
   const deeper = hexRgb(skin.deeper)
   const scrim = Number.isFinite(Number(skin.scrim)) ? Number(skin.scrim) : 0.31
   const posX = Number.isFinite(Number(skin.posX)) ? Number(skin.posX) : 46
@@ -99,8 +103,14 @@ function backdropSample(source, skin) {
   const offsetX = (W - drawnW) * posX / 100, offsetY = (H - drawnH) * posY / 100
   const left = (W - Math.min(W, 736)) / 2, right = (W + Math.min(W, 736)) / 2
   const blur = Number(skin.blur) || 0
-  const saturate = Number.isFinite(Number(skin.saturate)) ? Number(skin.saturate) : 1.3
-  const brightness = Number.isFinite(Number(skin.brightness)) ? Number(skin.brightness) : 0.9
+  const look = blur > 0
+  const on = Boolean(focus) && (focus.blur > 0 || focus.scrim > 0 || focus.band > 0 || focus.saturate !== 1 || focus.brightness !== 1)
+  const saturate = (look ? (Number.isFinite(Number(skin.saturate)) ? Number(skin.saturate) : 1.3) : 1) * (on ? focus.saturate : 1)
+  const brightness = (look ? (Number.isFinite(Number(skin.brightness)) ? Number(skin.brightness) : 0.9) : 1) * (on ? focus.brightness : 1)
+  const filter = rgb => {
+    const luma = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
+    return rgb.map(v => Math.max(0, Math.min(255, (luma + (v - luma) * saturate) * brightness)))
+  }
   const samples = []
   for (let y = 0; y < GRID; y += 1) {
     for (let x = 0; x < GRID; x += 1) {
@@ -114,15 +124,19 @@ function backdropSample(source, skin) {
         const k = (Math.floor(iy) * source.gridWidth + Math.floor(ix)) * 4
         rgb = [source.data[k], source.data[k + 1], source.data[k + 2]]
       }
+      // Reading focus's blurred copy carries the filter under the scrims; the
+      // look's live glass filter applies it over them.
+      if (on) rgb = filter(rgb)
       const f = falloffAt(sx, sy)
       rgb = blend(rgb, deeper, Math.min(1, 1 - (1 - scrim * f) * (1 - scrim * 0.70)))
-      // html[data-atr-chat]::after only exists when there is a blur to apply
-      if (blur > 0) {
-        const luma = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
-        rgb = rgb.map(v => Math.max(0, Math.min(255, (luma + (v - luma) * saturate) * brightness)))
+      // html[data-atr-chat]::after only exists when there is something to apply
+      if (look && !on) rgb = filter(rgb)
+      if (look) {
         const afterRadius = Math.hypot((sx / W - 0.5) / 1.2, (sy / H - 0.4) / 0.9)
         rgb = blend(rgb, deeper, scrim * (0.45 + 0.50 * Math.min(1, afterRadius)))
       }
+      if (on && focus.scrim > 0) rgb = blend(rgb, deeper, focus.scrim)
+      if (on && focus.band > 0) rgb = blend(rgb, deeper, focus.band)
       samples.push(rgb)
     }
   }
@@ -170,6 +184,17 @@ function replyMaterial(ink, tint, samples, dials, lift) {
   }
   const max = Math.max(dials.solid, dials.max)
   return { alpha: Math.min(max, Math.max(dials.solid, solved)), color, before, after: at(Math.min(max, Math.max(dials.solid, solved))) }
+}
+
+// The reply panel at one Reading focus level: the backdrop it is solved
+// against, and Solid's opaque floor, as syncPanel applies it.
+function panelAt(skin, source, panelDials, focus) {
+  const ink = hexRgb(skin.ink)
+  const dials = focus?.solid ? { ...panelDials, solid: 1, max: 1 } : panelDials
+  const samples = backdropSample(source, skin, focus)
+  const material = replyMaterial(ink, hexRgb(skin.ground), samples, dials, hexRgb(skin.edge))
+  const grounds = samples.map(s => composite(s, material.color, material.alpha))
+  return { ratio: Math.min(...grounds.map(g => contrast(ink, g))), alpha: material.alpha }
 }
 
 // ── the surfaces a palette actually paints ──────────────────────────────────
@@ -272,7 +297,7 @@ const num = v => (v ?? 0).toFixed(2)
 async function main() {
   const only = process.argv[2]
   const { findChrome } = await import('./lib/preset.mjs')
-  const { LOOK_PRESETS, SKIN_DEFAULTS, PANEL_DEFAULTS } = await readTables()
+  const { LOOK_PRESETS, SKIN_DEFAULTS, PANEL_DEFAULTS, READING_FOCUS } = await readTables()
   const chrome = await findChrome()
 
   // Gruvbox is the baseline every other look is judged against.
@@ -295,7 +320,8 @@ async function main() {
       continue
     }
     const source = await pictureGrid(chrome, file)
-    rows.push({ ...look, file: path.basename(file), m: measure(look.skin, source, PANEL_DEFAULTS) })
+    const focus = Object.fromEntries(Object.entries(READING_FOCUS).map(([level, f]) => [level, panelAt(look.skin, source, PANEL_DEFAULTS, f)]))
+    rows.push({ ...look, file: path.basename(file), m: measure(look.skin, source, PANEL_DEFAULTS), focus })
   }
 
   const base = rows.find(r => r.id === 'gruvbox')?.m
@@ -310,6 +336,12 @@ async function main() {
   console.log(`${pad('look', 12)}${TIER_NAMES.map(t => pad(t, 12)).join('')}`)
   for (const r of rows) console.log(`${pad(r.label, 12)}${TIER_NAMES.map(t => pad(base ? `${num(r.m.tiers[t])}/${num(tierBar(base, r.m, t))}` : num(r.m.tiers[t]), 12)).join('')}`)
 
+  const levels = Object.keys(READING_FOCUS)
+  console.log(`
+Ink on the reply panel at each Reading focus level, in a conversation, as ratio (panel alpha)`)
+  console.log(`${pad('look', 12)}${levels.map(l => pad(l, 14)).join('')}`)
+  for (const r of rows) console.log(`${pad(r.label, 12)}${levels.map(l => pad(`${num(r.focus[l].ratio)} (${num(r.focus[l].alpha)})`, 14)).join('')}`)
+
   // Fail only on things that are bugs rather than taste: body text below AA, or
   // a tier that has fallen under the shipped look's own value.
   const problems = []
@@ -317,6 +349,9 @@ async function main() {
   for (const r of rows) {
     if (r.m.panel.ratio < TARGET) problems.push(`${r.label}: ink on the reply panel is ${num(r.m.panel.ratio)}:1, under AA`)
     if (r.m.chrome < TARGET) problems.push(`${r.label}: ink on the chrome pane is ${num(r.m.chrome)}:1, under AA`)
+    for (const [level, f] of Object.entries(r.focus)) {
+      if (f.ratio < TARGET) problems.push(`${r.label}: ink on the reply panel at Reading focus ${level} is ${num(f.ratio)}:1, under AA`)
+    }
     if (r.id === 'gruvbox' || !base) continue
     for (const t of TIER_NAMES) {
       const bar = tierBar(base, r.m, t)

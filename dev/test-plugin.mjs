@@ -38,7 +38,8 @@ export const atom = (init) => {
   return { get: () => v, set: (n) => { const o = v; v = n; for (const f of subs) f(n, o) }, subscribe: (f) => { subs.add(f); return () => subs.delete(f) } }
 }
 export const useValue = (a) => a.get()
-export const host = { state: null }
+// A focused session, so the chat mark follows host state as it does in the app.
+export const host = { state: { focusedSessionId: atom('run-1') } }
 const el = (tag) => (props) => {
   const p = props || {}
   const node = document.createElement(tag)
@@ -61,6 +62,12 @@ export const Button = el('button'), ToggleRow = el('div'), Codicon = el('span'),
   SegmentedControl = el('div'), Select = el('div'), SelectContent = el('div'), SelectItem = el('div'),
   SelectTrigger = el('div'), SelectValue = el('span')
 export const requestTheme = () => {}, setAccentOverride = () => {}
+`
+
+// Components are called directly by the JSX stub, so an effect runs at once and
+// its cleanup is kept for the test to call: that is a mount and an unmount.
+const REACT = `
+export const useEffect = (fn) => { const off = fn(); (window.__effects ||= []).push(off) }
 `
 
 const JSX = `
@@ -140,7 +147,7 @@ const ctx = {
     set: (k, v) => { try { localStorage.setItem(PREFIX + k, JSON.stringify(v)) } catch {} },
     remove: (k) => localStorage.removeItem(PREFIX + k)
   },
-  register: () => {}, registerSettingsPage: (p) => { window.__settings = p }, registerDirective: () => {},
+  register: (c) => { (window.__contribs ||= []).push(c) }, registerSettingsPage: (p) => { window.__settings = p }, registerDirective: () => {},
   onDispose: () => {}, setInterval: (f, ms) => setInterval(f, ms), setTimeout: (f, ms) => setTimeout(f, ms),
 }
 plugin.register(ctx)
@@ -167,6 +174,7 @@ async function main() {
   await fs.mkdir(WORK, { recursive: true })
   await fs.writeFile(path.join(WORK, 'sdk.js'), SDK)
   await fs.writeFile(path.join(WORK, 'jsx.js'), JSX)
+  await fs.writeFile(path.join(WORK, 'react.js'), REACT)
   const assetNames = await fs.readdir(assets)
   await fs.writeFile(path.join(WORK, 'index.html'), page(assetNames))
 
@@ -175,6 +183,7 @@ async function main() {
     '/index.html': path.join(WORK, 'index.html'),
     '/sdk.js': path.join(WORK, 'sdk.js'),
     '/jsx.js': path.join(WORK, 'jsx.js'),
+    '/react.js': path.join(WORK, 'react.js'),
     '/plugin.js': path.join(dir, 'plugin.js'),
     // The page is http, so it may not load file:// urls. The plugin's own sheet
     // is rewritten to these routes in the screenshot pass at the end.
@@ -351,6 +360,88 @@ async function main() {
   }))
   check('Reset clears the uploaded picture key', cleared.key === null || cleared.key === JSON.stringify(''), String(cleared.key).slice(0, 20))
   check('Reset returns to the preset marker', cleared.rec?.image === 'assets/johan-christian-dahl-stalheim.jpg', String(cleared.rec?.image))
+
+  // Reading focus. An uploaded picture is same-origin, so the blurred copy can
+  // be made here (the shipped file:// pictures cannot be read from this http
+  // page, and would only prove the live-filter fallback).
+  const keptSkin2 = await view.evaluate(() => localStorage.getItem('hermes.plugin.hermes-atrium.skin2'))
+  await view.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 160
+    const g = c.getContext('2d')
+    for (let x = 0; x < 256; x += 16) { g.fillStyle = x % 32 ? '#f4e9c0' : '#203040'; g.fillRect(x, 0, 16, 160) }
+    const rec = JSON.parse(localStorage.getItem('hermes.plugin.hermes-atrium.skin2') || '{}')
+    delete rec.image
+    localStorage.setItem('hermes.plugin.hermes-atrium.skinImage2', JSON.stringify(c.toDataURL('image/png')))
+    localStorage.setItem('hermes.plugin.hermes-atrium.skin2', JSON.stringify(rec))
+    localStorage.removeItem('hermes.plugin.hermes-atrium.readingFocus')
+  })
+  await open()
+  const focusState = () => view.evaluate(() => {
+    const base = document.getElementById('atr-chrome-base')?.textContent || ''
+    const at = base.indexOf('html::after {')
+    const layer = at < 0 ? '' : base.slice(at, base.indexOf('}', at))
+    const chat = base.indexOf("html[data-atr-chat='1']::after {")
+    const reply = document.getElementById('atr-reply-ground')?.textContent || ''
+    return {
+      stored: localStorage.getItem('hermes.plugin.hermes-atrium.readingFocus'),
+      layer: Boolean(layer),
+      baked: /url\("data:image\/jpeg;base64,/.test(layer),
+      live: chat >= 0 && base.slice(chat, base.indexOf('}', chat)).includes('backdrop-filter'),
+      band: base.includes("[data-slot='aui_thread-viewport'] {\n  background-image: linear-gradient(90deg"),
+      alpha: Number(/--atr-reply-ground: rgba\([^)]*, ([\d.]+)\)/.exec(reply)?.[1] ?? NaN),
+      opacity: getComputedStyle(document.documentElement, '::after').opacity
+    }
+  })
+  const soft = await focusState()
+  check('Reading focus is on by default', soft.stored === null && soft.layer && soft.opacity === '1', JSON.stringify(soft))
+  check('Reading focus paints a blurred copy, not a live filter', soft.baked && !soft.live, `baked ${soft.baked} live ${soft.live}`)
+  check('Medium, the default, has no band', !soft.band)
+  await view.evaluate(() => window.__mountSettings())
+  const pickFocus = label => view.evaluate(l => {
+    const b = [...document.querySelectorAll('#atrium-settings [aria-label="Reading focus"] button')].find(x => x.textContent.trim() === l)
+    if (!b) return false
+    b.click(); return true
+  }, label)
+  check('found the Reading focus control', await pickFocus('Strong'))
+  await view.waitForTimeout(500)
+  const strong = await focusState()
+  check('Strong persists and darkens behind the column', strong.stored === JSON.stringify('strong') && strong.band && strong.baked, JSON.stringify(strong))
+  await pickFocus('Solid')
+  await view.waitForTimeout(500)
+  const solid = await focusState()
+  check('Solid makes reply panels opaque', solid.alpha === 1, String(solid.alpha))
+  check('Solid leaves the stored panel dials alone', (await readRecord('panel'))?.solid !== 1, JSON.stringify(await readRecord('panel')))
+  await pickFocus('Off')
+  await view.waitForTimeout(500)
+  const off = await focusState()
+  // An empty session (a new session tab) keeps the picture sharp, but only
+  // once its empty slot has stayed up, so a loading chat does not flash.
+  const emptyMark = () => view.evaluate(() => {
+    const c = (window.__contribs || []).find(x => x.area === 'chat.empty')
+    if (!c) return null
+    window.__effects = []
+    c.data.render({ sessionId: 'run-1' })
+    return window.__effects.length
+  })
+  const chatMark = () => view.evaluate(() => document.documentElement.dataset.atrChat || '')
+  check('an empty-chat contribution is registered', (await emptyMark()) === 1)
+  check('an empty session is not sharp at once', (await chatMark()) === '1')
+  await view.waitForTimeout(700)
+  check('an empty session keeps the picture sharp', (await chatMark()) === '' && !(await view.evaluate(() => 'atrDraft' in document.documentElement.dataset)))
+  await view.evaluate(() => window.__effects.forEach(off => off()))
+  check('the first message brings the chat layer back', (await chatMark()) === '1')
+  await emptyMark()
+  await view.waitForTimeout(50)
+  await view.evaluate(() => window.__effects.forEach(off => off()))
+  await view.waitForTimeout(600)
+  check('a chat that loads quickly never flashes sharp', (await chatMark()) === '1')
+  check('Off removes the layer and gives the panels back', !off.layer && off.alpha < 1, JSON.stringify(off))
+  await view.evaluate(k => {
+    if (k === null) localStorage.removeItem('hermes.plugin.hermes-atrium.skin2')
+    else localStorage.setItem('hermes.plugin.hermes-atrium.skin2', k)
+    localStorage.removeItem('hermes.plugin.hermes-atrium.skinImage2')
+    localStorage.removeItem('hermes.plugin.hermes-atrium.readingFocus')
+  }, keptSkin2)
 
   // The upgrade path: an install from the previous build.
   const prevDefault = {

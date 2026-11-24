@@ -20,6 +20,8 @@
  *                        colours follow the chosen look) + CSS over the app
  *   reply panels      -> five live dials that solve a panel tone against the
  *                        picture behind the reading column (§2)
+ *   reading focus     -> a blurred, muted copy of the picture behind a
+ *                        conversation, made once on a canvas (§1)
  *   snippet cards     -> a `::snippet{...}` transcript directive (copy)
  *   calmer chat       -> CSS over the app's own surfaces
  *
@@ -35,18 +37,21 @@
  */
 
 import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ToggleRow, useValue } from '@hermes/plugin-sdk'
+import { useEffect } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 // ══ §1 SETUP, SKIN, PAINTING & MATERIALS ═══════════════════════════════════
 
 const THEMES_AREA = 'themes'
 const DIRECTIVE_AREA = 'transcript.directives'
+// Mounted by Hermes while a session's transcript is empty (see the chat mark in §8).
+const CHAT_EMPTY_AREA = 'chat.empty'
 
 // Stored key strings are permanent: users have data under them. Each look has
 // its own record, so every look keeps an independent picture and palette.
 // `skin`/`skinImage` are Custom 1's, and they can never move: they are the keys
 // the first Custom preset has always written. Custom 2 and 3 are numbered.
-const STORE_KEYS = { auto: 'auto', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', motion: 'motion', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage' }
+const STORE_KEYS = { auto: 'auto', sky: 'sky', chrome: 'chrome', replyGround: 'replyGround', panel: 'panel', look: 'look', margins: 'margins', motion: 'motion', readingFocus: 'readingFocus', skin: 'skin', skinImage: 'skinImage', skin2: 'skin2', skinImage2: 'skinImage2', skin3: 'skin3', skinImage3: 'skinImage3', gruvboxSkin: 'gruvboxSkin', gruvboxSkinImage: 'gruvboxSkinImage' }
 
 // Keys earlier builds stored and nothing reads any more. They are removed at
 // load because the app and every plugin share one local store of about 10 MB,
@@ -209,6 +214,36 @@ const SKIN_COLORS = [
   ['quote', 'Quotes']
 ]
 let SKIN = { ...SKIN_DEFAULTS }
+
+// ── Reading focus ────────────────────────────────────────────────────────────
+// One setting for everyone who finds the picture too busy to read over. It acts
+// only while a conversation is open: a fresh draft keeps the picture sharp, and
+// opening a chat fades the picture back. It is global rather than a knob of
+// each look, because someone who wants calmer reading wants it on every look.
+//
+// Blur alone leaves the colour and the contrast that make a picture busy, so
+// every level also lowers saturation and brightness and lays an even scrim
+// over the picture. `band` darkens the picture behind the reading column only,
+// so the sides keep their light. `solid` makes every reply panel opaque.
+//
+// Medium is the default: it is on for everyone, so it has to quiet the picture
+// enough to read over while it still reads as a painting. The measure tool
+// (dev/measure-palettes.mjs) checks every level.
+const READING_FOCUS = {
+  off: { blur: 0, saturate: 1, brightness: 1, scrim: 0, band: 0, solid: false },
+  soft: { blur: 6, saturate: 0.9, brightness: 0.94, scrim: 0.1, band: 0, solid: false },
+  medium: { blur: 12, saturate: 0.75, brightness: 0.88, scrim: 0.18, band: 0, solid: false },
+  strong: { blur: 20, saturate: 0.55, brightness: 0.8, scrim: 0.26, band: 0.3, solid: false },
+  solid: { blur: 20, saturate: 0.55, brightness: 0.8, scrim: 0.26, band: 0.3, solid: true }
+}
+const READING_FOCUS_LEVELS = ['off', 'soft', 'medium', 'strong', 'solid']
+const READING_FOCUS_LABELS = { off: 'Off', soft: 'Soft', medium: 'Medium', strong: 'Strong', solid: 'Solid' }
+const READING_FOCUS_DEFAULT = 'medium'
+// The module-level copy every pure helper reads, kept in step with the setting
+// in §8 the same way `panel` is.
+let readingFocus = READING_FOCUS_DEFAULT
+const setReadingFocus = level => { readingFocus = Object.hasOwn(READING_FOCUS, level) ? level : READING_FOCUS_DEFAULT }
+const focusLevel = () => READING_FOCUS[readingFocus] || READING_FOCUS[READING_FOCUS_DEFAULT]
 
 // ── The looks ──────────────────────────────────────────────────────────────
 // One list, read by the settings gallery, the status chip, the sheet header and
@@ -530,12 +565,22 @@ const skinMaterial = () => ({
 // The painting as the ground. The scrim is what makes the glass tinted rather
 // than clear: it drops the picture's peak brightness so the panels above it can
 // stay translucent without letting a highlight sit under a line of prose.
-const pictureLayers = () => {
+const pictureLayers = () => [
+  'html::before {',
+  "  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;",
+  ...pictureBackground(skinImage()),
+  '}',
+  'body::before { content: none; }'
+]
+// The picture's declarations, shared with the reading-focus layer (§1, Reading
+// focus) so its blurred copy sits under exactly the same scrims, fit and
+// position, and the two layers cannot drift apart. `above` are extra layers
+// painted over the scrims.
+const pictureBackground = (image, above = []) => {
   const scrim = skinNumber(SKIN.scrim, 0.44)
   return [
-    'html::before {',
-    "  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;",
     '  background-image:',
+    ...above.map(layer => `    ${layer},`),
     // left: the sidebar's column of small text sits over the dress and the
     // sunlit grass; top/bottom: titlebar and composer edges.
     // fine grain: dark gradients over 8-bit colour step visibly; a faint
@@ -556,13 +601,11 @@ const pictureLayers = () => {
     // shipped painting is what you see. Two of the pictures in use (a 2.3 MB
     // PNG and a 3.4 MB JPEG) sat over that line and could never be applied,
     // while every smaller one worked. background-image has no such limit.
-    `    url("${String(skinImage()).replace(/"/g, '%22')}");`,
-    `  background-size: 160px 160px, cover, cover, ${SKIN.fit === 'contain' ? 'contain' : 'cover'};`,
-    `  background-position: 0 0, center, center, ${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%;`,
-    '  background-repeat: repeat, no-repeat, no-repeat, no-repeat;',
-    `  background-color: ${SKIN.deeper};`,
-    '}',
-    'body::before { content: none; }'
+    `    url("${String(image).replace(/"/g, '%22')}");`,
+    `  background-size: ${[...above.map(() => 'cover'), '160px 160px', 'cover', 'cover', SKIN.fit === 'contain' ? 'contain' : 'cover'].join(', ')};`,
+    `  background-position: ${[...above.map(() => 'center'), '0 0', 'center', 'center', `${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%`].join(', ')};`,
+    `  background-repeat: ${[...above.map(() => 'no-repeat'), 'repeat', 'no-repeat', 'no-repeat', 'no-repeat'].join(', ')};`,
+    `  background-color: ${SKIN.deeper};`
   ]
 }
 
@@ -616,6 +659,143 @@ const preparePictureBackdrop = url => {
   image.src = url
 }
 
+// ── The chat layer (html::after) ─────────────────────────────────────────────
+// Two things can soften the picture behind a conversation: a look's own Glass
+// blur (chrome only) and Reading focus (whenever the picture is shown). They
+// share one layer, so they cannot stack two full-window filters, and this is
+// the one set of numbers both the sheet and the panel solver read.
+const chatGlass = (backdrop, chrome) => {
+  const look = Boolean(chrome) && skinNumber(SKIN.blur, 0) > 0
+  const level = backdrop ? focusLevel() : READING_FOCUS.off
+  const focus = level.blur > 0 || level.scrim > 0 || level.band > 0 || level.saturate !== 1 || level.brightness !== 1
+  return {
+    look, focus,
+    blur: Math.max(look ? skinNumber(SKIN.blur, 0) : 0, focus ? level.blur : 0),
+    saturate: (look ? skinNumber(SKIN.saturate, 1.3) : 1) * (focus ? level.saturate : 1),
+    brightness: (look ? skinNumber(SKIN.brightness, 0.9) : 1) * (focus ? level.brightness : 1),
+    scrim: focus ? level.scrim : 0,
+    band: focus ? level.band : 0
+  }
+}
+const focusParams = g => [g.blur, g.saturate.toFixed(3), g.brightness.toFixed(3), SKIN.deeper, SKIN.fit].join('|')
+
+// Reading focus paints a copy of the picture that is blurred once, on a canvas,
+// rather than asking for a live backdrop-filter. The live filter is a
+// full-window compositor pass on every scroll (which is why Glass blur ships at
+// 0), and Reading focus is on by default, so it must cost nothing per frame. A
+// blurred picture also loses nothing at low resolution, so the copy is small:
+// at most FOCUS_PICTURE_MAX on its long side, a JPEG of tens of kilobytes held
+// in memory and never stored.
+//
+// The copy can fail where the canvas refuses to export (a picture the renderer
+// treats as cross-origin). The layer then falls back to the live filter, so the
+// setting still works, at the old cost.
+const FOCUS_PICTURE_MAX = 1280
+let focusPicture = { src: '', params: '', url: '' }
+let focusRequest = { src: '', params: '' }
+let focusPictureReady = () => {}
+const focusPictureFor = g => (focusPicture.src === skinImage() && focusPicture.params === focusParams(g) ? focusPicture.url : '')
+const blurPicture = (image, g) => {
+  const nw = image.naturalWidth, nh = image.naturalHeight
+  if (!nw || !nh) return ''
+  const scale = Math.min(1, FOCUS_PICTURE_MAX / Math.max(nw, nh))
+  const w = Math.max(1, Math.round(nw * scale)), h = Math.max(1, Math.round(nh * scale))
+  // The blur is asked for in window pixels; on the canvas it is scaled by how
+  // much the fitted picture is enlarged or reduced in this window.
+  const vw = Math.max(1, window.innerWidth || 1), vh = Math.max(1, window.innerHeight || 1)
+  const fitted = SKIN.fit === 'contain' ? Math.min(vw / nw, vh / nh) : Math.max(vw / nw, vh / nh)
+  const radius = g.blur * scale / fitted
+  // A canvas blur pulls transparent black in at the edges, which paints a dark
+  // frame round the window. The picture's outermost rows and columns are
+  // stretched into a margin first, so the edge blurs into itself.
+  const m = Math.ceil(radius * 2) + 1
+  const pad = document.createElement('canvas')
+  pad.width = w + 2 * m
+  pad.height = h + 2 * m
+  const p = pad.getContext('2d')
+  // Transparent pixels show the look's deepest ground, as they do on screen.
+  p.fillStyle = SKIN.deeper
+  p.fillRect(0, 0, pad.width, pad.height)
+  p.drawImage(image, m, m, w, h)
+  p.drawImage(pad, m, m, 1, h, 0, m, m, h)
+  p.drawImage(pad, m + w - 1, m, 1, h, m + w, m, m, h)
+  p.drawImage(pad, 0, m, pad.width, 1, 0, 0, pad.width, m)
+  p.drawImage(pad, 0, m + h - 1, pad.width, 1, 0, m + h, pad.width, m)
+  const out = document.createElement('canvas')
+  out.width = w
+  out.height = h
+  const o = out.getContext('2d')
+  o.filter = `${radius > 0.3 ? `blur(${radius.toFixed(2)}px) ` : ''}saturate(${g.saturate}) brightness(${g.brightness})`
+  o.drawImage(pad, -m, -m)
+  return out.toDataURL('image/jpeg', 0.86)
+}
+const prepareFocusPicture = (url, g) => {
+  const params = focusParams(g)
+  if (focusPicture.src === url && focusPicture.params === params) return
+  if (focusRequest.src === url && focusRequest.params === params) return
+  if (typeof Image === 'undefined' || typeof document === 'undefined') return
+  const request = { src: url, params }
+  focusRequest = request
+  const finish = out => {
+    if (focusRequest !== request) return
+    focusPicture = { src: url, params, url: out }
+    focusPictureReady()
+  }
+  const image = new Image()
+  image.crossOrigin = 'anonymous'
+  image.onload = () => {
+    if (focusRequest !== request) return
+    let out = ''
+    try { out = blurPicture(image, g) } catch {}
+    finish(out)
+  }
+  image.onerror = () => finish('')
+  image.src = url
+}
+
+// The layer itself. It exists on every view while Reading focus is on, and is
+// only opaque in a conversation, so opening a chat fades the picture back
+// rather than cutting to it. The fade rides the motion tokens (§5b), so the
+// App animations switch and the system's reduced-motion setting make it
+// instant.
+const chatLayerCss = g => {
+  if (!g.focus) return []
+  const deeper = hexTriple(SKIN.deeper)
+  const scrim = skinNumber(SKIN.scrim, 0.31)
+  // Top first: Reading focus's even scrim, then the look's own glass scrim.
+  const above = []
+  if (g.scrim > 0) above.push(`linear-gradient(rgba(${deeper}, ${g.scrim}), rgba(${deeper}, ${g.scrim}))`)
+  if (g.look) above.push(`radial-gradient(120% 90% at 50% 40%, rgba(${deeper}, ${(scrim * 0.45).toFixed(3)}), rgba(${deeper}, ${(scrim * 0.95).toFixed(3)}))`)
+  const blurred = focusPictureFor(g)
+  const out = [
+    'html::after {',
+    "  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;",
+    '  opacity: 0;',
+    // The longest beat, so Motion off and reduced-motion still make it instant.
+    '  transition: opacity var(--atr-t-3, 200ms) var(--atr-ease, ease);',
+    // The blurred copy, under the same scrims, fit and position as the picture.
+    ...(blurred
+      ? pictureBackground(blurred, above)
+      : [`  background-image: ${above.length ? above.join(', ') : 'none'};`]),
+    '}',
+    "html[data-atr-chat='1']::after {",
+    '  opacity: 1;',
+    // The copy has not been made yet, or cannot be: filter the picture live.
+    ...(blurred ? [] : [`  backdrop-filter: blur(${g.blur}px) saturate(${g.saturate}) brightness(${g.brightness});`]),
+    '}'
+  ]
+  // The band sits on the transcript's own scroll box, which spans the chat
+  // pane, so it centres on the pane rather than the window and stays put while
+  // the transcript scrolls. It is only a background image: the box's own
+  // colour and everything in it are left as the app paints them.
+  if (g.band > 0) out.push(
+    "html[data-atr-chat='1'] [data-slot='aui_thread-viewport'] {",
+    `  background-image: linear-gradient(90deg, rgba(${deeper}, 0) calc(50% - 38rem), rgba(${deeper}, ${g.band}) calc(50% - 25rem), rgba(${deeper}, ${g.band}) calc(50% + 25rem), rgba(${deeper}, 0) calc(50% + 38rem));`,
+    '}'
+  )
+  return out
+}
+
 const pictureBackdrop = (bounds, filtered = true) => {
   const source = pictureSource
   if (!source || source.url !== skinImage() || source.failed) return [[0, 0, 0], [255, 255, 255]]
@@ -637,10 +817,21 @@ const pictureBackdrop = (bounds, filtered = true) => {
   // The filter and its own scrim live on html::after, which the sheet only
   // emits when Glass blur is above 0 (see sheetCss). Modelling them at blur 0
   // solved the panel against a darker backdrop than the one on screen.
-  const chat = filtered && skinNumber(SKIN.blur, 0) > 0 && document.documentElement.matches?.("html[data-atr-chat='1']")
+  // Reading focus shares that layer (chatGlass). Its blurred copy carries the
+  // saturation and brightness in the picture itself, under the scrims, while
+  // the live filter applies them over the scrims; the order is modelled as
+  // painted, and the blur itself barely moves the mean this solver reads.
+  const glass = chatGlass(true, filtered)
+  const chat = (glass.look || glass.focus) && document.documentElement.matches?.("html[data-atr-chat='1']")
+  const baked = chat && glass.focus && Boolean(focusPictureFor(glass))
+  const filterRgb = rgb => {
+    const luma = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
+    return rgb.map(v => Math.max(0, Math.min(255, (luma + (v - luma) * glass.saturate) * glass.brightness)))
+  }
   const applyBackdrop = (rgb, sx, sy) => {
     // Transparent image pixels reveal the CSS background color before either scrim.
     if (rgb.length > 3) rgb = blend(rgb, deeper, 1 - rgb[3] / 255)
+    if (baked) rgb = filterRgb(rgb)
     const nx = (sx / width - 0.5) / 1.25, ny = (sy / height - 0.42) / 1.15
     const radius = Math.hypot(nx, ny)
     const stops = [[0, 0], [.35, .10], [.55, .32], [.72, .62], [.88, .90], [1, 1.05]]
@@ -653,16 +844,16 @@ const pictureBackdrop = (bounds, filtered = true) => {
     // CSS stacks the radial and linear picture scrims before the chat backdrop filter.
     const alpha = 1 - (1 - scrim * falloff) * (1 - scrim * 0.70)
     rgb = blend(rgb, deeper, Math.min(1, alpha))
-    if (chat) {
-      const luma = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
-      const sat = skinNumber(SKIN.saturate, 1.3), brightness = skinNumber(SKIN.brightness, 0.9)
-      rgb = rgb.map(v => Math.max(0, Math.min(255, (luma + (v - luma) * sat) * brightness)))
-    }
-    // html::after paints its own radial scrim above the filtered backdrop.
-    if (chat) {
+    if (chat && !baked) rgb = filterRgb(rgb)
+    // html::after paints the look's radial scrim above the filtered backdrop.
+    if (chat && glass.look) {
       const afterRadius = Math.hypot((sx / width - 0.5) / 1.2, (sy / height - 0.4) / 0.9)
       rgb = blend(rgb, deeper, scrim * (0.45 + 0.50 * Math.min(1, afterRadius)))
     }
+    // Reading focus's even scrim, then its band. The band is full strength
+    // across the sampled column, which is narrower than the band's flat middle.
+    if (chat && glass.scrim > 0) rgb = blend(rgb, deeper, glass.scrim)
+    if (chat && glass.band > 0) rgb = blend(rgb, deeper, glass.band)
     return rgb
   }
   const sampleAt = (sx, sy) => {
@@ -1163,7 +1354,7 @@ const groupedFieldCss = () => {
 // green), links are Underlined (blue), inline code is Constant (purple) on
 // bg0_hard, quotes are PreProc (aqua), hairlines are LineNr (bg4), selection is
 // Visual (bg3). This is the half of the colorscheme a chat window actually uses.
-const gruvboxTextCss = () => [
+const gruvboxTextCss = (focusLayer = false) => [
   /* one soft-focus layer for the reading column: the picture stays as colour
      and light, not as detail competing with letterforms */
   // One glass band across the WHOLE window: edge to edge, left side of the
@@ -1181,7 +1372,8 @@ const gruvboxTextCss = () => [
   ...(() => {
     const blur = skinNumber(SKIN.blur, 0)
     const scrim = `  background: radial-gradient(120% 90% at 50% 40%, rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.45).toFixed(3)}), rgba(${hexTriple(SKIN.deeper)}, ${(skinNumber(SKIN.scrim, 0.44) * 0.95).toFixed(3)}));`
-    if (!(blur > 0)) return []
+    // Reading focus owns the layer while it is on, and folds this blur into it.
+    if (!(blur > 0) || focusLayer) return []
     return [
       "html[data-atr-chat='1']::after {",
       "  content: '';",
@@ -1643,6 +1835,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "img[src*='filler-bg0'] { display: none; }",
     // The picture IS the background.
     ...pictureLayers(),
+    // Reading focus, and the look's own glass folded into it (chatGlass).
+    ...chatLayerCss(chatGlass(backdrop, chrome)),
     ] : []),
     ...(chrome ? [
     // Panel density, and it is deliberately mode-scoped: Atrium's palettes are
@@ -2547,7 +2741,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     ...materialVars(),
   ] : [], chrome ? [
     ...SESSION_TAB_CSS,
-    ...gruvboxTextCss(),
+    ...gruvboxTextCss(chatGlass(backdrop, chrome).focus),
     ...polishCss(),
     // Sidebar cards, the composer and the switch pill share the material.
     "[data-slot='sidebar-content'] > [data-slot='sidebar-group'],",
@@ -3022,12 +3216,13 @@ const MOTION_CSS = [
   // ── Tokens ──────────────────────────────────────────────────────────────
   // Three beats: t-1 for exits and presses, t-2 for hovers and small
   // entrances, t-3 for the moments worth watching (dialogs).
-  // The pacing is deliberately unhurried: at 90ms an exit read as a hard cut,
-  // so the floor is ~140ms everywhere and nothing exceeds 280ms.
+  // Quick, but not abrupt: at 90ms an exit read as a hard cut, so the floor
+  // stays at 120ms. Longer beats made menus and the chat fade feel slow to
+  // answer, so nothing exceeds 200ms.
   ':root {',
-  '  --atr-t-1: 140ms;',
-  '  --atr-t-2: 200ms;',
-  '  --atr-t-3: 280ms;',
+  '  --atr-t-1: 120ms;',
+  '  --atr-t-2: 150ms;',
+  '  --atr-t-3: 200ms;',
   // A calmer deceleration than a fast-start curve: eases reach their settle
   // without the initial snap that read as jarring on hovers and exits.
   '  --atr-ease: cubic-bezier(0.33, 1, 0.68, 1);',
@@ -3656,7 +3851,13 @@ export default {
       }
       return out
     })())
-    const syncPanel = () => { panel = { ...panelSettings.get() } }
+    // Reading focus, global rather than per look. An unknown stored value (a
+    // downgrade, a hand-edited key) falls back to the default level.
+    const focusSetting = atom(READING_FOCUS_LEVELS.includes(stored(STORE_KEYS.readingFocus)) ? stored(STORE_KEYS.readingFocus) : READING_FOCUS_DEFAULT)
+    setReadingFocus(focusSetting.get())
+    // Solid's opaque panels are applied here rather than written into the
+    // dials, so choosing another level gives the dials back as you left them.
+    const syncPanel = () => { panel = { ...panelSettings.get(), ...(focusLevel().solid ? { solid: 1, max: 1 } : {}) } }
     syncPanel()
     let panelUnsub = null
     // Keep the local `panel` copy in step without touching render state from the
@@ -3675,6 +3876,7 @@ export default {
       ctx.storage.set(STORE_KEYS.look, look.get())
       ctx.storage.set(STORE_KEYS.margins, margins.get())
       ctx.storage.set(STORE_KEYS.motion, motion.get())
+      ctx.storage.set(STORE_KEYS.readingFocus, focusSetting.get())
       ctx.storage.set(STORE_KEYS.panel, panelSettings.get())
     }
 
@@ -3900,7 +4102,7 @@ export default {
       if (!replyGround.get()) { sheet?.remove(); replyRefreshKey = ''; return }
       if (document.hidden) return
       const key = [away, chromeOn.get(), backdropOn.get(), look.get(), replyPictureVersion, pictureRevision,
-        JSON.stringify(panelSettings.get()),
+        JSON.stringify(panelSettings.get()), readingFocus, document.documentElement.dataset?.atrChat || '', focusPicture.url.length,
         ...SKIN_SLIDERS.map(([k]) => SKIN[k]), ...SKIN_COLORS.map(([k]) => SKIN[k]), SKIN.fit, SKIN.posX, SKIN.posY,
         document.documentElement.className, window.innerWidth, window.innerHeight].join(':')
       if (key === replyRefreshKey) return
@@ -3931,6 +4133,12 @@ export default {
       const backdrop = backdropOn.get()
       const chrome = chromeOn.get()
       if (!backdrop && !chrome) { clearSheet(); renderReplyGround(); return }
+      // The blurred copy is made off the paint path; when it lands,
+      // focusPictureReady repaints with it.
+      if (backdrop) {
+        const glass = chatGlass(backdrop, chrome)
+        if (glass.focus) prepareFocusPicture(skinImage(), glass)
+      }
       paintSheet(nowAt(), false, { backdrop, chrome })
       renderReplyGround()
     }
@@ -4174,6 +4382,7 @@ export default {
     const skinOf = which => LOOK_SKINS[which] || LOOK_SKINS.custom
     setSkin(skinOf(look.get()))
     pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
+    focusPictureReady = () => { if (!atrDisposed) repaint() }
 
     ensurePictureStyle()
     const skin = atom({ ...skinOf(look.get()) })
@@ -4648,18 +4857,79 @@ export default {
       const root = document.documentElement
       let pageDead = false
       const focusAtom = typeof host !== 'undefined' ? host?.state?.focusedSessionId : null
-      const syncChatMark = () => {
-        if (pageDead) return
-        // without the focus state (an older host) every view counts as a chat
-        const draft = Boolean(focusAtom?.get) && !focusAtom.get()
-        if (draft) {
-          delete root.dataset.atrChat
-          if (root.dataset.atrDraft !== '1') root.dataset.atrDraft = '1'
+      // A session with nothing in it yet (a new session tab, opened while
+      // another chat is open) has an id, so focus alone calls it a chat. Hermes
+      // says when a transcript is empty through the `chat.empty` area: it mounts
+      // that slot, with the session's runtime id, exactly while the transcript
+      // has no messages. The contribution below renders nothing and only notes
+      // which sessions are empty, so the picture stays sharp there too.
+      //
+      // The slot also mounts for a moment while an old chat is still loading
+      // its history, so a session only counts as empty once its slot has stayed
+      // up for EMPTY_SETTLE_MS. Without the wait, opening an old chat would
+      // flash the sharp picture before its messages arrive. The wait is short
+      // because a new tab feels slow without it; a longer one hides a slower
+      // backend's loading gap, at the cost of that lag on every new tab.
+      const EMPTY_SETTLE_MS = 150
+      const emptyMounts = new Map()
+      const emptySessions = new Set()
+      const emptyTimers = new Map()
+      let syncChatMark = () => {}
+      const noteEmpty = (sessionId, delta) => {
+        if (!sessionId || pageDead) return
+        const count = (emptyMounts.get(sessionId) || 0) + delta
+        clearTimeout(emptyTimers.get(sessionId))
+        emptyTimers.delete(sessionId)
+        if (count > 0) {
+          emptyMounts.set(sessionId, count)
+          if (!emptySessions.has(sessionId)) {
+            emptyTimers.set(sessionId, setTimeout(() => {
+              emptyTimers.delete(sessionId)
+              if (!emptyMounts.has(sessionId)) return
+              emptySessions.add(sessionId)
+              syncChatMark()
+            }, EMPTY_SETTLE_MS))
+          }
         } else {
-          if (root.dataset.atrChat !== '1') root.dataset.atrChat = '1'
-          delete root.dataset.atrDraft
+          emptyMounts.delete(sessionId)
+          if (emptySessions.delete(sessionId)) syncChatMark()
         }
       }
+      const EmptyMark = ({ sessionId }) => {
+        useEffect(() => {
+          noteEmpty(sessionId, 1)
+          return () => noteEmpty(sessionId, -1)
+        }, [sessionId])
+        return null
+      }
+      // An older host has no such area: the registration is simply never
+      // mounted, and an empty session tab counts as a chat as before.
+      ctx.register({ id: 'hermes-atrium.empty-mark', area: CHAT_EMPTY_AREA, data: { render: ({ sessionId }) => jsx(EmptyMark, { sessionId }) } })
+      syncChatMark = () => {
+        if (pageDead) return
+        // without the focus state (an older host) every view counts as a chat
+        const focused = focusAtom?.get ? focusAtom.get() : undefined
+        const draft = Boolean(focusAtom?.get) && !focused
+        // An empty session is not a fresh draft: the intro is not shown, so
+        // the draft layout must not apply. It only loses the chat mark.
+        const empty = Boolean(focused) && emptySessions.has(focused)
+        const wasChat = root.dataset.atrChat === '1'
+        const chat = !draft && !empty
+        if (chat) {
+          if (root.dataset.atrChat !== '1') root.dataset.atrChat = '1'
+        } else {
+          delete root.dataset.atrChat
+        }
+        if (draft) {
+          if (root.dataset.atrDraft !== '1') root.dataset.atrDraft = '1'
+        } else {
+          delete root.dataset.atrDraft
+        }
+        // The chat layer only paints in a conversation, so the panel tone it
+        // was solved against changes with the mark.
+        if (wasChat !== chat) renderReplyGround()
+      }
+      ctx.onDispose?.(() => { for (const t of emptyTimers.values()) clearTimeout(t); emptyTimers.clear() })
       const focusUnsub = focusAtom?.subscribe?.(syncChatMark)
       syncChatMark()
 
@@ -5046,6 +5316,7 @@ export default {
         const isReplyGround = useValue(replyGround)
         const isMargins = useValue(margins)
         const isMotion = useValue(motion)
+        const focusNow = useValue(focusSetting)
         const lookNow = useValue(look)
 
         // One sentence for every look: they differ only in which saved skin they
@@ -5142,7 +5413,31 @@ export default {
           isReplyGround ? section('settings', 'Tune panel', [jsx(PanelTuning, { onDone: () => repaint() })], { collapse: true }) : null
         ])
 
+        // What each level does, said in the row's own note so the choice does
+        // not need a manual.
+        const FOCUS_NOTES = {
+          off: 'The picture stays as sharp and bright in a conversation as everywhere else.',
+          soft: 'In a conversation, the picture softens a little so text reads over it.',
+          medium: 'In a conversation, the picture is blurred, quieter and darker.',
+          strong: 'In a conversation, the picture is heavily blurred and muted, darkest behind the text.',
+          solid: 'Strong, and every reply sits on an opaque panel.'
+        }
+        const focusButton = level => jsx(Button, {
+          size: 'sm', variant: focusNow === level ? 'secondary' : 'outline',
+          'aria-pressed': focusNow === level,
+          onClick: () => {
+            focusSetting.set(level)
+            setReadingFocus(level)
+            syncPanel()
+            persist()
+            repaint()
+          },
+          children: READING_FOCUS_LABELS[level]
+        }, level)
         const layoutSection = section('layout', 'Layout & motion', [
+          selectedLook !== 'hermes' ? SkinRow('Reading focus',
+            jsx('div', { className: 'flex gap-1', role: 'group', 'aria-label': 'Reading focus', children: READING_FOCUS_LEVELS.map(focusButton) }),
+            { note: FOCUS_NOTES[focusNow] || FOCUS_NOTES[READING_FOCUS_DEFAULT] }) : null,
           jsx(ToggleRow, {
             checked: isMargins,
             description: 'A narrower reading column with wide margins, lined up with the message box.',
@@ -5183,6 +5478,7 @@ export default {
       document.getElementById('atr-reply-ground')?.remove()
       document.getElementById(REPLY_PROBE_ID)?.remove()
       pictureReady = () => {}
+      focusPictureReady = () => {}
       unpinWordmark()
       if (typeof window !== 'undefined') window.removeEventListener?.('resize', onResize)
       if (typeof document !== 'undefined' && document.documentElement) {
