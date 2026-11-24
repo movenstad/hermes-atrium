@@ -74,6 +74,7 @@ export async function readTables() {
     LOOK_PRESETS: await table('LOOK_PRESETS'),
     SKIN_DEFAULTS: await table('SKIN_DEFAULTS', '{', '}', { PAINTING_URL: 'data:,' }),
     PANEL_DEFAULTS: await table('PANEL_DEFAULTS'),
+    READING_FOCUS: await table('READING_FOCUS'),
     LOOK_IDS: await table('LOOK_IDS', '[', ']')
   }
 }
@@ -89,6 +90,7 @@ export async function buildFakeInstall() {
   let src = await source()
   src = src.split("from '@hermes/plugin-sdk'").join("from '/sdk.js'")
   src = src.split("from 'react/jsx-runtime'").join("from '/jsx.js'")
+  src = src.split("from 'react'").join("from '/react.js'")
   await fs.writeFile(path.join(dir, 'plugin.js'), src)
   for (const f of await fs.readdir(ASSETS)) {
     await fs.copyFile(path.join(ASSETS, f), path.join(dir, 'assets', f))
