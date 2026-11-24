@@ -20,8 +20,11 @@ is listed under [What it touches on your computer](#what-it-touches-on-your-comp
 ## Install
 
 ```
-hermes plugins install hermes-atrium
+hermes plugins install movenstad/hermes-atrium
 ```
+
+If Hermes Atrium reaches the plugin marketplace later, `hermes plugins install
+hermes-atrium` will work too.
 
 Then enable it in **Settings -> Plugins** (or answer yes when the installer
 asks).
@@ -236,3 +239,10 @@ weights were measured against that picture's pixels rather than chosen in the
 abstract. Each is also framed to its subject: the Watzmann from its top edge
 (peaks and sky), Stalheim near the top (the rainbow and valley), Dresden from
 its bottom edge (the river and the moon's reflection).
+
+### Inspiration
+
+Hermes Atrium got started after trying [Zephyr](https://github.com/Peteryhs/zephyr) 
+by Peteryhs, a Hermes Desktop plugin with a live sky background.
+Parts of its code are used here under its MIT licence, whose notice is included
+in [LICENSE](LICENSE).
