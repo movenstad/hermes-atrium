@@ -226,8 +226,9 @@ let SKIN = { ...SKIN_DEFAULTS }
 // over the picture. `band` darkens the picture behind the reading column only,
 // so the sides keep their light. `solid` makes every reply panel opaque.
 //
-// Soft is the default: it is on for everyone, so it has to keep the painting a
-// painting. The measure tool (dev/measure-palettes.mjs) checks every level.
+// Medium is the default: it is on for everyone, so it has to quiet the picture
+// enough to read over while it still reads as a painting. The measure tool
+// (dev/measure-palettes.mjs) checks every level.
 const READING_FOCUS = {
   off: { blur: 0, saturate: 1, brightness: 1, scrim: 0, band: 0, solid: false },
   soft: { blur: 6, saturate: 0.9, brightness: 0.94, scrim: 0.1, band: 0, solid: false },
@@ -237,7 +238,7 @@ const READING_FOCUS = {
 }
 const READING_FOCUS_LEVELS = ['off', 'soft', 'medium', 'strong', 'solid']
 const READING_FOCUS_LABELS = { off: 'Off', soft: 'Soft', medium: 'Medium', strong: 'Strong', solid: 'Solid' }
-const READING_FOCUS_DEFAULT = 'soft'
+const READING_FOCUS_DEFAULT = 'medium'
 // The module-level copy every pure helper reads, kept in step with the setting
 // in §8 the same way `panel` is.
 let readingFocus = READING_FOCUS_DEFAULT

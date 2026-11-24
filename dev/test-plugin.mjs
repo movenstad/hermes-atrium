@@ -395,7 +395,7 @@ async function main() {
   const soft = await focusState()
   check('Reading focus is on by default', soft.stored === null && soft.layer && soft.opacity === '1', JSON.stringify(soft))
   check('Reading focus paints a blurred copy, not a live filter', soft.baked && !soft.live, `baked ${soft.baked} live ${soft.live}`)
-  check('Soft has no band', !soft.band)
+  check('Medium, the default, has no band', !soft.band)
   await view.evaluate(() => window.__mountSettings())
   const pickFocus = label => view.evaluate(l => {
     const b = [...document.querySelectorAll('#atrium-settings [aria-label="Reading focus"] button')].find(x => x.textContent.trim() === l)
