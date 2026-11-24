@@ -5,13 +5,13 @@ choose, behind the app. It lays tinted glass over it.
 
 The presets:
 
-- **Gruvbox**: The backwater by Charles William Wyllie with the gruvbox colors for text and the rest.  
+- **Gruvbox**: The backwater by Charles William Wyllie with the gruvbox colors for text and the rest.
 - **Custom 1, 2 and 3**: Each slot keeps its own picture, palette and opacities,
   so three setups can be switched from the bottom status bar. They also arrive
   "finished": **Watzmann**, **Stalheim** and **Dresden** are three designed
   looks over public-domain paintings by Johan Christian Dahl and you can change any of it.
 
-I practice every preset can be changed to what you want. 
+In practice every preset can be changed to what you want.
 
 **No network access of any kind**. Nothing in
 this plugin leaves your computer. What it does read and write on your computer
