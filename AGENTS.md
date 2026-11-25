@@ -215,7 +215,9 @@ panel thinner.
 
 ## Before you call it done
 
-- `npm run check` runs `node --check` on `desktop/plugin.js`.
+- `npm --prefix dev run check` runs `node --check` on `desktop/plugin.js`. Keep
+  `package.json` out of the repo root: the Hermes installer asks users to
+  install Node dependencies whenever one is there, even with none listed.
 - `hermes plugins validate .` is what the marketplace CI runs. It must pass with
   no refusals. Its "desktop surface review" warnings are what a reviewer will
   read, so a change should not add to them without a reason you would defend

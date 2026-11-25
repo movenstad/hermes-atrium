@@ -1,6 +1,9 @@
 # dev/
 
-Two local tools for the parts of this plugin that cannot be checked by reading
+`npm --prefix dev run check` is the quick syntax check on `desktop/plugin.js`.
+It needs no install.
+
+Two local tools cover the parts of this plugin that cannot be checked by reading
 the code. Neither is part of the plugin: the app loads `desktop/plugin.js` and
 `desktop/assets/`, nothing here. They live in the repo because both were written twice
 already, and the second time is where the arithmetic slips.
