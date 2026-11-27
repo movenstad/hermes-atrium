@@ -36,17 +36,28 @@ and alpha are solved by the same walk `replyPanelTone` and `replyMaterial` do.
 Those three are named in `MIRRORED` in `lib/preset.mjs`; when one changes in
 `plugin.js`, change it here too, or the numbers stop meaning anything.
 
-It fails the run on the two things that are bugs rather than taste: body text
-under AA on the reading column, and a faint tier quieter than Gruvbox's own on
-the same surface. Colour that is merely different is not a failure.
+It also prints the faint tiers on a sidebar card, and the faintest syntax colour
+in a code block. The syntax colours belong to the app (Shiki's
+`github-dark-dimmed` and `github-light-default`), so the tool carries its own list of them; the code ground
+(`deeper`) and the brightness lift (`CODE_BLOCK`) come from `plugin.js`.
+
+Every look is measured twice, its dark set and its light one. A light set has no
+shipped look to be judged against, so each of its tiers must clear AA on the
+chrome pane and on a sidebar card.
+
+It fails the run on the things that are bugs rather than taste: body text under
+AA on the reading column, a code block colour under AA, and a faint tier quieter
+than Gruvbox's own on the same surface. A dark set's sidebar card tiers are printed only.
+Colour that is merely different is not a failure.
 
 Pass a look to check just one: `npm --prefix dev run measure -- stalheim`.
 
 ## test-plugin.mjs
 
 Loads `plugin.js` in real Chromium with stubbed SDK modules and a fake desktop
-file bridge, mounts the real settings page, and asserts 40 things: each Custom
-slot paints its own picture and ground, the gallery names and previews the right
+file bridge, mounts the real settings page, and asserts behaviour: each Custom
+slot paints its own picture and ground, light and dark mode each paint their own set and
+gives code blocks their own ground, the gallery names and previews the right
 look, a knob move persists the marker and the palette to the record and the
 theme file without leaking into another slot, Reset returns a slot to its own
 preset and clears an uploaded picture key, and an install from the previous

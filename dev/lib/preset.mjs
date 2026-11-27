@@ -75,6 +75,8 @@ export async function readTables() {
     SKIN_DEFAULTS: await table('SKIN_DEFAULTS', '{', '}', { PAINTING_URL: 'data:,' }),
     PANEL_DEFAULTS: await table('PANEL_DEFAULTS'),
     READING_FOCUS: await table('READING_FOCUS'),
+    CODE_BLOCK: await table('CODE_BLOCK'),
+    GRUVBOX_LIGHT: await table('GRUVBOX_LIGHT'),
     LOOK_IDS: await table('LOOK_IDS', '[', ']')
   }
 }
