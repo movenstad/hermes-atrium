@@ -993,7 +993,7 @@ const sessionTabCss = () => [
   '  position: relative;',
   '  height: 26px !important; min-height: 26px !important; margin: 4px 1px 0 !important;',
   '  padding-inline: 4px 6px !important;',
-  '  border: 0 !important; border-radius: 8px !important;',
+  '  border: 0 !important; border-radius: var(--atr-r-control, 8px) !important;',
   '  background: transparent !important; box-shadow: none !important;',
   "  color: var(--atr-ink-2, #ebdbb2) !important; opacity: 0.78;",
   '  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;',
@@ -1086,14 +1086,14 @@ const sessionTabCss = () => [
   // box is unchanged by a background.
   "html:root [data-titlebar-cluster='right']:has(> :is(button, a)) {",
   `  background: rgba(${hexTriple(SKIN.deeper)}, ${isPaleSkin() ? 0.85 : 0.34});`,
-  '  border-radius: 10px;',
+  '  border-radius: calc(10px * var(--atr-corner-scale, 1));',
   '}',
   // A light palette draws dark icons on a picture nothing washes, so the left
   // cluster needs the same ground.
   ...(isPaleSkin() ? [
   "html:root [data-titlebar-cluster='left']:has(> :is(button, a)) {",
   `  background: rgba(${hexTriple(SKIN.deeper)}, 0.85);`,
-  '  border-radius: 10px;',
+  '  border-radius: calc(10px * var(--atr-corner-scale, 1));',
   '}',
   ] : []),
   // The icons are `text-muted-foreground/85` on the app's token chain, which
@@ -1111,7 +1111,7 @@ const sessionTabCss = () => [
   '}',
   // the + button: a quiet rounded square in line with the pills
   "button[aria-label='New session tab'] {",
-  '  width: 26px !important; height: 26px !important; margin: 4px 0 0 4px !important; border-radius: 8px !important;',
+  '  width: 26px !important; height: 26px !important; margin: 4px 0 0 4px !important; border-radius: var(--atr-r-control, 8px) !important;',
   '  color: var(--atr-ink-3, #d5c4a1) !important; background: transparent !important; border: 0 !important;',
   '  transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;',
   '}',
@@ -1120,7 +1120,7 @@ const sessionTabCss = () => [
   "button[aria-label='New session tab'] :is(svg, i) { width: 14px !important; height: 14px !important; font-size: 14px !important; }",
   ...(isPaleSkin() ? [`button[aria-label='New session tab'] { background: rgba(${hexTriple(SKIN.deeper)}, 0.85) !important; color: var(--atr-ink-1) !important; }`] : []),
   // a tab's close button: hidden until the tab is hovered or active
-  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
+  "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button { border-radius: calc(5px * var(--atr-corner-scale, 1)) !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button:hover { opacity: 1; background: rgba(var(--atr-hi), 0.10) !important; }",
   // Wider tabs: the app caps them at 12rem and sizes them to the title. Give
@@ -1165,10 +1165,11 @@ const polishCss = () => [
   '}',
   ':root {',
   // One ladder, four steps: chip 4, control/row/well 8, card 12, sheet 16.
-  '  --atr-r-1: 4px;',
-  '  --atr-r-2: 8px;',
-  '  --atr-r-3: 12px;',
-  '  --atr-r-4: 16px;',
+  // `--atr-corner-scale` is set by cornerCss where the corners are continuous.
+  '  --atr-r-1: calc(4px * var(--atr-corner-scale, 1));',
+  '  --atr-r-2: calc(8px * var(--atr-corner-scale, 1));',
+  '  --atr-r-3: calc(12px * var(--atr-corner-scale, 1));',
+  '  --atr-r-4: calc(16px * var(--atr-corner-scale, 1));',
   '  --atr-r-chip: var(--atr-r-1);',
   '  --atr-r-control: var(--atr-r-2);',
   '  --atr-r-card: var(--atr-r-3);',
@@ -1176,15 +1177,16 @@ const polishCss = () => [
   // by its own base sheet: `rounded-xl` was 3.2px, `rounded-lg` 2.4px, while
   // Atrium drew 8-16px surfaces beside them. That is why a command well, a
   // menu and the sheet around them never read as one family. One scalar puts
-  // every Tailwind radius on the same scale as the tokens below:
+  // every Tailwind radius on the same scale as the tokens below (before the
+  // corner scale):
   //   rounded-sm 6px · rounded-md 7.5px · rounded-lg 9px · rounded-xl 12px
   //   rounded-2xl 18px · rounded-3xl 24px
-  '  --radius-scalar: .75;',
+  '  --radius-scalar: calc(.75 * var(--atr-corner-scale, 1));',
   // No explicit --radius-sm/md/lg overrides: the app's base sheet already
   // derives those from the scalar, and re-declaring them (8/12/6) made
   // rounded-lg tie rounded-xl at 12. The scalar alone gives the scale above;
   // --radius stays as the app's standalone base token.
-  '  --radius: 12px;',
+  '  --radius: calc(12px * var(--atr-corner-scale, 1));',
   // Atrium's two surface aliases: cards/floating lists, and sheets.
   '  --atr-radius: var(--atr-r-3);',
   '  --atr-radius-lg: var(--atr-r-4);',
@@ -1431,7 +1433,7 @@ const polishCss = () => [
   '  border-radius: var(--atr-r-card) !important;',
   '}',
   ":is([role='tooltip']) {",
-  '  border-radius: 6px !important;',
+  '  border-radius: calc(6px * var(--atr-corner-scale, 1)) !important;',
   '  padding: 4px 8px !important;',
   '  font-size: 11px !important;',
   '}',
@@ -1720,7 +1722,7 @@ const replyGroundCss = material => {
   // are then byte-for-byte the host's own styles.
   if (!material.alpha) return ''
   const shell = 'html body ' + REPLY_SHELL
-  return [
+  return withCorners([
     ':root {',
     `  --atr-reply-ground: rgba(${material.color.join(', ')}, ${material.alpha});`,
     `  --atr-reply-pad: ${REPLY_PAD()};`,
@@ -1776,7 +1778,7 @@ const replyGroundCss = material => {
     '  background: var(--atr-reply-ground) !important; border-radius: var(--atr-radius, 12px);',
     '  color: inherit !important; text-shadow: none !important;',
     '}',
-  ].join('\n')
+  ].join('\n'))
 }
 
 // Read only theme state, never the app's markup or individual messages. Hermes
@@ -1833,6 +1835,39 @@ const MENU_ROWS = ":is([role='menuitem'], [role='option'], [role='menuitemcheckb
 const SWITCH_HOOK = '[data-atr-strip][data-atr-switch]'
 
 // ══ §4 APP CSS (sheetCss: layout, glass material, every surface) ═══════════
+
+// ── Continuous corners ─────────────────────────────────────────────────────
+// A round corner goes from straight edge to full curve in one step. A
+// superellipse eases into it. The two numbers belong together: at the same
+// radius a superellipse looks sharper, so the radius grows, which keeps about
+// the old depth at the middle of the corner and starts the curve further out.
+const CORNER_SHAPE = 'superellipse(1.7)'
+const CORNER_SCALE = 1.5
+
+// Chromium learned `corner-shape` in 139. An older host drops it and keeps the
+// round corners at their old size.
+//
+// `corner-shape` does not inherit, so it travels with the radius: every rule of
+// ours that declares one gets the shape too, and no second list of selectors can
+// fall out of step. Pills and circles are sent back to round.
+const withCorners = css => css.replace(/border(?:-(?:top|bottom)-(?:left|right))?-radius:\s*([^;{}]+);/g,
+  (rule, radius) => `${rule} corner-shape: ${/^(999|50%)/.test(radius) ? 'round' : 'var(--atr-corner, round)'};`)
+
+// What the app rounds by itself has no rule of ours to travel with. A blanket
+// `*` would also turn every circle into a squircle, and CSS cannot select by
+// radius, so only the app's utility classes are named. `:where` keeps the weight
+// at zero so any rule above still wins.
+const cornerCss = () => [
+  `@supports (corner-shape: ${CORNER_SHAPE}) {`,
+  `  :root { --atr-corner: ${CORNER_SHAPE}; --atr-corner-scale: ${CORNER_SCALE}; }`,
+  "  :where([class~='rounded'], [class*='rounded-']):where(:not([class*='rounded-full'], [class*='rounded-[50%]'], [class*='rounded-[999'])) {",
+  '    corner-shape: var(--atr-corner);',
+  '  }',
+  // A layer that takes its parent's radius has to take the shape too, or the
+  // two curves part at the edge.
+  "  [class*='rounded-[inherit]'] { corner-shape: inherit; }",
+  '}',
+]
 
 // ── The floating sidebar ──────────────────────────────────────────
 // The sidebar column becomes one card. Parked, it sits off-screen and a touch
@@ -3165,7 +3200,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "html body [data-slot='sheet-content'][class][data-state] {",
     '  border-color: transparent !important;',
     '}',
-    // A 20px gutter keeps the well's curve clear of the 16px sheet corner.
+    // A 20px gutter keeps the well's curve clear of the sheet's corner.
     "[data-slot='dialog-content'] > div[class*='grid'] {",
     '  padding: 1.25rem !important;',
     '}',
@@ -3343,7 +3378,8 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Scrollbars everywhere: thin and tinted, never the platform grey slab.
     '* { scrollbar-color: rgba(var(--atr-hi), 0.14) transparent; scrollbar-width: thin; }',
     ...SIDEBAR_CSS,
-  ] : []].map(lines => lines.join('\n'))
+    ...cornerCss(),
+  ] : []].map(lines => withCorners(lines.join('\n')))
   // Two style elements by contract: `paintSheet` installs exactly the two
   // entries in SHEET_IDS and silently drops anything past that. The array above
   // is assembled as five cascade-ordered groups (backdrop, the chrome tokens,
@@ -3768,7 +3804,7 @@ const ensureSnippetStyle = () => {
   if (typeof document === 'undefined' || document.getElementById('atr-snippet-style')) return
   const el = document.createElement('style')
   el.id = 'atr-snippet-style'
-  el.textContent = SNIPPET_CSS
+  el.textContent = withCorners(SNIPPET_CSS)
   document.head.appendChild(el)
 }
 
@@ -5602,7 +5638,7 @@ export default {
               style: { height: 'auto', minWidth: 0, padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem', whiteSpace: 'normal', textAlign: 'left', ...(selectedLook === item.id ? { outline: '2px solid var(--ui-accent)', outlineOffset: '2px' } : {}) },
               onClick: () => selectAppearance(item.id),
               children: [
-                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', background: lookPreview(skinOf(item.id).image, item.preview) } }),
+                jsx('span', { 'aria-hidden': true, style: { display: 'block', height: '4rem', borderRadius: 'var(--atr-r-control, 8px)', cornerShape: 'var(--atr-corner, round)', background: lookPreview(skinOf(item.id).image, item.preview) } }),
                 jsxs('span', { style: { display: 'flex', justifyContent: 'space-between' }, children: [item.label, selectedLook === item.id ? jsx(Codicon, { name: 'check', size: '1rem' }) : null] }),
                 jsx('span', { className: 'text-xs text-muted-foreground', children: item.description })
               ]
