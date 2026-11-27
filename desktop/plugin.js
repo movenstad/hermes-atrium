@@ -36,7 +36,7 @@
  *   §8  PLUGIN REGISTRATION (register: settings, timers, observers)
  */
 
-import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ToggleRow, useValue } from '@hermes/plugin-sdk'
+import { atom, Button, Codicon, host, requestTheme, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ToggleRow, useTheme, useValue } from '@hermes/plugin-sdk'
 import { useEffect } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
@@ -108,6 +108,8 @@ const PAINTING_FILE = 'charles-william-wyllie-the-backwater.jpg'
 // palette table (gruvbox.vim's `s:gb`) is gone: it was a second source of truth
 // for colours the skin already names, and a Custom look could not reach it.
 const DESTRUCTIVE = '#fb4934'
+// Gruvbox's faded red, for the same job on a light palette.
+const DESTRUCTIVE_PALE = '#9d0006'
 
 // ── The skin, as data ───────────────────────────────────────────────────────
 // ONE set of knobs for every look. A look is a named preset of this data: the
@@ -215,6 +217,38 @@ const SKIN_COLORS = [
 ]
 let SKIN = { ...SKIN_DEFAULTS }
 
+// ── Light and dark ──────────────────────────────────────────────────────────
+// A look is one picture and two sets of these knobs. The keys at the top of its
+// record are the dark set, which is what every earlier build wrote, and `light`
+// holds the light one. The picture, its fit and position, the glass and the
+// sidebar wash are shared. Which set is on screen follows the app's own Light,
+// Dark or System setting.
+const MODE_KEYS = ['scrim', 'card', 'bubble', 'page', ...SKIN_COLORS.map(c => c[0])]
+const modeValues = source => Object.fromEntries(MODE_KEYS
+  .filter(key => source?.[key] !== undefined && source[key] !== null && source[key] !== '')
+  .map(key => [key, source[key]]))
+
+// Gruvbox's own light mode (morhetz/gruvbox, medium contrast): bg0 for the
+// reading ground, bg0_h for the sidebar and code, bg1 and bg2 for cards and your
+// messages, bg3 for edges, the faded colours for text. Where gruvbox's own tone
+// falls under AA over a picture, a darker step of it is used. No light set has a
+// scrim: an empty chat shows the painting as painted. In a conversation Reading
+// focus treats it as in dark mode (toningSet).
+const GRUVBOX_LIGHT = {
+  scrim: 0, card: 0.86, bubble: 0.86, page: 0.90,
+  ground: '#fbf1c7', deeper: '#f9f5d7', cardTint: '#f2e5bc', bubbleTint: '#ebdbb2', edge: '#bdae93',
+  accent: '#af3a03', ink: '#282828', ink2: '#3c3836', ink3: '#504945', quiet: '#5a524c', ink4: '#5f564f',
+  link: '#076678', code: '#8f3f71', quote: '#35664a'
+}
+
+// The mode on screen, kept in step with the app in §8.
+let UI_MODE = 'dark'
+const hostMode = () => (typeof document !== 'undefined' && document.documentElement?.classList?.contains?.('dark') === false ? 'light' : 'dark')
+// Whether a palette is a light one, judged by the palette itself, so a Custom
+// set with its colours the other way round still gets the matching materials.
+const isPaleSkin = (set = SKIN) => replyLuminance(hexRgb(set.ground)) > replyLuminance(hexRgb(set.ink))
+const destructiveFor = (set = SKIN) => (isPaleSkin(set) ? DESTRUCTIVE_PALE : DESTRUCTIVE)
+
 // ── Reading focus ────────────────────────────────────────────────────────────
 // One setting for everyone who finds the picture too busy to read over. It acts
 // only while a conversation is open: a fresh draft keeps the picture sharp, and
@@ -273,13 +307,12 @@ const isCustomLook = id => id !== 'gruvbox'
 //
 // The palettes are measured rather than picked by eye, against each picture's
 // own pixels, through the same compositing the reply-panel solver runs. At the
-// shipped panel dials, ink on the solved reply panel reaches 12.1:1 on Watzmann,
-// 11.9:1 on Stalheim and 17.0:1 on Dresden, and every faint tier keeps
-// Gruvbox's hierarchy on the chrome ground: its ratio, scaled to how the look's
-// own body text compares to Gruvbox's. `npm --prefix dev run measure`
-// reproduces every one of those numbers and fails the run if a change drops
-// below them, so treat this comment as the summary and that script as the
-// source.
+// shipped panel dials, ink on the solved reply panel clears 11:1 on all three,
+// and every faint tier keeps Gruvbox's hierarchy on the chrome ground: its
+// ratio, scaled to how the look's own body text compares to Gruvbox's.
+// `npm --prefix dev run measure` prints the numbers, code blocks included, and
+// fails the run if a change drops below them, so treat this comment as the
+// summary and that script as the source.
 //
 // The three are paintings by Johan Christian Dahl, in the public domain: a light
 // look (the Watzmann's snow and pale sky), a middle one (Stalheim's storm over
@@ -290,24 +323,35 @@ const isCustomLook = id => id !== 'gruvbox'
 // river, the bridge and the moon's reflection.
 //
 // The scrims are lighter than Gruvbox's 0.31 so the paintings keep their own
-// light; the solved reply panel carries the contrast behind prose. Watzmann has
-// none at all and lighter cards: its painting is bright, so one deep blue for
-// every surface is enough to hold the text. Dresden's edge matches its ground,
-// so its reply panels stay near-black instead of lifting over the dark picture
-// (see replyPanelTone). Blur stays
-// at 0 like every other look: a still picture gains nothing from a full-window
-// compositor pass on every scroll.
+// light; the solved reply panel carries the contrast behind prose.
+//
+// Watzmann and Dresden share one near-black ground (#0d1117) for the chat and
+// the sidebar, with surfaces and text stepping up from it. They differ in warmth:
+// Watzmann has brighter text and an orange accent against its pale painting,
+// Dresden softer text, a dimmer edge and a lantern amber. Cards stay above 0.8
+// on both, because the faint labels on a thinner card fall under AA wherever the
+// card sits over snow or moonlight. Dresden's edge is barely lighter than its
+// ground, so its reply panels stay near-black instead of lifting over the dark
+// picture (see replyPanelTone). Blur stays at 0 like every other look: a still
+// picture gains nothing from a full-window compositor pass on every scroll.
 const LOOK_PRESETS = {
   custom: {
     name: 'Watzmann',
-    description: 'Alpine snow, deep blue glass',
+    description: 'Alpine snow, midnight glass',
     skin: {
       image: 'assets/johan-christian-dahl-the-watzmann.jpg', fit: 'cover', posX: 50, posY: 0,
-      scrim: 0, card: 0.70, bubble: 0.80, page: 0.85,
-      ground: '#1c2836', deeper: '#1c2836', cardTint: '#1c2836', bubbleTint: '#1c2836',
-      edge: '#7f97b0', accent: '#eaa98f',
-      ink: '#f7f9fc', ink2: '#e2e8f0', ink3: '#cdd6e2', quiet: '#b4c0cf', ink4: '#9eabbc',
-      link: '#a8cdf0', code: '#f0c2a8', quote: '#b8d4a8'
+      scrim: 0, card: 0.86, bubble: 0.80, page: 0.85,
+      ground: '#0d1117', deeper: '#0d1117', cardTint: '#161b22', bubbleTint: '#21262d',
+      edge: '#3d444d', accent: '#f0883e',
+      ink: '#f0f6fc', ink2: '#d1d9e0', ink3: '#bcc5cf', quiet: '#aab4bf', ink4: '#9aa4af',
+      link: '#79c0ff', code: '#ffb77c', quote: '#7ee787'
+    },
+    light: {
+      scrim: 0, card: 0.87, bubble: 0.86, page: 0.90,
+      ground: '#ffffff', deeper: '#f6f8fa', cardTint: '#f6f8fa', bubbleTint: '#eaeef2',
+      edge: '#d0d7de', accent: '#a04100',
+      ink: '#1f2328', ink2: '#31373d', ink3: '#3d444d', quiet: '#464e57', ink4: '#515a64',
+      link: '#0757b5', code: '#953800', quote: '#116329'
     }
   },
   custom2: {
@@ -320,6 +364,13 @@ const LOOK_PRESETS = {
       edge: '#7a6f55', accent: '#d9b45a',
       ink: '#f6f1e4', ink2: '#e6dcc6', ink3: '#d2c6ab', quiet: '#bfb193', ink4: '#a49a82',
       link: '#a9c3d6', code: '#e3a98a', quote: '#b5c98a'
+    },
+    light: {
+      scrim: 0, card: 0.88, bubble: 0.86, page: 0.92,
+      ground: '#f7f3e8', deeper: '#fbf8f0', cardTint: '#efe9da', bubbleTint: '#e6dfcb',
+      edge: '#cfc5a8', accent: '#735408',
+      ink: '#24211a', ink2: '#37322a', ink3: '#443e32', quiet: '#4b4437', ink4: '#554e3f',
+      link: '#1c5078', code: '#833a12', quote: '#3f5714'
     }
   },
   custom3: {
@@ -327,23 +378,30 @@ const LOOK_PRESETS = {
     description: 'Moonlit Elbe, near-black glass',
     skin: {
       image: 'assets/johan-christian-dahl-view-of-dresden-by-moonlight.jpg', fit: 'cover', posX: 50, posY: 100,
-      scrim: 0.09, card: 0.55, bubble: 0.80, page: 0.80,
-      ground: '#14191f', deeper: '#0c1016', cardTint: '#14191f', bubbleTint: '#14191f',
-      edge: '#14191f', accent: '#e8b26a',
-      ink: '#eef2f7', ink2: '#d3dae4', ink3: '#bcc5d2', quiet: '#a8b3c2', ink4: '#8e9aab',
-      link: '#8fbbe6', code: '#e9a87e', quote: '#98c7b8'
+      scrim: 0.09, card: 0.82, bubble: 0.80, page: 0.80,
+      ground: '#0d1117', deeper: '#0d1117', cardTint: '#151b23', bubbleTint: '#1c232d',
+      edge: '#2a313c', accent: '#e3b341',
+      ink: '#e6edf3', ink2: '#ccd6e0', ink3: '#b3bec9', quiet: '#a2adba', ink4: '#909ba8',
+      link: '#8cc8ff', code: '#f2cc60', quote: '#76e3ea'
+    },
+    light: {
+      scrim: 0, card: 0.90, bubble: 0.88, page: 0.92,
+      ground: '#eef2f7', deeper: '#f6f8fb', cardTint: '#e4eaf2', bubbleTint: '#dae2ec',
+      edge: '#c2ccd9', accent: '#7a5000',
+      ink: '#161d27', ink2: '#2a3441', ink3: '#37424f', quiet: '#414c59', ink4: '#4a5561',
+      link: '#0a529f', code: '#6f4700', quote: '#0e545f'
     }
   }
 }
-// The presets earlier builds seeded the slots with, before the Dahl paintings.
-// Every install that opened a Custom slot wrote one of these into its record
-// (the theme file sync seeds it), so without this table an upgrade would keep
-// the old palette over a picture that no longer ships. A record that still
-// holds nothing but its slot's retired preset counts as untouched, and a record
-// that kept a retired picture marker gets the slot's current picture instead
-// of falling back to the shipped painting.
+// The presets earlier builds seeded the slots with: the ones before the Dahl
+// paintings, then the first Dahl palettes. Every install that opened a Custom
+// slot wrote one of these into its record (the theme file sync seeds it), so
+// without this table an upgrade would keep the old palette. A record that still
+// holds nothing but one of its slot's retired presets counts as untouched, and a
+// record that kept a retired picture marker gets the slot's current picture
+// instead of falling back to the shipped painting.
 const RETIRED_PRESETS = {
-  custom: {
+  custom: [{
     name: 'Watersky',
     description: 'Blue concrete, cool glass',
     skin: {
@@ -354,8 +412,18 @@ const RETIRED_PRESETS = {
       ink: '#f6fbff', ink2: '#dbe8f6', ink3: '#c4d6e9', quiet: '#a9bed4', ink4: '#8fa5bb',
       link: '#96d2f9', code: '#f6cc9e', quote: '#9ee3d8'
     }
-  },
-  custom2: {
+  }, {
+    name: 'Watzmann, deep blue',
+    skin: {
+      image: 'assets/johan-christian-dahl-the-watzmann.jpg', fit: 'cover', posX: 50, posY: 0,
+      scrim: 0, card: 0.70, bubble: 0.80, page: 0.85,
+      ground: '#1c2836', deeper: '#1c2836', cardTint: '#1c2836', bubbleTint: '#1c2836',
+      edge: '#7f97b0', accent: '#eaa98f',
+      ink: '#f7f9fc', ink2: '#e2e8f0', ink3: '#cdd6e2', quiet: '#b4c0cf', ink4: '#9eabbc',
+      link: '#a8cdf0', code: '#f0c2a8', quote: '#b8d4a8'
+    }
+  }],
+  custom2: [{
     name: 'Goldensky',
     description: 'Dusk clouds, warm glass',
     skin: {
@@ -366,8 +434,8 @@ const RETIRED_PRESETS = {
       ink: '#faf1ea', ink2: '#ebdbd1', ink3: '#d9c4b7', quiet: '#c6ad9f', ink4: '#ac998f',
       link: '#c3b6dd', code: '#eabf92', quote: '#d2b0cb'
     }
-  },
-  custom3: {
+  }],
+  custom3: [{
     name: 'Nightsky',
     description: 'Starfield, indigo glass',
     skin: {
@@ -378,12 +446,24 @@ const RETIRED_PRESETS = {
       ink: '#f0edff', ink2: '#d6d0f0', ink3: '#bdb5dd', quiet: '#c0b8db', ink4: '#a49cc0',
       link: '#b0c8fb', code: '#eeaff0', quote: '#93e0d3'
     }
-  }
+  }, {
+    name: 'Dresden, slate',
+    skin: {
+      image: 'assets/johan-christian-dahl-view-of-dresden-by-moonlight.jpg', fit: 'cover', posX: 50, posY: 100,
+      scrim: 0.09, card: 0.55, bubble: 0.80, page: 0.80,
+      ground: '#14191f', deeper: '#0c1016', cardTint: '#14191f', bubbleTint: '#14191f',
+      edge: '#14191f', accent: '#e8b26a',
+      ink: '#eef2f7', ink2: '#d3dae4', ink3: '#bcc5d2', quiet: '#a8b3c2', ink4: '#8e9aab',
+      link: '#8fbbe6', code: '#e9a87e', quote: '#98c7b8'
+    }
+  }]
 }
 // The record a slot starts from: the shipped knobs, then whatever its preset
-// names. Spelled out in one place so readLookSkin, resetSkin and the previous
-// record all agree on what "before you touched it" means.
-const presetSkin = which => ({ ...SKIN_DEFAULTS, ...(LOOK_PRESETS[which]?.skin || {}) })
+// names, and the same for its light set. Spelled out in one place so
+// readLookSkin, resetSkin and the previous record all agree on what "before you
+// touched it" means.
+const presetLight = which => ({ ...GRUVBOX_LIGHT, ...(LOOK_PRESETS[which]?.light || {}) })
+const presetSkin = which => ({ ...SKIN_DEFAULTS, ...(LOOK_PRESETS[which]?.skin || {}), light: presetLight(which) })
 
 // The surfaces earlier builds shipped as Gruvbox: a green tinted from the
 // painting, not gruvbox's own greys. Records written by those builds still hold
@@ -408,24 +488,24 @@ const isShippedDefaults = (record, which) => Object.keys(SKIN_DEFAULTS).every(ke
   return String(a).toLowerCase() === String(b).toLowerCase() || isRetiredSurface(key, a)
 }) || isRetiredPreset(record, which)
 
-// Whether a record holds nothing but the preset an earlier build seeded this
-// slot with. Same test as above, against the retired preset's knobs.
+// Whether a record holds nothing but a preset an earlier build seeded this slot
+// with. Same test as above, against each retired preset's knobs.
 const isRetiredPreset = (record, which) => {
-  const old = RETIRED_PRESETS[which]?.skin
-  if (!old || !record || typeof record !== 'object') return false
-  return Object.keys(SKIN_DEFAULTS).every(key => {
+  if (!record || typeof record !== 'object') return false
+  return (RETIRED_PRESETS[which] || []).some(({ skin: old }) => Object.keys(SKIN_DEFAULTS).every(key => {
     if (key === 'image') return true
     const a = record[key], b = key in old ? old[key] : SKIN_DEFAULTS[key]
     if (a === undefined) return true
     if (typeof b === 'number') return Number(a) === b
     return String(a).toLowerCase() === String(b).toLowerCase()
-  })
+  }))
 }
 
 // A picture marker for a file that no longer ships (`assets/watersky.jpg`)
 // becomes the slot's current preset picture. Left alone it would resolve to
 // nothing and paint the Gruvbox painting under a palette chosen for another.
-const RETIRED_MARKERS = Object.values(RETIRED_PRESETS).map(p => p.skin.image.toLowerCase())
+// Named one by one: a retired palette can sit over a painting that still ships.
+const RETIRED_MARKERS = ['assets/watersky.jpg', 'assets/goldensky.jpg', 'assets/nightsky.jpg']
 const currentMarker = (which, image) => RETIRED_MARKERS.includes(String(image || '').replace(/\\/g, '/').toLowerCase())
   ? (LOOK_PRESETS[which]?.skin.image || image)
   : image
@@ -460,8 +540,11 @@ const remotePicture = v => {
   const t = String(v || '').trim()
   return t.startsWith('//') || (/^[a-z][a-z0-9+.-]+:/i.test(t) && !/^(?:file|data):/i.test(t))
 }
-const setSkin = next => {
-  const out = { ...SKIN_DEFAULTS }
+// One of a record's two sets, as the values to paint.
+const skinValues = (record, mode) => {
+  const light = mode === 'light'
+  const out = light ? { ...SKIN_DEFAULTS, ...GRUVBOX_LIGHT } : { ...SKIN_DEFAULTS }
+  const next = light ? { ...record, ...record?.light } : record
   for (const key of Object.keys(next || {})) {
     if (!(key in SKIN_DEFAULTS)) continue
     const v = next[key]
@@ -480,8 +563,19 @@ const setSkin = next => {
       if (typeof v === 'string' && v && !remotePicture(v)) out[key] = v
     }
   }
-  SKIN = out
+  return out
 }
+// The dark set of the look on screen, kept in both modes. It is made to sit on
+// the picture, so light mode borrows it for the words on an empty chat and for
+// the picture behind a conversation.
+let DARK_SET = SKIN_DEFAULTS
+const setSkin = record => {
+  SKIN = skinValues(record, UI_MODE)
+  DARK_SET = skinValues(record, 'dark')
+}
+// Whose scrim and ground tone the picture behind a conversation. A light ground
+// there would whiten the painting where the point is to darken it.
+const toningSet = () => (isPaleSkin() ? DARK_SET : SKIN)
 const skinNumber = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
 // '#221a16' -> '34, 26, 22' (the app's neutral tokens are bare RGB triples)
 const hexTriple = hex => {
@@ -502,6 +596,11 @@ const materialVars = () => {
   const tri = rgb => rgb.join(', ')
   const deep = SKIN.deeper, ground = SKIN.ground, card = SKIN.cardTint, bub = SKIN.bubbleTint
   const g = k => skinNumber(SKIN[k], 0.78)
+  // Your messages and the composer are see-through on a dark palette. Light mode
+  // leaves the picture unwashed, where that turns them grey under dark text over
+  // a dark passage, so a light palette gives them the weight its slider names.
+  const pale = isPaleSkin()
+  const weight = (dark, light) => Math.min(1, pale ? light : dark).toFixed(3)
   return [
     'html:root {',
     `  --atr-hi: ${hexTriple(SKIN.ink)};`,
@@ -510,11 +609,11 @@ const materialVars = () => {
     `  --atr-m-pin-a: rgba(${hexTriple(ground)}, ${(g('sidebar') * 0.68).toFixed(3)}); --atr-m-pin-b: rgba(${hexTriple(deep)}, ${(g('sidebar') * 0.78).toFixed(3)});`,
     // The composer used to follow the retired Chat pane opacity slider. 0.78 is
     // the middle of what the four looks set it to, so it keeps its weight.
-    `  --atr-m-comp-a: rgba(${hexTriple(bub)}, ${(0.78 * 0.62).toFixed(3)}); --atr-m-comp-b: rgba(${hexTriple(card)}, ${(0.78 * 0.70).toFixed(3)});`,
-    `  --atr-m-bub-a: rgba(${hexTriple(bub)}, ${(g('bubble') * 0.60).toFixed(3)}); --atr-m-bub-b: rgba(${hexTriple(card)}, ${(g('bubble') * 0.68).toFixed(3)});`,
+    `  --atr-m-comp-a: rgba(${hexTriple(bub)}, ${weight(0.78 * 0.62, 0.90)}); --atr-m-comp-b: rgba(${hexTriple(card)}, ${weight(0.78 * 0.70, 0.94)});`,
+    `  --atr-m-bub-a: rgba(${hexTriple(bub)}, ${weight(g('bubble') * 0.60, g('bubble'))}); --atr-m-bub-b: rgba(${hexTriple(card)}, ${weight(g('bubble') * 0.68, g('bubble') * 1.05)});`,
     `  --atr-m-sheet: rgba(${tri(mixHex(deep, ground, 0.5))}, ${(g('card') * 0.92).toFixed(3)});`,
     `  --atr-m-on: ${deep};`,
-    '  --ui-row-active-background: var(--atr-selected, rgba(255, 255, 255, 0.10)) !important;',
+    '  --ui-row-active-background: var(--atr-selected, rgba(var(--atr-hi), 0.10)) !important;',
     '}'
   ]
 }
@@ -529,20 +628,20 @@ const materialVars = () => {
 // for the floating sidebar: the rail behind the cards must show the picture at
 // full strength, or the gaps between the cards match their own tone and the
 // column reads as one slab. The cards paint themselves from the skin.
-const skinGrounds = () => {
+const skinGrounds = (set = SKIN) => {
   const a = (hex, alpha) => `rgba(${hexTriple(hex)}, ${alpha})`
   return {
-    background: a(SKIN.ground, 0.88), foreground: SKIN.ink,
-    card: a(SKIN.cardTint, 0.96), cardForeground: SKIN.ink,
-    muted: a(SKIN.cardTint, 0.80), mutedForeground: SKIN.quiet,
-    popover: a(SKIN.deeper, 0.98), popoverForeground: SKIN.ink,
-    primary: SKIN.accent, primaryForeground: SKIN.deeper,
-    secondary: a(SKIN.cardTint, 0.90), secondaryForeground: SKIN.ink2,
-    accent: SKIN.accent, accentForeground: SKIN.deeper,
-    border: SKIN.edge, input: a(SKIN.cardTint, 0.95),
-    ring: SKIN.accent, destructive: DESTRUCTIVE, destructiveForeground: SKIN.deeper,
-    sidebarBackground: 'transparent', sidebarBorder: SKIN.edge,
-    userBubble: a(SKIN.bubbleTint, 0.95), userBubbleBorder: SKIN.edge
+    background: a(set.ground, 0.88), foreground: set.ink,
+    card: a(set.cardTint, 0.96), cardForeground: set.ink,
+    muted: a(set.cardTint, 0.80), mutedForeground: set.quiet,
+    popover: a(set.deeper, 0.98), popoverForeground: set.ink,
+    primary: set.accent, primaryForeground: set.deeper,
+    secondary: a(set.cardTint, 0.90), secondaryForeground: set.ink2,
+    accent: set.accent, accentForeground: set.deeper,
+    border: set.edge, input: a(set.cardTint, 0.95),
+    ring: set.accent, destructive: destructiveFor(set), destructiveForeground: set.deeper,
+    sidebarBackground: 'transparent', sidebarBorder: set.edge,
+    userBubble: a(set.bubbleTint, 0.95), userBubbleBorder: set.edge
   }
 }
 
@@ -576,8 +675,11 @@ const pictureLayers = () => [
 // focus) so its blurred copy sits under exactly the same scrims, fit and
 // position, and the two layers cannot drift apart. `above` are extra layers
 // painted over the scrims.
-const pictureBackground = (image, above = []) => {
-  const scrim = skinNumber(SKIN.scrim, 0.44)
+const pictureBackground = (image, above = [], set = SKIN) => {
+  const scrim = skinNumber(set.scrim, 0.44)
+  // A light palette leaves the picture as painted: no grain, and a scrim only if
+  // one is asked for (every light preset has none).
+  const grain = !isPaleSkin(set)
   return [
     '  background-image:',
     ...above.map(layer => `    ${layer},`),
@@ -585,7 +687,7 @@ const pictureBackground = (image, above = []) => {
     // sunlit grass; top/bottom: titlebar and composer edges.
     // fine grain: dark gradients over 8-bit colour step visibly; a faint
     // noise breaks the steps up so the falloff reads as a smooth curve
-    `    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),`,
+    ...(grain ? [`    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),`] : []),
     // one soft vignette (eased, many stops) + one even scrim: no ramps that end
     // in a visible line
     `    radial-gradient(125% 115% at 50% 42%, rgba(${hexTriple(SKIN.deeper)}, 0) 0%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.10).toFixed(3)}) 35%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.32).toFixed(3)}) 55%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.62).toFixed(3)}) 72%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 0.90).toFixed(3)}) 88%, rgba(${hexTriple(SKIN.deeper)}, ${(scrim * 1.05).toFixed(3)}) 100%),`,
@@ -602,9 +704,9 @@ const pictureBackground = (image, above = []) => {
     // PNG and a 3.4 MB JPEG) sat over that line and could never be applied,
     // while every smaller one worked. background-image has no such limit.
     `    url("${String(image).replace(/"/g, '%22')}");`,
-    `  background-size: ${[...above.map(() => 'cover'), '160px 160px', 'cover', 'cover', SKIN.fit === 'contain' ? 'contain' : 'cover'].join(', ')};`,
-    `  background-position: ${[...above.map(() => 'center'), '0 0', 'center', 'center', `${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%`].join(', ')};`,
-    `  background-repeat: ${[...above.map(() => 'no-repeat'), 'repeat', 'no-repeat', 'no-repeat', 'no-repeat'].join(', ')};`,
+    `  background-size: ${[...above.map(() => 'cover'), ...(grain ? ['160px 160px'] : []), 'cover', 'cover', SKIN.fit === 'contain' ? 'contain' : 'cover'].join(', ')};`,
+    `  background-position: ${[...above.map(() => 'center'), ...(grain ? ['0 0'] : []), 'center', 'center', `${skinNumber(SKIN.posX, 46)}% ${skinNumber(SKIN.posY, 45)}%`].join(', ')};`,
+    `  background-repeat: ${[...above.map(() => 'no-repeat'), ...(grain ? ['repeat'] : []), 'no-repeat', 'no-repeat', 'no-repeat'].join(', ')};`,
     `  background-color: ${SKIN.deeper};`
   ]
 }
@@ -677,7 +779,7 @@ const chatGlass = (backdrop, chrome) => {
     band: focus ? level.band : 0
   }
 }
-const focusParams = g => [g.blur, g.saturate.toFixed(3), g.brightness.toFixed(3), SKIN.deeper, SKIN.fit].join('|')
+const focusParams = g => [g.blur, g.saturate.toFixed(3), g.brightness.toFixed(3), toningSet().deeper, SKIN.fit].join('|')
 
 // Reading focus paints a copy of the picture that is blurred once, on a canvas,
 // rather than asking for a live backdrop-filter. The live filter is a
@@ -714,7 +816,7 @@ const blurPicture = (image, g) => {
   pad.height = h + 2 * m
   const p = pad.getContext('2d')
   // Transparent pixels show the look's deepest ground, as they do on screen.
-  p.fillStyle = SKIN.deeper
+  p.fillStyle = toningSet().deeper
   p.fillRect(0, 0, pad.width, pad.height)
   p.drawImage(image, m, m, w, h)
   p.drawImage(pad, m, m, 1, h, 0, m, m, h)
@@ -760,8 +862,9 @@ const prepareFocusPicture = (url, g) => {
 // instant.
 const chatLayerCss = g => {
   if (!g.focus) return []
-  const deeper = hexTriple(SKIN.deeper)
-  const scrim = skinNumber(SKIN.scrim, 0.31)
+  const set = toningSet()
+  const deeper = hexTriple(set.deeper)
+  const scrim = skinNumber(set.scrim, 0.31)
   // Top first: Reading focus's even scrim, then the look's own glass scrim.
   const above = []
   if (g.scrim > 0) above.push(`linear-gradient(rgba(${deeper}, ${g.scrim}), rgba(${deeper}, ${g.scrim}))`)
@@ -775,7 +878,7 @@ const chatLayerCss = g => {
     '  transition: opacity var(--atr-t-3, 200ms) var(--atr-ease, ease);',
     // The blurred copy, under the same scrims, fit and position as the picture.
     ...(blurred
-      ? pictureBackground(blurred, above)
+      ? pictureBackground(blurred, above, set)
       : [`  background-image: ${above.length ? above.join(', ') : 'none'};`]),
     '}',
     "html[data-atr-chat='1']::after {",
@@ -811,8 +914,12 @@ const pictureBackdrop = (bounds, filtered = true) => {
   const drawnWidth = source.width * scale, drawnHeight = source.height * scale
   const offsetX = (width - drawnWidth) * skinNumber(SKIN.posX, 46) / 100
   const offsetY = (height - drawnHeight) * skinNumber(SKIN.posY, 45) / 100
-  const pixels = source.pixels.data, samples = [], deeper = hexRgb(SKIN.deeper)
-  const scrim = skinNumber(SKIN.scrim, 0.31)
+  // Reading focus tones a conversation's picture with the set chatLayerCss uses.
+  const glass = chatGlass(true, filtered)
+  const chat = (glass.look || glass.focus) && document.documentElement.matches?.("html[data-atr-chat='1']")
+  const set = chat && glass.focus ? toningSet() : SKIN
+  const pixels = source.pixels.data, samples = [], deeper = hexRgb(set.deeper)
+  const scrim = skinNumber(set.scrim, 0.31)
   const blend = (a, b, t) => [0, 1, 2].map(i => a[i] * (1 - t) + b[i] * t)
   // The filter and its own scrim live on html::after, which the sheet only
   // emits when Glass blur is above 0 (see sheetCss). Modelling them at blur 0
@@ -821,8 +928,6 @@ const pictureBackdrop = (bounds, filtered = true) => {
   // saturation and brightness in the picture itself, under the scrims, while
   // the live filter applies them over the scrims; the order is modelled as
   // painted, and the blur itself barely moves the mean this solver reads.
-  const glass = chatGlass(true, filtered)
-  const chat = (glass.look || glass.focus) && document.documentElement.matches?.("html[data-atr-chat='1']")
   const baked = chat && glass.focus && Boolean(focusPictureFor(glass))
   const filterRgb = rgb => {
     const luma = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
@@ -878,7 +983,9 @@ const pictureBackdrop = (bounds, filtered = true) => {
 // session-tile): wide pills, the active one a flat matte block, the same
 // matte material the sidebar cards wear. The pane tabs (Sessions / Bots) are NOT
 // these; they keep their own look.
-const SESSION_TAB_CSS = [
+// A function, not a constant: some of these rules read the palette on screen,
+// and a constant would hold whatever it was when the module loaded.
+const sessionTabCss = () => [
   // Top tabs: soft pills, sentence case, no rules between them. The active tab
   // is a flat matte block of the same material as the cards; the rest stay
   // quiet until hovered.
@@ -911,12 +1018,13 @@ const SESSION_TAB_CSS = [
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']) {",
   '  opacity: 1;',
   '  color: var(--atr-ink-1, #ebdbb2) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #282828) 48%, transparent) !important;',
+  // Light mode leaves the picture unwashed, so a light tab carries its own text.
+  `  background: color-mix(in srgb, var(--atr-tint, #282828) ${isPaleSkin() ? 82 : 48}%, transparent) !important;`,
   '  box-shadow: inset 0 0 0 1px var(--atr-edge) !important;',
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):not([aria-selected='true']):hover {",
   '  color: var(--atr-ink-0, #fbf1c7) !important;',
-  '  background: color-mix(in srgb, var(--atr-tint, #282828) 68%, transparent) !important;',
+  `  background: color-mix(in srgb, var(--atr-tint, #282828) ${isPaleSkin() ? 92 : 68}%, transparent) !important;`,
   '}',
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *)::before { display: none !important; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *) .uppercase {",
@@ -943,7 +1051,9 @@ const SESSION_TAB_CSS = [
   // This is also why thinning the idle tabs cannot do this job on its own: the
   // tint and the painting are both dark, so fewer percent of the tint is still
   // dark. The active tab has to be genuinely lighter, not the others darker.
-  '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 72%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
+  isPaleSkin()
+    ? `  background: rgba(${hexTriple(SKIN.deeper)}, 0.97) !important;`
+    : '  background: color-mix(in srgb, var(--atr-m-solid, rgb(17, 18, 24)) 72%, rgb(var(--atr-hi, 255, 255, 255))) !important;',
   '  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(var(--atr-hi, 251, 241, 199)) 22%, transparent) !important;',
   '}',
   // ── The fixed titlebar tools ───────────────────────────────────────────
@@ -974,10 +1084,18 @@ const SESSION_TAB_CSS = [
   // The box is exactly the buttons, so nothing here can push the cluster into
   // the native window controls: the app reserves `count * 24px` and the layout
   // box is unchanged by a background.
-  "html.dark [data-titlebar-cluster='right']:has(> :is(button, a)) {",
-  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.34);`,
+  "html:root [data-titlebar-cluster='right']:has(> :is(button, a)) {",
+  `  background: rgba(${hexTriple(SKIN.deeper)}, ${isPaleSkin() ? 0.85 : 0.34});`,
   '  border-radius: 10px;',
   '}',
+  // A light palette draws dark icons on a picture nothing washes, so the left
+  // cluster needs the same ground.
+  ...(isPaleSkin() ? [
+  "html:root [data-titlebar-cluster='left']:has(> :is(button, a)) {",
+  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.85);`,
+  '  border-radius: 10px;',
+  '}',
+  ] : []),
   // The icons are `text-muted-foreground/85` on the app's token chain, which
   // Atrium has already pointed at its ink ramp; the /85 alpha is what pushed
   // them under the floor. Full ink, as stock draws them.
@@ -1000,6 +1118,7 @@ const SESSION_TAB_CSS = [
   "button[aria-label='New session tab']:hover { background: rgba(var(--atr-hi), 0.08) !important; color: var(--atr-ink-0, #fbf1c7) !important; }",
   "button[aria-label='New session tab']:active { transform: scale(0.94); }",
   "button[aria-label='New session tab'] :is(svg, i) { width: 14px !important; height: 14px !important; font-size: 14px !important; }",
+  ...(isPaleSkin() ? [`button[aria-label='New session tab'] { background: rgba(${hexTriple(SKIN.deeper)}, 0.85) !important; color: var(--atr-ink-1) !important; }`] : []),
   // a tab's close button: hidden until the tab is hovered or active
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *) button { border-radius: 5px !important; opacity: 0; transition: opacity 120ms ease, background-color 120ms ease; }",
   "[role='tab'][data-tree-tab]:not([data-atr-strip] *):is(:hover, [aria-selected='true']) button { opacity: 0.7; }",
@@ -1350,6 +1469,20 @@ const groupedFieldCss = () => {
   ]
 }
 
+// How much the app's dark syntax colours are brightened inside a code block. Its
+// comment grey is the faintest of them, and 1.1 is what keeps it over AA on the
+// lightest shipped code ground (Gruvbox's).
+const CODE_BLOCK = { lift: 1.1 }
+
+// The dark halo behind prose suits light text only: under dark ink it smudges.
+// The app marks a dark palette with `.dark`; `:where` keeps each rule's
+// specificity what it was.
+const IN_DARK = ':where(html.dark) '
+// Whether the look's deepest ground can carry its text, which decides if code
+// gets it as a ground. A palette whose sidebar runs against its chat would
+// otherwise put dark code on dark.
+const codeOnDeeper = () => replyContrast(hexRgb(SKIN.ink), hexRgb(SKIN.deeper)) >= REPLY_TARGET
+
 // The prose layer wears the syntax side of gruvbox: headings are Title (bold
 // green), links are Underlined (blue), inline code is Constant (purple) on
 // bg0_hard, quotes are PreProc (aqua), hairlines are LineNr (bg4), selection is
@@ -1403,17 +1536,18 @@ const gruvboxTextCss = (focusLayer = false) => [
   '  text-decoration: underline !important;',
   `  text-decoration-color: rgba(${hexTriple(SKIN.link)}, 0.55) !important;`,
   '}',
-  // Constant
-  ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) :is(code, kbd, samp) {",
+  // Constant. Inline only: the code inside a block is the block's own text, and
+  // tinting it painted every plain fence in the accent code colour.
+  ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) :is(:not(pre) > code, kbd, samp) {",
   `  color: ${SKIN.code} !important;`,
-  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.78) !important;`,
   `  border: 1px solid ${SKIN.edge} !important;`,
+  ...(codeOnDeeper() ? [`  background: rgba(${hexTriple(SKIN.deeper)}, 0.78) !important;`] : []),
   '}',
   // String / Special in blocks: the fence keeps bg0_hard, the border is bg2
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) pre {",
-  `  background: rgba(${hexTriple(SKIN.deeper)}, 0.9) !important;`,
   `  border: 1px solid ${SKIN.edge} !important;`,
   `  color: ${SKIN.ink2} !important;`,
+  ...(codeOnDeeper() ? [`  background: rgba(${hexTriple(SKIN.deeper)}, 0.9) !important;`] : []),
   '}',
   // PreProc
   ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message']) blockquote {",
@@ -1425,11 +1559,21 @@ const gruvboxTextCss = (focusLayer = false) => [
   `  border-color: ${SKIN.edge} !important;`,
   '}',
   // prose shadow: cheap insurance on the last translucent surface in the stack
-  ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message'], [data-slot='assistant-message']) :is(p, li, td, th, dd, dt, figcaption) {",
+  IN_DARK + ":is([data-slot='aui_assistant-message-content'], [data-slot='aui_user-message-root'], [data-slot='user-message'], [data-slot='assistant-message']) :is(p, li, td, th, dd, dt, figcaption) {",
   '  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 2px 7px rgba(0, 0, 0, 0.38);',
   '}',
-  "[data-slot='aui_intro'] :is(p, h1, h2, h3, [class*='wordmark']), [data-slot='statusbar'] {",
+  "[data-slot='aui_intro'] :is(p, h1, h2, h3, [class*='wordmark']), " + IN_DARK + "[data-slot='statusbar'] {",
   '  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.50), 0 2px 7px rgba(0, 0, 0, 0.32);',
+  '}',
+  // The empty chat's words sit straight on the picture, which light mode leaves
+  // untouched, so they keep the light ink and halo they have in dark mode.
+  "html:not(.dark) [data-slot='aui_intro'] :is(p, h1, h2, h3, [class*='wordmark'], [class*='wordmark'] *) {",
+  `  color: ${DARK_SET.ink} !important;`,
+  '}',
+  // The line under the wordmark is small, and nothing darkens the picture for it
+  // in light mode, so its letters carry a tighter edge of their own.
+  "html:not(.dark) [data-slot='aui_intro'] p {",
+  '  text-shadow: 0 0 2px rgba(0, 0, 0, 0.95), 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.85) !important;',
   '}'
 ]
 
@@ -1511,7 +1655,10 @@ const replyPanelTone = (ink, tint, samples, lift = [255, 255, 255]) => {
   // The opposite pole comes from the existing tint/ink ramp. Custom dark ink
   // needs the light end; reusing the normal dark glass would reduce contrast.
   const dark = replyContrast(ink, tint) >= REPLY_TARGET ? tint : ZF_INK.map(v => v * 0.1)
-  const light = replyComposite(tint, [255, 255, 255], 0.97)
+  // A light palette's own ground is its panel tone, as a dark palette's is, so a
+  // cream look keeps cream panels. The near-white pole is for the rest.
+  const pale = replyLuminance(tint) > replyLuminance(ink)
+  const light = pale && replyContrast(ink, tint) >= REPLY_TARGET ? tint : replyComposite(tint, [255, 255, 255], 0.97)
   const base = replyContrast(ink, dark) >= replyContrast(ink, light) ? dark : light
   const clampRgb = rgb => rgb.map(v => Math.round(Math.min(255, Math.max(0, v))))
   const separation = rgb => Math.min(...samples.map(s => replyContrast(replyComposite(s, rgb, REPLY_MIN_ALPHA()), s)))
@@ -1520,7 +1667,8 @@ const replyPanelTone = (ink, tint, samples, lift = [255, 255, 255]) => {
   const need = REPLY_SEPARATION()
   const stop = clampRgb(base)
   if (!legible(stop)) return replyContrast(ink, stop) >= REPLY_TARGET ? stop : [255, 255, 255]
-  const up = replyLuminance(lift) > replyLuminance(base) ? lift : base
+  // A light panel steps toward white: its Edges colour is darker than its ground.
+  const up = pale ? [255, 255, 255] : replyLuminance(lift) > replyLuminance(base) ? lift : base
   // One direction for the whole search: the one whose furthest reach separates
   // best. A near-black ground can only lighten, a near-white one only darken.
   const toward = separation(clampRgb(replyComposite(base, up, cap)))
@@ -1839,9 +1987,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     ...chatLayerCss(chatGlass(backdrop, chrome)),
     ] : []),
     ...(chrome ? [
-    // Panel density, and it is deliberately mode-scoped: Atrium's palettes are
-    // dark, and a light-mode app would not want a translucent ground.
-    ':root.dark {',
+    // Panel density, for both modes: each paints its own palette. The doubled
+    // `:root` outranks the app's own `:root` and `:root.dark` tokens.
+    ':root:root {',
     // The panes ARE the palette (bg0 chrome, bg0_hard sidebar, bg1 cards), so
     // each is a gruvbox surface with the painting behind it, not soot.
     `  --theme-neutral-chrome: rgba(${hexTriple(SKIN.ground)}, ${density});`,
@@ -1897,7 +2045,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // which is what makes the column read as floating pieces rather than one
     // strip. `:has(input)` is how the search row is named: it is the only
     // region in the column holding an input.
-    ':root.dark {',
+    ':root:root {',
     '  --sidebar-edge-border: color-mix(in srgb, var(--ui-base) 18%, transparent);',
     '}',
     // No live backdrop-filter here: re-blurring the picture behind the whole
@@ -2264,7 +2412,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content']) kbd {",
     '  color: var(--atr-ink-3) !important;',
     '  border-color: rgba(148, 163, 184, 0.28) !important;',
-    '  background: rgba(255, 255, 255, 0.05) !important;',
+    '  background: rgba(var(--atr-hi), 0.05) !important;',
     '}',
     // Switch tabs: inactive tab in grey, active in white
     `${SWITCH_HOOK} > [role='tablist'] > [data-slot='pane-tab'] {`,
@@ -2279,7 +2427,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // Hover state on panel items
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button']):hover {",
     `  color: ${solidInk} !important;`,
-    '  background-color: rgba(255, 255, 255, 0.08) !important;',
+    '  background-color: rgba(var(--atr-hi), 0.08) !important;',
     '}',
     ":is([data-tour='sessions-sidebar'], [data-slot='sidebar-content'], [data-sessions-mode]) :is([data-slot='sidebar-menu-button'], button, a, [role='button']):hover * {",
     `  color: ${solidInk} !important;`,
@@ -2372,8 +2520,9 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  border: none;',
     '  border-radius: 999px;',
     // Recessed: a well, not a card, so the pill on top reads as the raised
-    // piece instead of a card on a card.
-    '  background: var(--atr-well);',
+    // piece instead of a card on a card. A light palette's well is a faint
+    // shade, which leaves the other label bare on the picture, so it gets glass.
+    `  background: var(${isPaleSkin() ? '--atr-glass-strong' : '--atr-well'});`,
     '  box-shadow: inset 0 0 0 1px var(--atr-edge);',
     '  overflow: hidden;',
     '}',
@@ -2550,7 +2699,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  margin-inline: auto !important;',
     '}',
     "[data-slot='aui_intro'] p:last-child {",
-    '  color: rgba(255, 255, 255, 0.92) !important;',
+    '  color: var(--atr-ink-0) !important;',
     '  max-width: 34rem !important;',
     '  margin-inline: auto !important;',
     '  font-size: 0.875rem !important;',
@@ -2680,7 +2829,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     "[data-slot='tool-block'][data-tool-open] :is(pre, code) { color: var(--atr-ink-1) !important; }",
     "[data-slot='tool-block'][data-tool-open] div:has(> code) { background: var(--atr-well) !important; border-color: var(--atr-edge) !important; }",
     "[data-slot='tool-block'][data-tool-open] [class*='tracking-[0.08em]'] { color: var(--atr-ink-2) !important; }",
-    ...(isNight ? [] : ["[data-slot='tool-block']:not([data-tool-open]) { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
+    ...(isNight ? [] : [IN_DARK + "[data-slot='tool-block']:not([data-tool-open]) { text-shadow: 0 1px 0.5rem rgba(0, 0, 0, 0.35); }"]),
   ] : [], chrome ? [
     // ── Atrium material ─────────────────────────────────────────────────────
     // One glass for every surface, tinted by the look itself: the skin's ground
@@ -2696,11 +2845,11 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `  --atr-glass-hover: color-mix(in srgb, var(--atr-tint-hi) ${glassPct(88 + 8 * NIGHT)}, transparent);`,
     `  --atr-glass-strong: color-mix(in srgb, var(--atr-tint) ${glassPct(94 + 4 * NIGHT)}, transparent);`,
     `  --atr-glass-sunk: color-mix(in srgb, var(--atr-tint) ${glassPct(50 + 30 * NIGHT)}, transparent);`,
-    `  --atr-well: rgba(0, 0, 0, ${(0.16 + 0.08 * NIGHT).toFixed(3)});`,
+    `  --atr-well: rgba(0, 0, 0, ${isPaleSkin() ? '0.050' : (0.16 + 0.08 * NIGHT).toFixed(3)});`,
     // Prompt/command wells need more than a black wash over an already dark
     // sheet: an opaque mix of the hour's tint and black gives a real step.
-    '  --atr-well-prompt: color-mix(in srgb, var(--atr-tint) 50%, #000);',
-    '  --atr-edge: rgba(255, 255, 255, 0.07);',
+    `  --atr-well-prompt: color-mix(in srgb, var(--atr-tint) ${isPaleSkin() ? 95 : 50}%, #000);`,
+    '  --atr-edge: rgba(var(--atr-hi), 0.07);',
     // every card in the sessions column paints this one fill
     // Every card, the composer and the sidebar are the same tier now; the
     // night grey is carried by `--atr-tint` itself, so a material can never be
@@ -2718,10 +2867,10 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     `  --atr-page-fill: color-mix(in srgb, var(--atr-tint) ${glassPct(100 * skinNumber(SKIN.page, 0.86))}, transparent);`,
     `  --atr-side-card: ${sideCard};`,
     '  --atr-side-card-hi: var(--atr-glass-hover);',
-    '  --atr-edge-strong: rgba(255, 255, 255, 0.11);',
-    '  --atr-hover: rgba(255, 255, 255, 0.065);',
-    '  --atr-lift: inset 0 0 0 1px var(--atr-edge), inset 0 1px 0 rgba(255, 255, 255, 0.045);',
-    '  --atr-lift-high: inset 0 0 0 1px var(--atr-edge-strong), inset 0 1px 0 rgba(255, 255, 255, 0.06);',
+    '  --atr-edge-strong: rgba(var(--atr-hi), 0.11);',
+    '  --atr-hover: rgba(var(--atr-hi), 0.065);',
+    '  --atr-lift: inset 0 0 0 1px var(--atr-edge), inset 0 1px 0 rgba(var(--atr-hi), 0.045);',
+    '  --atr-lift-high: inset 0 0 0 1px var(--atr-edge-strong), inset 0 1px 0 rgba(var(--atr-hi), 0.06);',
     // One shadow for anything that floats above the app: dialogs, menus,
     // popovers, the drawer, the dock and the floating sidebar. It used to be
     // five different recipes (14px/36px, 24px/60px, 30px/80px, ...).
@@ -2740,7 +2889,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     // swallow everything after it.
     ...materialVars(),
   ] : [], chrome ? [
-    ...SESSION_TAB_CSS,
+    ...sessionTabCss(),
     ...gruvboxTextCss(chatGlass(backdrop, chrome).focus),
     ...polishCss(),
     // Sidebar cards, the composer and the switch pill share the material.
@@ -3163,6 +3312,23 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '  border-radius: var(--atr-radius) !important;',
     '  box-shadow: var(--atr-lift) !important;',
     '}',
+    // Code and diffs sit in the look's deepest ground, opaque. The app picks the
+    // syntax colours, so what is behind them is what decides their contrast, and
+    // glass over a picture left that to the picture. The scroll fade takes the
+    // same colour, or it ends the block in a pale band. The app also dims the
+    // dark syntax colours, which puts comments under AA; this lifts them instead
+    // (CODE_BLOCK, measured by dev/measure-palettes.mjs). The edge shows where
+    // a block starts when its ground matches the reply panel.
+    ":is([data-slot='aui_thread-content'], [data-slot='thread']) :is([data-slot='code-card'], [data-slot='file-diff-panel']) {",
+    '  border: 1px solid var(--atr-hair) !important;',
+    '}',
+    ...(codeOnDeeper() ? [
+    ":is([data-slot='aui_thread-content'], [data-slot='thread']) :is([data-slot='code-card'], [data-slot='file-diff-panel']) {",
+    `  background: ${SKIN.deeper} !important;`,
+    `  --expandable-fade-from: ${SKIN.deeper} !important;`,
+    '}',
+    ] : []),
+    `html.dark :is([data-slot='aui_thread-content'], [data-slot='thread']) .shiki { filter: brightness(${CODE_BLOCK.lift}) !important; }`,
     // Form controls inside any Atrium surface: a recessed well, accent focus.
     ":is([data-overlay-surface], section[class*='bg-(--ui-chat-surface-background)'], [data-slot='dialog-content']) :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, [data-slot='select-trigger'], [data-slot='searchable-select-trigger']) {",
     '  background: var(--atr-well) !important;',
@@ -3175,7 +3341,7 @@ const sheetCss = (date, gl = false, { backdrop = true, chrome = true, split = fa
     '}',
     ...groupedFieldCss(),
     // Scrollbars everywhere: thin and tinted, never the platform grey slab.
-    '* { scrollbar-color: rgba(255, 255, 255, 0.14) transparent; scrollbar-width: thin; }',
+    '* { scrollbar-color: rgba(var(--atr-hi), 0.14) transparent; scrollbar-width: thin; }',
     ...SIDEBAR_CSS,
   ] : []].map(lines => lines.join('\n'))
   // Two style elements by contract: `paintSheet` installs exactly the two
@@ -3661,8 +3827,12 @@ function SnippetCard({ attrs, onCopy }) {
 // this quiet was invisible at the far end of the bar, and a lamp reads faster
 // than a word.
 
-function PhaseChip({ appearance, onSelect }) {
+function PhaseChip({ appearance, onSelect, onMode }) {
   const selected = useValue(appearance)
+  // The app's Light, Dark or System choice, resolved. It is told on mount and on
+  // every change, and withdrawn on unmount.
+  const mode = useTheme()?.resolvedMode
+  useEffect(() => { onMode(mode); return () => onMode(null) }, [mode])
   const choices = [...LOOK_IDS.map(id => [id, lookLabel(id)]), ['hermes', 'Hermes appearance']]
   return jsxs(Select, { value: selected, onValueChange: onSelect, children: [
     // 18px inside the status bar's 20px row (`h-5`). The control's default
@@ -4108,7 +4278,7 @@ export default {
       if (key === replyRefreshKey) return
       replyRefreshKey = key
       const native = replyHostGround()
-      const styled = !away && chromeOn.get() && document.documentElement.classList?.contains?.('dark')
+      const styled = !away && chromeOn.get()
       const material = skinMaterial()
       const ink = styled ? hexRgb(SKIN.ink) : native.ink
       let samples = native.samples
@@ -4158,18 +4328,23 @@ export default {
     // look does. Every look publishes from the same skin: Gruvbox is the shipped
     // preset, each Custom look is that data after your edits, and no look has a
     // palette another lacks.
+    // Both of the look's sets go to the app, which paints the one its Light,
+    // Dark or System setting asks for. It is first called once the records are
+    // read, further down: published any earlier, the app was handed Gruvbox at
+    // every start, and code was highlighted for the wrong ground.
     function registerLive() {
-      const key = SKIN_COLORS.map(([k]) => SKIN[k]).join() + '|' + ['scrim', 'sidebar', 'card', 'bubble', 'page'].map(k => SKIN[k]).join()
+      const record = skinOf(look.get())
+      const light = skinValues(record, 'light'), dark = skinValues(record, 'dark')
+      const key = [light, dark].map(set => SKIN_COLORS.map(([k]) => set[k]).join()).join('|')
       if (liveFor === key) return
       liveFor = key
       ctx.register({ id: 'hermes-atrium.theme', area: THEMES_AREA, order: 38, data: {
         name: THEME_NAME, label: 'Hermes Atrium',
         description: 'Choose Gruvbox or a Custom look in Settings → Hermes Atrium.',
-        colors: skinGrounds()
+        colors: skinGrounds(light), darkColors: skinGrounds(dark)
       } })
     }
     let liveFor = null
-    registerLive()
 
     // One stable host theme. Picking any other Hermes theme parks Atrium.
     let themeObs = null
@@ -4188,6 +4363,9 @@ export default {
         if (themeBase(picked) === THEME_NAME) {
           if (away) { wake(); appearance.set(look.get()) ; apply() }
         }
+        // The app sets this attribute on every repaint of its theme, a switch
+        // between light and dark included.
+        syncMode()
       }
       themeObs = new MutationObserver(onTheme)
       themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-hermes-theme'] })
@@ -4214,7 +4392,7 @@ export default {
       id: 'phase-chip',
       area: 'statusBar.right',
       order: 96,
-      render: () => jsx(PhaseChip, { appearance, onSelect: selectAppearance })
+      render: () => jsx(PhaseChip, { appearance, onSelect: selectAppearance, onMode: mode => reportMode(mode) })
     })
 
     // ── settings ─────────────────────────────────────────────────────────────
@@ -4298,10 +4476,13 @@ export default {
       const preset = presetSkin(which)
       const untouched = !raw || typeof raw !== 'object' || isShippedDefaults(raw, which)
       const out = untouched ? { ...preset } : { ...preset, ...raw }
+      // Merged on its own: a record can hold nothing but shipped dark values and
+      // still carry light ones you changed.
+      out.light = { ...preset.light, ...modeValues(raw?.light) }
       out.image = currentMarker(which, out.image)
       // Only knobs the skin still has. A retired one (`chrome`, the old Chat pane
       // opacity) would otherwise ride along in the record and be written back.
-      for (const key of Object.keys(out)) if (!(key in SKIN_DEFAULTS)) delete out[key]
+      for (const key of Object.keys(out)) if (key !== 'light' && !(key in SKIN_DEFAULTS)) delete out[key]
       // Gruvbox's surfaces move from the old green to gruvbox's own greys, one
       // key at a time, so a surface someone chose is left alone.
       if (which === 'gruvbox' && raw && typeof raw === 'object') {
@@ -4380,12 +4561,41 @@ export default {
     // write through to each look's own keys.
     const LOOK_SKINS = Object.fromEntries(LOOK_IDS.map(id => [id, readLookSkin(id)]))
     const skinOf = which => LOOK_SKINS[which] || LOOK_SKINS.custom
+    UI_MODE = hostMode()
+    const uiMode = atom(UI_MODE)
     setSkin(skinOf(look.get()))
     pictureReady = () => { if (!atrDisposed) { replyPictureVersion += 1; renderReplyGround(nowAt()) } }
     focusPictureReady = () => { if (!atrDisposed) repaint() }
 
     ensurePictureStyle()
     const skin = atom({ ...skinOf(look.get()) })
+
+    // ── light or dark ────────────────────────────────────────────────────────
+    // The app says which mode it is in through the status chip while that is
+    // mounted. With the status bar hidden, the class it paints the theme with
+    // says the same.
+    let reportedMode = null
+    function syncMode() {
+      const next = reportedMode || hostMode()
+      if (next === UI_MODE) return
+      UI_MODE = next
+      uiMode.set(next)
+      setSkin(skin.get())
+      ensurePictureStyle()
+      repaint()
+    }
+    function reportMode(mode) {
+      reportedMode = mode === 'light' || mode === 'dark' ? mode : null
+      if (reportedMode) syncMode()
+    }
+    registerLive()
+    repaint()
+    // A reply panel is not solved while the window is hidden, so a plugin loaded
+    // or a mode switched behind another window had none until something else
+    // repainted. The solver is keyed, so this costs nothing when nothing moved.
+    const onShown = () => { if (!document.hidden) renderReplyGround() }
+    document.addEventListener('visibilitychange', onShown)
+    ctx.onDispose?.(() => document.removeEventListener('visibilitychange', onShown))
     const selectAppearance = next => {
       if (next !== 'hermes' && !LOOK_IDS.includes(next)) return
       if (next === 'hermes') {
@@ -4456,9 +4666,10 @@ export default {
     // A knob writes to the record of the look you are looking at. That is the
     // whole difference between the looks now: which record the controls edit.
     // Nothing here switches looks behind your back.
-    const pushSkin = patch => {
+    const commitSkin = record => {
       const which = look.get()
-      const next = { ...skin.get(), ...patch }
+      const next = { ...record }
+      const pictureMoved = next.image !== skin.get().image
       for (const key of Object.keys(next)) if (next[key] === undefined) next[key] = SKIN_DEFAULTS[key]
       LOOK_SKINS[which] = next
       skin.set(next)
@@ -4467,11 +4678,20 @@ export default {
       // Each Custom look owns its own file, so editing one must not rewrite what
       // another holds.
       if (isCustomLook(which) && !fromFile) writeConfig(which, next)
-      if (patch.image !== undefined) ensurePictureStyle()
+      if (pictureMoved) ensurePictureStyle()
       // The host theme's colours are skin values, so a palette change has to
       // re-publish them and not just repaint the sheet.
       registerLive()
       apply()
+    }
+    // A knob edits what is on screen: colours and opacities go into the set for
+    // the mode you are in, everything else is shared by both.
+    const pushSkin = patch => {
+      const record = skin.get()
+      if (UI_MODE !== 'light') return commitSkin({ ...record, ...patch })
+      const next = { ...record, light: { ...record.light } }
+      for (const [key, value] of Object.entries(patch)) (MODE_KEYS.includes(key) ? next.light : next)[key] = value
+      commitSkin(next)
     }
     // Reset means "what this look was born as": the shipped preset for Gruvbox,
     // the designed preset for a Custom slot. Returning a Custom slot to the
@@ -4525,10 +4745,11 @@ export default {
     // knob whose name does not say what it paints: it is the ground under the
     // panes whose content draws none of its own (a plugin route, the Bots
     // roster, a preview), not the pages the app ships itself.
-    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path to a picture on this computer (~/Pictures/x.jpg), a shipped one (assets/johan-christian-dahl-stalheim.jpg), or "uploaded" to keep the picture from Settings; web addresses are ignored, because the plugin makes no network requests. Glass saturation and brightness only apply while blur is above 0. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. Delete a key to get its default.'
+    const CONFIG_HELP = 'Hermes Atrium Custom look. Edit and save; Hermes follows. image: a path to a picture on this computer (~/Pictures/x.jpg), a shipped one (assets/johan-christian-dahl-stalheim.jpg), or "uploaded" to keep the picture from Settings; web addresses are ignored, because the plugin makes no network requests. Glass saturation and brightness only apply while blur is above 0. Colours are hex; opacities and filters are numbers. `page` is the ground under plugin pages and other panes that paint no surface of their own; it starts at 0.86, the same weight the app\'s own pages wear, and 1 is an opaque sheet. The keys at the top are the dark mode colours and opacities; the `light` block holds the ones for light mode. Delete a key to get its default.'
     const configText = sk => {
       const out = { _help: CONFIG_HELP }
       for (const key of Object.keys(SKIN_DEFAULTS)) out[key] = key === 'image' ? urlToPath(sk.image) : sk[key]
+      out.light = modeValues(sk.light)
       return JSON.stringify(out, null, 2) + '\n'
     }
     // What was last read or written, per file. A poll compares the text it gets
@@ -4591,20 +4812,22 @@ export default {
       // because a slot someone put their own photograph in is not untouched.
       const untouched = isShippedDefaults(data, which)
       const keepPicture = STORED_PICTURE[which] ? { image: LOOK_SKINS[which].image || skin.get().image } : {}
+      const preset = presetSkin(which)
+      const light = { ...preset.light, ...modeValues(data.light) }
       const next = untouched
-        ? { ...presetSkin(which), ...keepPicture }
-        : { ...presetSkin(which), ...(patch.image ? {} : { image: LOOK_SKINS[which].image || skin.get().image }), ...patch }
+        ? { ...preset, ...keepPicture, light }
+        : { ...preset, ...(patch.image ? {} : { image: LOOK_SKINS[which].image || skin.get().image }), ...patch, light }
       if (!switchTo || look.get() !== which) {
         // Startup, or a look that is not on screen: seed the record and leave
         // what is painted alone. A look that IS on screen at startup still gets
         // its own values, because they are what should be painted.
         LOOK_SKINS[which] = next
-        if (!switchTo && look.get() === which) { skin.set(next); setSkin(next) }
         writeLookSkin(which, next)
+        if (!switchTo && look.get() === which) { skin.set(next); setSkin(next); registerLive(); repaint() }
         return
       }
       fromFile = true
-      try { pushSkin(next) } finally { fromFile = false }
+      try { commitSkin(next) } finally { fromFile = false }
     }
     const readConfig = async (switchTo = true) => {
       for (const which of CUSTOM_LOOKS) await readConfigOne(which, switchTo)
@@ -4710,7 +4933,7 @@ export default {
         // reading a look's picture key directly keeps seeing a file that is not
         // there. Every look is healed, because every look can point at
         // `assets/`.
-        if (stale(SKIN.image)) setSkin({ ...SKIN, image: url })
+        if (stale(SKIN.image)) setSkin({ ...skinOf(look.get()), image: url })
         for (const which of LOOK_IDS) {
           const rec = LOOK_SKINS[which]
           if (!rec || !stale(rec.image)) continue
@@ -5200,7 +5423,7 @@ export default {
     // The picture: where it comes from, how it sits in the window, how much it is
     // held back, and the soft-focus glass over it.
     const SkinPicture = () => {
-      const cfg = useValue(skin)
+      const cfg = skinValues(useValue(skin), useValue(uiMode))
       const refusal = useValue(pictureRefusal)
       const isUpload = typeof cfg.image === 'string' && cfg.image.startsWith('data:')
       const shown = isUpload ? '' : shownPath(cfg.image)
@@ -5256,22 +5479,34 @@ export default {
             children: 'Theme file'
           }) : null
         ]}),
-        refusal ? jsx('p', { role: 'alert', className: 'pb-1 text-[0.75rem]', style: { color: DESTRUCTIVE }, children: refusal }) : null,
+        refusal ? jsx('p', { role: 'alert', className: 'pb-1 text-[0.75rem]', style: { color: destructiveFor() }, children: refusal }) : null,
         SkinRow('Fit', jsxs('div', { className: 'flex gap-1', role: 'group', 'aria-label': 'Fit', children: [fitButton('cover', 'Cover'), fitButton('contain', 'Contain')] }),
           { note: 'Cover fills the window; Contain shows the whole picture.' }),
         SkinRow('Horizontal position', Range({ label: 'Horizontal position', value: skinNumber(cfg.posX, 46), min: 0, max: 100, step: 1, format: v => `${v}%`, onChange: v => pushSkin({ posX: v }) })),
         SkinRow('Vertical position', Range({ label: 'Vertical position', value: skinNumber(cfg.posY, 45), min: 0, max: 100, step: 1, format: v => `${v}%`, onChange: v => pushSkin({ posY: v }) })),
-        SkinSlider(cfg, 'scrim', { note: 'Darkens the picture so the panels over it stay readable.' }),
+        SkinSlider(cfg, 'scrim', { note: isPaleSkin() ? 'Washes out the picture. 0 leaves it untouched.' : 'Darkens the picture so the panels over it stay readable.' }),
         SkinSlider(cfg, 'blur', { note: blurOff ? 'Turn blur up to use saturation and brightness.' : 'Soft focus behind the chat.' }),
         SkinSlider(cfg, 'saturate', { indent: true, disabled: blurOff }),
         SkinSlider(cfg, 'brightness', { indent: true, disabled: blurOff })
       ]})
     }
 
+    // Says which of the two sets the controls beside it are editing.
+    const ModeNote = what => {
+      const mode = useValue(uiMode)
+      return jsx('p', {
+        className: 'pb-1 text-[0.75rem] text-(--ui-text-tertiary)',
+        children: `${what} are set separately for light and dark. You are editing ${mode} mode.`
+      }, 'mode-note')
+    }
+
     // How much of the picture each kind of surface lets through.
     const SkinOpacity = () => {
-      const cfg = useValue(skin)
-      return jsx('div', { className: 'flex flex-col gap-0.5', children: ['sidebar', 'card', 'bubble', 'page'].map(key => SkinSlider(cfg, key)) })
+      const cfg = skinValues(useValue(skin), useValue(uiMode))
+      return jsxs('div', { className: 'flex flex-col gap-0.5', children: [
+        ModeNote('Cards, your messages and pages'),
+        ...['sidebar', 'card', 'bubble', 'page'].map(key => SkinSlider(cfg, key))
+      ] })
     }
 
     // The palette, as a grid of swatches in three groups rather than one long
@@ -5282,9 +5517,9 @@ export default {
       ['Prose & accent', ['accent', 'link', 'code', 'quote']]
     ]
     const SkinColors = () => {
-      const cfg = useValue(skin)
+      const cfg = skinValues(useValue(skin), useValue(uiMode))
       const labelOf = key => SKIN_COLORS.find(c => c[0] === key)?.[1] || key
-      return jsx('div', { className: 'flex flex-col gap-3 pt-1 pb-2', children: COLOR_GROUPS.map(([title, keys]) => jsxs('div', { children: [
+      return jsxs('div', { className: 'flex flex-col gap-3 pt-1 pb-2', children: [ModeNote('Colours'), ...COLOR_GROUPS.map(([title, keys]) => jsxs('div', { children: [
         jsx('div', { className: 'pb-1 text-[0.75rem] text-(--ui-text-tertiary)', children: title }),
         jsx('div', {
           style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(10rem, 1fr))', gap: '0.375rem 0.75rem' },
@@ -5300,7 +5535,7 @@ export default {
             ]
           }, key))
         })
-      ]}, title)) })
+      ]}, title))] })
     }
 
     ctx.registerSettingsPage?.({

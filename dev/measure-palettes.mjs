@@ -45,6 +45,8 @@ const hexRgb = hex => {
 }
 const rgbHex = rgb => '#' + rgb.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('')
 const hexTriple = hex => hexRgb(hex).join(', ')
+// isPaleSkin, mirrored.
+const isPale = skin => luminance(hexRgb(skin.ground)) > luminance(hexRgb(skin.ink))
 
 // pictureLayers' radial vignette, in normalised window coordinates.
 const STOPS = [[0, 0], [0.35, 0.10], [0.55, 0.32], [0.72, 0.62], [0.88, 0.90], [1, 1.05]]
@@ -93,9 +95,13 @@ async function pictureGrid(chrome, file) {
 // column, which is what the panel tone and alpha are solved from. `focus` is a
 // READING_FOCUS level, measured in a conversation with its blurred copy made
 // (the normal path); chatGlass in plugin.js folds the look's own glass into it.
-function backdropSample(source, skin, focus = null) {
-  const deeper = hexRgb(skin.deeper)
-  const scrim = Number.isFinite(Number(skin.scrim)) ? Number(skin.scrim) : 0.31
+function backdropSample(source, skin, focus = null, darkSet = skin) {
+  // Reading focus tones a light look's conversation with its dark set
+  // (toningSet in plugin.js).
+  const toning = Boolean(focus) && (focus.blur > 0 || focus.scrim > 0 || focus.band > 0 || focus.saturate !== 1 || focus.brightness !== 1)
+  const set = toning && isPale(skin) ? darkSet : skin
+  const deeper = hexRgb(set.deeper)
+  const scrim = Number.isFinite(Number(set.scrim)) ? Number(set.scrim) : 0.31
   const posX = Number.isFinite(Number(skin.posX)) ? Number(skin.posX) : 46
   const posY = Number.isFinite(Number(skin.posY)) ? Number(skin.posY) : 45
   const scale = skin.fit === 'contain' ? Math.min(W / source.width, H / source.height) : Math.max(W / source.width, H / source.height)
@@ -104,7 +110,7 @@ function backdropSample(source, skin, focus = null) {
   const left = (W - Math.min(W, 736)) / 2, right = (W + Math.min(W, 736)) / 2
   const blur = Number(skin.blur) || 0
   const look = blur > 0
-  const on = Boolean(focus) && (focus.blur > 0 || focus.scrim > 0 || focus.band > 0 || focus.saturate !== 1 || focus.brightness !== 1)
+  const on = toning
   const saturate = (look ? (Number.isFinite(Number(skin.saturate)) ? Number(skin.saturate) : 1.3) : 1) * (on ? focus.saturate : 1)
   const brightness = (look ? (Number.isFinite(Number(skin.brightness)) ? Number(skin.brightness) : 0.9) : 1) * (on ? focus.brightness : 1)
   const filter = rgb => {
@@ -146,7 +152,8 @@ function backdropSample(source, skin, focus = null) {
 // ── replyMaterial / replyPanelTone, mirrored ────────────────────────────────
 function panelTone(ink, tint, samples, dials, lift = [255, 255, 255]) {
   const dark = contrast(ink, tint) >= TARGET ? tint : [9 * 0.1, 13 * 0.1, 22 * 0.1]
-  const light = composite(tint, [255, 255, 255], 0.97)
+  const pale = luminance(tint) > luminance(ink)
+  const light = pale && contrast(ink, tint) >= TARGET ? tint : composite(tint, [255, 255, 255], 0.97)
   const base = contrast(ink, dark) >= contrast(ink, light) ? dark : light
   const clampRgb = rgb => rgb.map(v => Math.round(Math.min(255, Math.max(0, v))))
   const separation = rgb => Math.min(...samples.map(s => contrast(composite(s, rgb, dials.solid), s)))
@@ -154,7 +161,7 @@ function panelTone(ink, tint, samples, dials, lift = [255, 255, 255]) {
   const stop = clampRgb(base)
   if (contrast(ink, stop) < TARGET) return stop
   // The light step goes toward the look's Edges colour, as in plugin.js.
-  const up = luminance(lift) > luminance(base) ? lift : base
+  const up = pale ? [255, 255, 255] : luminance(lift) > luminance(base) ? lift : base
   const toward = separation(clampRgb(composite(base, up, cap))) >= separation(clampRgb(composite(base, [0, 0, 0], cap)))
     ? up : [0, 0, 0]
   let best = { tone: stop, sep: separation(stop) }
@@ -188,10 +195,10 @@ function replyMaterial(ink, tint, samples, dials, lift) {
 
 // The reply panel at one Reading focus level: the backdrop it is solved
 // against, and Solid's opaque floor, as syncPanel applies it.
-function panelAt(skin, source, panelDials, focus) {
+function panelAt(skin, source, panelDials, focus, darkSet = skin) {
   const ink = hexRgb(skin.ink)
   const dials = focus?.solid ? { ...panelDials, solid: 1, max: 1 } : panelDials
-  const samples = backdropSample(source, skin, focus)
+  const samples = backdropSample(source, skin, focus, darkSet)
   const material = replyMaterial(ink, hexRgb(skin.ground), samples, dials, hexRgb(skin.edge))
   const grounds = samples.map(s => composite(s, material.color, material.alpha))
   return { ratio: Math.min(...grounds.map(g => contrast(ink, g))), alpha: material.alpha }
@@ -254,6 +261,8 @@ function measure(skin, source, panelDials) {
     accentText: contrast(deeper, hexRgb(skin.accent)),
     tiers: Object.fromEntries(['ink2', 'ink3', 'quiet', 'ink4', 'link', 'code', 'quote']
       .map(k => [k, worstOn(chromeGrounds, hexRgb(skin[k]))])),
+    cardTiers: Object.fromEntries(['ink2', 'ink3', 'ink4']
+      .map(k => [k, worstOn(groundsUnder(cardTint, cardA), hexRgb(skin[k]))])),
     // Kept so a failing tier can be solved against the same grounds it failed on.
     tierGround: chromeGrounds
   }
@@ -278,6 +287,34 @@ function nearestClearing(color, ink, grounds, bar) {
   return out
 }
 
+// ── code blocks ─────────────────────────────────────────────────────────────
+// The text colours of the app's syntax themes. Dark: Shiki's github-dark-dimmed.
+// The app owns them; the plugin only chooses the ground behind them (the look's
+// `deeper`, opaque) and how much they are brightened (CODE_BLOCK.lift). If the
+// app changes its theme, update this list.
+const SYNTAX = {
+  text: '#adbac7', comment: '#768390', keyword: '#f47067', constant: '#6cb6ff',
+  variable: '#f69d50', function: '#dcbdfb', tag: '#8ddb8c', string: '#96d0ff', invalid: '#ff938a'
+}
+// The same for light mode: `github-light-default`, with the comment grey the
+// app swaps in. Nothing brightens these.
+const SYNTAX_LIGHT = {
+  text: '#1f2328', comment: '#57606a', keyword: '#cf222e', constant: '#0550ae',
+  variable: '#953800', function: '#8250df', tag: '#116329', string: '#0a3069', invalid: '#82071e'
+}
+// The faintest syntax colour on this look's code ground.
+function codeBlock(skin, lift) {
+  const ground = hexRgb(skin.deeper)
+  const light = isPale(skin)
+  return Object.entries(light ? SYNTAX_LIGHT : SYNTAX)
+    .map(([name, hex]) => ({ name, ratio: contrast(hexRgb(hex).map(v => Math.min(255, v * (light ? 1 : lift))), ground) }))
+    .reduce((worst, next) => (next.ratio < worst.ratio ? next : worst))
+}
+
+// The text tiers again on a sidebar card, where the faintest ones (labels,
+// timestamps) sit over the brightest passage the card can cross.
+const CARD_TIERS = ['ink2', 'ink3', 'ink4']
+
 // ── output ──────────────────────────────────────────────────────────────────
 // The bar is Gruvbox's own numbers, not the WCAG minimum, for the faint tiers:
 // they are labels and timestamps, and the shipped look is what "quiet enough,
@@ -297,15 +334,20 @@ const num = v => (v ?? 0).toFixed(2)
 async function main() {
   const only = process.argv[2]
   const { findChrome } = await import('./lib/preset.mjs')
-  const { LOOK_PRESETS, SKIN_DEFAULTS, PANEL_DEFAULTS, READING_FOCUS } = await readTables()
+  const { LOOK_PRESETS, SKIN_DEFAULTS, PANEL_DEFAULTS, READING_FOCUS, CODE_BLOCK, GRUVBOX_LIGHT } = await readTables()
   const chrome = await findChrome()
 
   // Gruvbox is the baseline every other look is judged against.
   const gruvbox = { ...SKIN_DEFAULTS, image: 'assets/charles-william-wyllie-the-backwater.jpg' }
-  const looks = [
+  // Every look twice: its dark set, then its light one over the same picture.
+  const dark = [
     { id: 'gruvbox', label: 'Gruvbox', skin: gruvbox },
     ...Object.entries(LOOK_PRESETS).map(([id, p]) => ({ id, label: p.name, skin: { ...SKIN_DEFAULTS, ...p.skin } }))
-  ].filter(l => !only || l.id === only || l.label.toLowerCase() === only.toLowerCase() || path.basename(l.skin.image) === only)
+  ]
+  const looks = [
+    ...dark,
+    ...dark.map(l => ({ ...l, light: true, darkSet: l.skin, label: `${l.label} light`, skin: { ...l.skin, ...GRUVBOX_LIGHT, ...(LOOK_PRESETS[l.id]?.light || {}) } }))
+  ].filter(l => !only || l.id === only || l.label.toLowerCase().startsWith(only.toLowerCase()) || path.basename(l.skin.image) === only)
 
   if (!looks.length) {
     console.error(`no look matches "${only}". Looks: ${['gruvbox', ...Object.keys(LOOK_PRESETS)].join(', ')}`)
@@ -320,27 +362,34 @@ async function main() {
       continue
     }
     const source = await pictureGrid(chrome, file)
-    const focus = Object.fromEntries(Object.entries(READING_FOCUS).map(([level, f]) => [level, panelAt(look.skin, source, PANEL_DEFAULTS, f)]))
+    const focus = Object.fromEntries(Object.entries(READING_FOCUS).map(([level, f]) => [level, panelAt(look.skin, source, PANEL_DEFAULTS, f, look.darkSet)]))
     rows.push({ ...look, file: path.basename(file), m: measure(look.skin, source, PANEL_DEFAULTS), focus })
   }
 
-  const base = rows.find(r => r.id === 'gruvbox')?.m
+  const base = rows.find(r => r.id === 'gruvbox' && !r.light)?.m
   console.log(`\nWorst case per surface, over the whole window (WCAG AA is ${TARGET}:1)`)
-  console.log(`${pad('look', 12)}${pad('picture', 18)}${pad('panel', 7)}${pad('chrome', 8)}${pad('card', 7)}${pad('bubble', 8)}${pad('page', 7)}${pad('accent', 8)}alpha`)
+  console.log(`${pad('look', 16)}${pad('picture', 18)}${pad('panel', 7)}${pad('chrome', 8)}${pad('card', 7)}${pad('bubble', 8)}${pad('page', 7)}${pad('accent', 8)}alpha`)
   for (const r of rows) {
     const m = r.m
-    console.log(`${pad(r.label, 12)}${pad(r.file, 18)}${pad(num(m.panel.ratio), 7)}${pad(num(m.chrome), 8)}${pad(num(m.card), 7)}${pad(num(m.bubble), 8)}${pad(num(m.page), 7)}${pad(num(m.accentText), 8)}${num(m.panel.alpha)}`)
+    console.log(`${pad(r.label, 16)}${pad(r.file, 18)}${pad(num(m.panel.ratio), 7)}${pad(num(m.chrome), 8)}${pad(num(m.card), 7)}${pad(num(m.bubble), 8)}${pad(num(m.page), 7)}${pad(num(m.accentText), 8)}${num(m.panel.alpha)}`)
   }
 
   console.log(`\nFaint text tiers on the chrome pane, as ratio/bar (the bar is Gruvbox's hierarchy, scaled to the look's own body text)`)
-  console.log(`${pad('look', 12)}${TIER_NAMES.map(t => pad(t, 12)).join('')}`)
-  for (const r of rows) console.log(`${pad(r.label, 12)}${TIER_NAMES.map(t => pad(base ? `${num(r.m.tiers[t])}/${num(tierBar(base, r.m, t))}` : num(r.m.tiers[t]), 12)).join('')}`)
+  console.log(`${pad('look', 16)}${TIER_NAMES.map(t => pad(t, 12)).join('')}`)
+  for (const r of rows) console.log(`${pad(r.label, 16)}${TIER_NAMES.map(t => pad(base && !r.light ? `${num(r.m.tiers[t])}/${num(tierBar(base, r.m, t))}` : num(r.m.tiers[t]), 12)).join('')}`)
+
+  console.log(`\nFaint text on a sidebar card, and the faintest syntax colour in a code block`)
+  console.log(`${pad('look', 16)}${CARD_TIERS.map(t => pad(t, 12)).join('')}code block`)
+  for (const r of rows) {
+    r.code = codeBlock(r.skin, CODE_BLOCK.lift)
+    console.log(`${pad(r.label, 16)}${CARD_TIERS.map(t => pad(num(r.m.cardTiers[t]), 12)).join('')}${num(r.code.ratio)} (${r.code.name})`)
+  }
 
   const levels = Object.keys(READING_FOCUS)
   console.log(`
 Ink on the reply panel at each Reading focus level, in a conversation, as ratio (panel alpha)`)
-  console.log(`${pad('look', 12)}${levels.map(l => pad(l, 14)).join('')}`)
-  for (const r of rows) console.log(`${pad(r.label, 12)}${levels.map(l => pad(`${num(r.focus[l].ratio)} (${num(r.focus[l].alpha)})`, 14)).join('')}`)
+  console.log(`${pad('look', 16)}${levels.map(l => pad(l, 14)).join('')}`)
+  for (const r of rows) console.log(`${pad(r.label, 16)}${levels.map(l => pad(`${num(r.focus[l].ratio)} (${num(r.focus[l].alpha)})`, 14)).join('')}`)
 
   // Fail only on things that are bugs rather than taste: body text below AA, or
   // a tier that has fallen under the shipped look's own value.
@@ -349,8 +398,21 @@ Ink on the reply panel at each Reading focus level, in a conversation, as ratio 
   for (const r of rows) {
     if (r.m.panel.ratio < TARGET) problems.push(`${r.label}: ink on the reply panel is ${num(r.m.panel.ratio)}:1, under AA`)
     if (r.m.chrome < TARGET) problems.push(`${r.label}: ink on the chrome pane is ${num(r.m.chrome)}:1, under AA`)
+    if (r.code.ratio < TARGET) problems.push(`${r.label}: ${r.code.name} in a code block is ${num(r.code.ratio)}:1, under AA`)
     for (const [level, f] of Object.entries(r.focus)) {
       if (f.ratio < TARGET) problems.push(`${r.label}: ink on the reply panel at Reading focus ${level} is ${num(f.ratio)}:1, under AA`)
+    }
+    // A light set has no shipped look to be judged against, so every tier of it
+    // is held to AA, on the chrome pane and on a sidebar card, and so are the
+    // accent's label and your own messages.
+    if (r.light) {
+      const held = [
+        ...TIER_NAMES.map(t => [`${t} on the chrome pane`, r.m.tiers[t]]),
+        ...CARD_TIERS.map(t => [`${t} on a sidebar card`, r.m.cardTiers[t]]),
+        ['text on the accent', r.m.accentText], ['ink on your message', r.m.bubble], ['ink on a page', r.m.page]
+      ]
+      for (const [what, ratio] of held) if (ratio < TARGET) problems.push(`${r.label}: ${what} is ${num(ratio)}:1, under AA`)
+      continue
     }
     if (r.id === 'gruvbox' || !base) continue
     for (const t of TIER_NAMES) {
@@ -371,7 +433,7 @@ Ink on the reply panel at each Reading focus level, in a conversation, as ratio 
     }
     process.exitCode = 1
   } else {
-    console.log('\nEvery look clears AA on the reading column, and every faint tier keeps Gruvbox\'s hierarchy.')
+    console.log('\nEvery look clears AA on the reading column. Dark faint tiers keep Gruvbox\'s hierarchy and light ones clear AA.')
   }
   console.log(`\nThe panel solver this mirrors: ${MIRRORED.join(', ')} (grep these in plugin.js).`)
   console.log(`Run from ${REPO}.`)

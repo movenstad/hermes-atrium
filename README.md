@@ -15,15 +15,15 @@ plugin does read and write is listed under
 ## Looks
 
 - **Gruvbox**: *The Backwater* by Charles William Wyllie with Gruvbox colours
-  for text and surfaces.
-- **Custom 1, 2 and 3**: three slots, each with its own picture, palette and
+  for text and surfaces, dark or light.
+- **Custom 1, 2 and 3**: three slots, each with its own picture, palettes and
   opacities, switched from the bottom status bar. They arrive as finished
   looks over public-domain paintings by Johan Christian Dahl, and every value
   can be changed.
 
 | Look | Starts as | Reads as |
 | --- | --- | --- |
-| Custom 1 | Watzmann | Snow peaks and pale sky behind clear, deep blue glass, alpenglow accent |
+| Custom 1 | Watzmann | Snow peaks and pale sky behind midnight glass, alpenglow orange accent |
 | Custom 2 | Stalheim | A storm and a rainbow over sunlit meadows behind olive-brown glass, gold accent |
 | Custom 3 | Dresden | The Elbe by moonlight behind near-black glass, lantern amber accent |
 
@@ -31,7 +31,28 @@ plugin does read and write is listed under
 | --- | --- | --- |
 | ![Custom 1, Watzmann](docs/images/custom1-watzmann.jpg) | ![Custom 2, Stalheim](docs/images/custom2-stalheim.jpg) | ![Custom 3, Dresden](docs/images/custom3-dresden.jpg) |
 
-**Reset look** returns a slot to the look it started as.
+**Reset look** returns a slot to the look it started as, in both modes.
+
+### Light and dark
+
+Every look has a light and a dark set of colours over the same picture, and
+follows Hermes's **Light**, **Dark** or **System** setting.
+
+| Look | Dark mode | Light mode |
+| --- | --- | --- |
+| Gruvbox | Gruvbox dark | Gruvbox light: cream, dark brown text |
+| Watzmann | Near-black blue glass, orange accent | White and pale grey glass, burnt orange accent |
+| Stalheim | Olive-brown glass, gold accent | Warm cream glass, dark olive text |
+| Dresden | Near-black glass, lantern amber accent | Pale blue-grey glass, dark amber accent |
+
+In light mode an empty chat shows the picture as painted, with no scrim or tint
+over it. The words there sit straight on the picture, so they stay light.
+Opening a conversation darkens it through Reading focus, as in dark mode.
+
+Settings edits the set for the mode you are in: the colours, the scrim, and the
+card, message and page opacities. The picture, its position, the blur and the
+sidebar opacity are shared. The table of starting looks above describes dark
+mode.
 
 ![A conversation with reply panels over the picture](docs/images/chat.jpg)
 
@@ -52,7 +73,7 @@ The other looks keep their own values.
 | Section | What is in it |
 | --- | --- |
 | Appearance | The four looks, and the **Background** and **Hermes Atrium styling** switches. |
-| Picture | **Choose image…**, the picture's path, **Reset look** and **Theme file**. Then fit, position, the scrim that darkens the picture, and Glass blur. |
+| Picture | **Choose image…**, the picture's path, **Reset look** and **Theme file**. Then fit, position, the scrim that holds the picture back, and Glass blur. |
 | Opacity | How much of the picture the sidebar, cards, your messages and pages let through. |
 | Colours | The palette in three groups: surfaces, text, and prose and accent. |
 | Reply panels | The panel behind every reply, with five dials under **Tune panel**. |
@@ -77,6 +98,9 @@ the first message fades it back.
 | Medium | A stronger blur, quieter colour, darker. The default. |
 | Strong | A heavy blur and muted colour, darkest behind the reading column. |
 | Solid | Strong, and every reply sits on an opaque panel. |
+
+Light mode does the same in a conversation, using the dark set's colour and
+scrim, so a chat's background looks alike in both modes.
 
 ### Reply panels
 
@@ -120,6 +144,11 @@ from the look's current values if needed. Every key is optional; anything left
 out keeps its default. Edit it in any editor and the app follows within a couple
 of seconds. Moving a knob in Settings writes it back.
 
+The keys at the top of a file are the dark mode colours and opacities. The
+`light` block holds the same keys for light mode. A file from an earlier version
+has no such block and uses the look's own light set until you add one or move a
+knob.
+
 ## What it touches on your computer
 
 Hermes desktop plugins run inside the app with the app's own access, so this is
@@ -146,7 +175,8 @@ the full list of what Atrium does outside drawing the window.
 - **Background work**: one timer, every two seconds, that checks whether a theme
   file changed. It stops when the plugin is disabled.
 - **Reading the app's state**: it follows which chat is focused (to tell a fresh
-  draft from a conversation) and the active theme. It also adds an empty,
+  draft from a conversation), the active theme and whether the app is in light
+  or dark mode. It also adds an empty,
   invisible entry to Hermes's empty-chat slot, which tells it when the focused
   session has no messages yet; it waits a moment (150 ms) before acting on that,
   so a chat that is still loading does not flicker. It does not read messages.

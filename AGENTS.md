@@ -148,7 +148,8 @@ a stored key string: users have data under it.
 
 **Adding a look.** A look is a saved skin, not a code path. Add its id to
 `LOOK_IDS`, its label to `LOOK_LABELS`, an entry to `SKIN_STORES` (its own record
-key, picture key and theme file name), and a preview to `APPEARANCE_LOOKS`. The
+key, picture key and theme file name), and a preview to `APPEARANCE_LOOKS`.
+Give its preset a dark set (`skin`) and a light one (`light`). The
 gallery, the status chip, the theme-file button and the picture heal all read
 those, so nothing else needs a branch. Never rename `custom`: that id, its
 `skin`/`skinImage` keys and its `hermes-atrium-theme.json` file are what every
@@ -180,6 +181,12 @@ for testing, so a new shipped picture needs a `!desktop/assets/<file>` line in
 redistribution. Keep the shipped ones as sized JPEGs, a few hundred KB to a few
 MB each, so the repository stays easy to clone. A preset's picture is named by
 its slot, so it must not be picked by sort order.
+
+**Light and dark.** A record's top-level keys are the dark set and `light` holds
+the light one; `MODE_KEYS` names what differs between them. Never write one
+mode's value into the other: knob edits go through `pushSkin`, whole records
+through `commitSkin`. The theme is published with both sets, and only after the
+records are read, or the app is handed another look's colours at every start.
 
 **Changing a preset's palette.** Measure it, don't pick it by eye. The panel
 solver composites the scrim, the glass and the reply panel over the picture's

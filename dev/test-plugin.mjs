@@ -62,6 +62,8 @@ export const Button = el('button'), ToggleRow = el('div'), Codicon = el('span'),
   SegmentedControl = el('div'), Select = el('div'), SelectContent = el('div'), SelectItem = el('div'),
   SelectTrigger = el('div'), SelectValue = el('span')
 export const requestTheme = () => {}, setAccentOverride = () => {}
+// The app's theme hook: undefined until a test says which mode the app is in.
+export const useTheme = () => ({ resolvedMode: window.__resolvedMode })
 `
 
 // Components are called directly by the JSX stub, so an effect runs at once and
@@ -220,9 +222,9 @@ async function main() {
 
   // Every Custom slot paints its own picture and its own ground.
   for (const [look, file, ground] of [
-    ['custom', 'johan-christian-dahl-the-watzmann.jpg', '#1c2836'],
+    ['custom', 'johan-christian-dahl-the-watzmann.jpg', '#0d1117'],
     ['custom2', 'johan-christian-dahl-stalheim.jpg', '#2f2b22'],
-    ['custom3', 'johan-christian-dahl-view-of-dresden-by-moonlight.jpg', '#14191f']
+    ['custom3', 'johan-christian-dahl-view-of-dresden-by-moonlight.jpg', '#0d1117']
   ]) {
     await setLook(look)
     await open()
@@ -245,6 +247,147 @@ async function main() {
       } catch (e) { check(`${look} picture is a real JPEG`, false, String(e.message)) }
     }
   }
+
+  // ── light and dark ──────────────────────────────────────────────────────
+  // The look on screen (Custom 3 here) hands the app both of its sets from the
+  // first moment, so the app never paints one mode with another look's colours.
+  const published = () => view.evaluate(() => {
+    const themes = (window.__contribs || []).filter(c => c.area === 'themes')
+    const of = c => c ? { light: c.data.colors.background, dark: c.data.darkColors?.background } : null
+    return { first: of(themes[0]), count: themes.length }
+  })
+  const first = await published()
+  check('the first theme published is the look on screen, in both modes',
+    first.first?.light === 'rgba(238, 242, 247, 0.88)' && first.first?.dark === 'rgba(13, 17, 23, 0.88)', JSON.stringify(first))
+
+  await view.evaluate(() => {
+    const probe = document.createElement('div')
+    probe.id = 'atr-mode-probe'
+    probe.innerHTML = '<div data-slot="aui_thread-content"><div data-slot="code-card">card</div></div>'
+      + '<div data-slot="aui_user-message-root"><p>prose <code>inline</code></p><pre><code>block</code></pre></div>'
+    document.body.appendChild(probe)
+  })
+  const paintedState = () => view.evaluate(() => {
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n')
+    const style = selector => { const el = document.querySelector('#atr-mode-probe ' + selector); return el ? getComputedStyle(el) : {} }
+    return {
+      ground: /--theme-neutral-chrome: rgba\((\d+, \d+, \d+)/.exec(css)?.[1] || null,
+      card: style('[data-slot="code-card"]').backgroundColor,
+      halo: style('p').textShadow,
+      inline: style('p code').backgroundColor,
+      lift: /\.shiki \{ filter: brightness\(([\d.]+)\)/.exec(css)?.[1] || null
+    }
+  })
+  // What the app does on a mode switch: repaint its theme, class and attribute.
+  const appMode = async mode => {
+    await view.evaluate(m => {
+      document.documentElement.classList.toggle('dark', m === 'dark')
+      document.documentElement.dataset.hermesTheme = 'hermes-atrium'
+    }, mode)
+    await view.waitForTimeout(600)
+    return paintedState()
+  }
+  const inDark = await appMode('dark')
+  check('dark mode paints the dark set', inDark.ground === '13, 17, 23' && inDark.card === 'rgb(13, 17, 23)' && inDark.halo !== 'none', JSON.stringify(inDark))
+  check('syntax colours are lifted', Number(inDark.lift) > 1, String(inDark.lift))
+  const inLight = await appMode('light')
+  check('light mode paints the light set', inLight.ground === '238, 242, 247' && inLight.card === 'rgb(246, 248, 251)' && inLight.halo === 'none', JSON.stringify(inLight))
+  check('light mode puts inline code on the light ground', inLight.inline.startsWith('rgba(246, 248, 251'), inLight.inline)
+  // Light mode lays nothing over the picture of an empty chat: every gradient on
+  // its layer is fully clear, with no grain or top shade. Behind a conversation
+  // Reading focus darkens it with the dark set's ground, as in dark mode.
+  const tint = await view.evaluate(() => {
+    const css = [...document.querySelectorAll('style')].map(s => s.textContent).join(String.fromCharCode(10))
+    const layers = [...css.matchAll(/(?:^|\s)html::before \{[^}]*\}/g)].map(m => m[0])
+    const alphas = layers.flatMap(layer => [...layer.matchAll(/rgba\(\d+, \d+, \d+, ([\d.]+)\)/g)].map(m => Number(m[1])))
+    const chat = /(?:^|\s)html::after \{[^}]*\}/.exec(css)?.[0] || ''
+    return {
+      layers: layers.length, alphas: alphas.length, strongest: Math.max(0, ...alphas),
+      grain: layers.some(layer => layer.includes('feTurbulence')),
+      darkens: chat.includes('rgba(13, 17, 23, 0.18)'),
+      dims: /brightness\(0\.88\)/.test(css),
+      shade: /html:root body::after/.test(css),
+      emptyInk: /html:not\(\.dark\) \[data-slot='aui_intro'\][^{]*\{\s*color: (#[0-9a-f]{6})/i.exec(css)?.[1] || null
+    }
+  })
+  check('light mode lays no tint over an empty chat\'s picture',
+    tint.layers >= 1 && tint.alphas > 0 && tint.strongest === 0 && !tint.grain && !tint.shade, JSON.stringify(tint))
+  check('a light conversation darkens the picture as dark mode does', tint.darkens && tint.dims, `${tint.darkens} ${tint.dims}`)
+  check('words on the bare picture stay light in light mode', tint.emptyInk === '#e6edf3', String(tint.emptyInk))
+
+  // A switch made while the window is hidden gets its reply panel once shown.
+  const replyPanel = () => view.evaluate(() => document.getElementById('atr-reply-ground')?.textContent || '')
+  await appMode('dark')
+  const panelDark = await replyPanel()
+  await view.evaluate(() => Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__hidden === true }))
+  await view.evaluate(() => { window.__hidden = true })
+  await appMode('light')
+  const panelHidden = await replyPanel()
+  await view.evaluate(() => { window.__hidden = false; document.dispatchEvent(new Event('visibilitychange')) })
+  await view.waitForTimeout(300)
+  const panelShown = await replyPanel()
+  check('a hidden window solves its reply panel once shown', panelDark !== '' && panelHidden === panelDark && panelShown !== panelDark, `${panelDark.length} ${panelHidden === panelDark} ${panelShown !== panelDark}`)
+
+  // A knob moved in light mode changes the light set and leaves the dark one.
+  await view.evaluate(() => window.__mountSettings())
+  await view.waitForTimeout(200)
+  const note = await view.evaluate(() => document.getElementById('atrium-settings').textContent.includes('You are editing light mode'))
+  check('settings say which set is being edited', note)
+  await view.evaluate(() => {
+    const box = document.querySelector('#atrium-settings input[type=color][aria-label="Links"]')
+    box.value = '#123456'
+    box.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  await view.waitForTimeout(400)
+  const edited = await readRecord('skin3')
+  const editedFile = await view.evaluate(() => {
+    const p = [...window.__bridge.files.keys()].find(k => k.endsWith('hermes-atrium-theme-3.json'))
+    return p ? JSON.parse(window.__bridge.files.get(p)) : null
+  })
+  check('a light edit lands in the light set only', edited?.light?.link === '#123456' && edited?.link === '#8cc8ff', `${edited?.light?.link} / ${edited?.link}`)
+  check('the theme file carries both sets', editedFile?.light?.link === '#123456' && editedFile?.link === '#8cc8ff', `${editedFile?.light?.link} / ${editedFile?.link}`)
+  await open()
+  check('a light edit survives a restart', (await readRecord('skin3'))?.light?.link === '#123456')
+
+  // The status chip passes the app's own setting on, and it wins over the class.
+  await view.evaluate(() => {
+    const probe = document.createElement('div')
+    probe.id = 'atr-mode-probe'
+    probe.innerHTML = '<div data-slot="aui_thread-content"><div data-slot="code-card">card</div></div>'
+      + '<div data-slot="aui_user-message-root"><p>prose <code>inline</code></p></div>'
+    document.body.appendChild(probe)
+  })
+  await appMode('dark')
+  const chip = mode => view.evaluate(m => {
+    window.__resolvedMode = m
+    window.__contribs.find(c => c.area === 'statusBar.right').render()
+  }, mode)
+  await chip('light')
+  await view.waitForTimeout(500)
+  check('the status chip reports a switch to light', (await paintedState()).ground === '238, 242, 247')
+  await chip(undefined)
+  const unmounted = await appMode('dark')
+  check('without the chip the painted class decides', unmounted.ground === '13, 17, 23', String(unmounted.ground))
+  await view.evaluate(() => {
+    document.getElementById('atr-mode-probe')?.remove()
+    localStorage.removeItem('hermes.plugin.hermes-atrium.skin3')
+  })
+
+  // Light edits are kept even where the dark values are still the shipped ones.
+  await view.evaluate(() => {
+    localStorage.setItem('hermes.plugin.hermes-atrium.gruvboxSkin', JSON.stringify({ ground: '#282828', light: { link: '#111111' } }))
+    localStorage.setItem('hermes.plugin.hermes-atrium.look', JSON.stringify('gruvbox'))
+  })
+  await open()
+  const kept = await view.evaluate(() => {
+    const theme = (window.__contribs || []).filter(c => c.area === 'themes')[0]?.data
+    return { light: theme?.colors.background, dark: theme?.darkColors.background }
+  })
+  check('Gruvbox publishes its light and dark sets', kept.light === 'rgba(251, 241, 199, 0.88)' && kept.dark === 'rgba(40, 40, 40, 0.88)', JSON.stringify(kept))
+  await appMode('light')
+  const linkRule = await view.evaluate(() => [...document.querySelectorAll('style')].some(s => s.textContent.includes('color: #111111 !important')))
+  check('a light edit on shipped Gruvbox values is kept', linkRule)
+  await view.evaluate(() => { document.documentElement.classList.add('dark'); localStorage.removeItem('hermes.plugin.hermes-atrium.gruvboxSkin') })
 
   // The gallery names and previews each look.
   await setLook('custom2')
@@ -472,6 +615,7 @@ async function main() {
   check('upgrade adopts the preset in an untouched slot', upgraded.r2?.ground === '#2f2b22' && upgraded.r2?.image === 'assets/johan-christian-dahl-stalheim.jpg', `${upgraded.r2?.ground} ${upgraded.r2?.image}`)
   check('upgrade paints the preset picture', upgraded.pic === 'johan-christian-dahl-stalheim.jpg', String(upgraded.pic))
   check('upgrade keeps a real edit', upgraded.r3?.ground === '#101820' && upgraded.r3?.accent === '#ff8800', `${upgraded.r3?.ground} ${upgraded.r3?.accent}`)
+  check('an upgraded untouched slot gains its light set', upgraded.r2?.light?.ground === '#f7f3e8', String(upgraded.r2?.light?.ground))
   check('upgrade keeps the edited slot\'s own picture', String(upgraded.r3?.image || '').endsWith('charles-william-wyllie-the-backwater.jpg'), String(upgraded.r3?.image))
 
   // The Canva presets earlier builds seeded are retired. A slot still holding
@@ -501,7 +645,7 @@ async function main() {
       pic: pic ? decodeURI(pic[1]).split('/').pop() : null
     }
   })
-  check('a retired preset upgrades to its Dahl preset', retired.r1?.ground === '#1c2836' && retired.r1?.image === 'assets/johan-christian-dahl-the-watzmann.jpg', `${retired.r1?.ground} ${retired.r1?.image}`)
+  check('a retired preset upgrades to its Dahl preset', retired.r1?.ground === '#0d1117' && retired.r1?.image === 'assets/johan-christian-dahl-the-watzmann.jpg', `${retired.r1?.ground} ${retired.r1?.image}`)
   check('the upgraded slot paints its painting', retired.pic === 'johan-christian-dahl-the-watzmann.jpg', String(retired.pic))
   await setLook('custom3')
   await open()
@@ -513,6 +657,20 @@ async function main() {
   })
   check('an edited retired slot keeps its edit', retiredEdit.r3?.accent === '#ff8800', String(retiredEdit.r3?.accent))
   check('a retired picture marker moves to the slot painting', retiredEdit.pic === 'johan-christian-dahl-view-of-dresden-by-moonlight.jpg', String(retiredEdit.pic))
+
+  // The first Dahl palettes are retired too: an untouched slot takes the new one.
+  const firstDahl = {
+    image: 'assets/johan-christian-dahl-view-of-dresden-by-moonlight.jpg', fit: 'cover', posX: 50, posY: 100,
+    scrim: 0.09, card: 0.55, bubble: 0.80, page: 0.80,
+    ground: '#14191f', deeper: '#0c1016', cardTint: '#14191f', bubbleTint: '#14191f',
+    edge: '#14191f', accent: '#e8b26a',
+    ink: '#eef2f7', ink2: '#d3dae4', ink3: '#bcc5d2', quiet: '#a8b3c2', ink4: '#8e9aab',
+    link: '#8fbbe6', code: '#e9a87e', quote: '#98c7b8'
+  }
+  await view.evaluate(rec => localStorage.setItem('hermes.plugin.hermes-atrium.skin3', JSON.stringify(rec)), firstDahl)
+  await open()
+  const repainted = await readRecord('skin3')
+  check('an untouched first Dahl palette takes the new one', repainted?.ground === '#0d1117' && Number(repainted?.card) === 0.82, `${repainted?.ground} ${repainted?.card}`)
 
   // Gruvbox moves from the old green surfaces to gruvbox's own greys, but only
   // where a surface was still at the old default.
